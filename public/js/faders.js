@@ -1218,36 +1218,73 @@ class FaderConsole {
             return;
         }
 
-        console.log(`Recalling preset ${state.id}...`);
+        console.log(`🎨 Recalling preset "${state.name}" for selected fixtures:`, this.selectedFixtureIds);
+
+        // Load all assignments
+        const res = await fetch(`${API}/api/faders/all-assignments`);
+        const data = await res.json();
+        if (!data.success) return;
+        const allAssignments = data.mapping;
+
+        // Convert channel-based preset to function-based values
+        // Use the ACTIVE fixture's assignments to determine which functions are stored
+        const activeAssignments = this.assignmentCache[this.fixtureId] || {};
+        const functionValues = {}; // { 'R': 255, 'G': 128, 'DIM': 200, 'P': 127, 'T': 64, ... }
 
         state.values.forEach(v => {
-            // CRITICAL: Only recall channels that are within the current fixture's range
-            if (v.channel > this.fixtureChannelCount) return;
-
-            // Ensure isOn has a sane default (true) if missing or null
-            const is_on = (v.is_on === 1 || v.is_on === true || v.is_on === undefined || v.is_on === null);
-
-            // Update global cache
-            if (!this.globalValueCache[this.fixtureId]) this.globalValueCache[this.fixtureId] = {};
-            this.globalValueCache[this.fixtureId][v.channel] = {
-                value: v.value,
-                isOn: is_on
-            };
-
-            // If channel is currently visible, update the UI
-            const chState = this.channels.find(c => c.channel === v.channel);
-            if (chState) {
-                this.updateFaderValue(chState, v.value, false);
-                this.toggleOnState(chState, is_on, false); // Don't save to DB while recalling
-            } else {
-                // Even if not visible, send to DMX output
-                if (is_on) {
-                    this.sendToBackend(v.channel, v.value);
-                } else {
-                    this.sendToBackend(v.channel, 0);
-                }
-            }
+            const channelAssignments = activeAssignments[v.channel] || [];
+            channelAssignments.forEach(func => {
+                functionValues[func] = v.value;
+            });
         });
+
+        console.log('Function values extracted from preset:', functionValues);
+
+        // Apply to ALL selected fixtures
+        for (const fixtureId of this.selectedFixtureIds) {
+            const fixture = this.availableFixtures.find(f => f.id === fixtureId);
+            if (!fixture) continue;
+
+            const assignments = allAssignments[fixtureId];
+            if (!assignments) continue;
+
+            // For each channel, check if it has a function that's in our preset
+            Object.keys(assignments).forEach(relCh => {
+                const functions = assignments[relCh];
+                const relChNum = parseInt(relCh);
+                const absAddr = fixture.dmx_address + relChNum - 1;
+
+                functions.forEach(f => {
+                    const val = functionValues[f];
+                    if (val !== undefined) {
+                        this.sendAbsoluteDMX(absAddr, val);
+                    }
+                });
+            });
+        }
+
+        // Update UI if active fixture is in selection
+        if (this.selectedFixtureIds.includes(this.fixtureId)) {
+            state.values.forEach(v => {
+                if (v.channel > this.fixtureChannelCount) return;
+
+                const is_on = (v.is_on === 1 || v.is_on === true || v.is_on === undefined || v.is_on === null);
+
+                // Update global cache
+                if (!this.globalValueCache[this.fixtureId]) this.globalValueCache[this.fixtureId] = {};
+                this.globalValueCache[this.fixtureId][v.channel] = {
+                    value: v.value,
+                    isOn: is_on
+                };
+
+                // If channel is currently visible, update the UI
+                const chState = this.channels.find(c => c.channel === v.channel);
+                if (chState) {
+                    this.updateFaderValue(chState, v.value, false);
+                    this.toggleOnState(chState, is_on, false);
+                }
+            });
+        }
     }
 
     async renamePreset(state, newName) {
