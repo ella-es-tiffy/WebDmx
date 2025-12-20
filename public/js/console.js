@@ -3,7 +3,7 @@
  * Main Application Controller
  */
 
-const API = 'http://localhost:3000';
+const API = `http://${window.location.hostname}:3000`;
 
 class DMXConsole {
     constructor() {

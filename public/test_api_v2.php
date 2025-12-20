@@ -138,7 +138,7 @@
     </div>
 
     <script>
-        const API = 'http://localhost:3000';
+        const API = `http://${window.location.hostname}:3000`;
         
         // Init Monitor
         const monitor = document.getElementById('monitor');

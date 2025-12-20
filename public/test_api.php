@@ -272,7 +272,7 @@ GET  /api/devices
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:3000';
+        const API_BASE = `http://${window.location.hostname}:3000`;
 
         // Update value displays
         document.getElementById('singleValue').addEventListener('input', (e) => {

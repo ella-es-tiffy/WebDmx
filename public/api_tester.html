@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -64,8 +65,15 @@
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
         }
 
         button {
@@ -173,10 +181,25 @@
             font-size: 10px;
         }
 
-        .method.GET { background: #3fb950; color: white; }
-        .method.POST { background: #58a6ff; color: white; }
-        .method.PUT { background: #d29922; color: white; }
-        .method.DELETE { background: #f85149; color: white; }
+        .method.GET {
+            background: #3fb950;
+            color: white;
+        }
+
+        .method.POST {
+            background: #58a6ff;
+            color: white;
+        }
+
+        .method.PUT {
+            background: #d29922;
+            color: white;
+        }
+
+        .method.DELETE {
+            background: #f85149;
+            color: white;
+        }
 
         .content {
             flex: 1;
@@ -210,7 +233,9 @@
             margin-bottom: 5px;
         }
 
-        textarea, input[type="text"], input[type="number"] {
+        textarea,
+        input[type="text"],
+        input[type="number"] {
             width: 100%;
             background: #0d1117;
             border: 1px solid #30363d;
@@ -226,7 +251,8 @@
             resize: vertical;
         }
 
-        textarea:focus, input:focus {
+        textarea:focus,
+        input:focus {
             outline: none;
             border-color: #58a6ff;
         }
@@ -310,6 +336,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="header">
         <h1>WebDMX API Debug Console</h1>
@@ -466,7 +493,7 @@
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:3000/api';
+        const API_BASE = `http://${window.location.hostname}:3000/api`;
         let currentMethod = 'GET';
         let currentPath = '';
 
@@ -511,7 +538,7 @@
 
         async function checkAPIStatus() {
             try {
-                const response = await fetch('http://localhost:3000/health');
+                const response = await fetch(`http://${window.location.hostname}:3000/health`);
                 const data = await response.json();
 
                 if (data.status === 'ok') {
@@ -579,7 +606,7 @@
                         body = JSON.parse(bodyText);
                         options.body = JSON.stringify(body);
                     } catch (e) {
-                        log('error', 'Invalid JSON in request body', {error: e.message});
+                        log('error', 'Invalid JSON in request body', { error: e.message });
                         return;
                     }
                 }
@@ -602,7 +629,7 @@
         }
 
         async function quickTest(test) {
-            switch(test) {
+            switch (test) {
                 case 'health':
                     selectEndpoint('GET', '/health');
                     await sendRequest();
@@ -629,7 +656,7 @@
 
             try {
                 // Try to kill the process via shell command (requires server endpoint)
-                const response = await fetch('http://localhost:3000/api/system/restart', {
+                const response = await fetch(`http://${window.location.hostname}:3000/api/system/restart`, {
                     method: 'POST'
                 });
 
@@ -657,4 +684,5 @@
         setInterval(updateConsoleTime, 1000);
     </script>
 </body>
+
 </html>

@@ -2,7 +2,7 @@
  * WebDMX Frontend Application
  */
 
-const API_URL = 'http://localhost:3000/api'; // Direct to Node backend for now
+const API_URL = `http://${window.location.hostname}:3000/api`; // Direct to Node backend for now
 
 // State
 let currentView = 'patch';
