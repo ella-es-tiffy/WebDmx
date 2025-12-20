@@ -3,10 +3,12 @@ const API_URL = `http://${window.location.hostname}:3000/api/devices`;
 class PatchManager {
     constructor() {
         this.fixtures = [];
+        this.templates = [];
     }
 
     async init() {
         await this.loadFixtures();
+        await this.loadTemplates();
         this.render();
     }
 
@@ -16,6 +18,18 @@ class PatchManager {
             this.fixtures = await res.json();
         } catch (e) {
             console.error('Failed to load fixtures:', e);
+        }
+    }
+
+    async loadTemplates() {
+        try {
+            const res = await fetch(`http://${window.location.hostname}:3000/api/templates`);
+            const data = await res.json();
+            if (data.success) {
+                this.templates = data.templates;
+            }
+        } catch (e) {
+            console.error('Failed to load templates:', e);
         }
     }
 
@@ -82,6 +96,13 @@ class PatchManager {
                         <input type="text" id="fix-model" value="${fixture ? (fixture.model || '') : ''}" placeholder="e.g. Pointy">
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Fixture Template (Optional)</label>
+                    <select id="fix-template" onchange="patchManager.applyTemplate()">
+                        <option value="">-- Manual Setup --</option>
+                        ${this.templates.map(t => `<option value="${t.id}" ${fixture?.template_id === t.id ? 'selected' : ''}>${t.name} (${t.channel_count}ch)</option>`).join('')}
+                    </select>
+                </div>
                 <div class="grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                     <div class="form-group">
                         <label>Category</label>
@@ -134,6 +155,7 @@ class PatchManager {
             position: document.getElementById('fix-position').value,
             dmx_address: parseInt(document.getElementById('fix-address').value),
             channel_count: parseInt(document.getElementById('fix-channels').value),
+            template_id: parseInt(document.getElementById('fix-template').value) || null
         };
 
         if (!data.name || isNaN(data.dmx_address)) return;
@@ -155,6 +177,19 @@ class PatchManager {
         } catch (e) {
             console.error('Failed to save fixture:', e);
         }
+    }
+
+    applyTemplate() {
+        const templateId = parseInt(document.getElementById('fix-template').value);
+        if (!templateId) return;
+
+        const template = this.templates.find(t => t.id === templateId);
+        if (!template) return;
+
+        // Auto-fill fields from template
+        if (template.manufacturer) document.getElementById('fix-manufacturer').value = template.manufacturer;
+        if (template.model) document.getElementById('fix-model').value = template.model;
+        document.getElementById('fix-channels').value = template.channel_count;
     }
 
     async deleteFixture(id) {

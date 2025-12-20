@@ -30,6 +30,7 @@ export interface IDevice {
     device_type?: DeviceType;
     category: 'spot' | 'wash' | 'par' | 'dimmer' | 'strobe' | 'sonstiges';
     position: 'front' | 'mid' | 'back' | 'left' | 'right';
+    template_id?: number;
     created_at?: Date;
     updated_at?: Date;
 }
@@ -58,6 +59,7 @@ export class Device {
                 device_type VARCHAR(50),
                 category VARCHAR(50) DEFAULT 'sonstiges',
                 position VARCHAR(50) DEFAULT 'front',
+                template_id INT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             )
@@ -69,6 +71,7 @@ export class Device {
         try { await pool.query("ALTER TABLE devices ADD COLUMN universe INT DEFAULT 1"); } catch (e) { }
         try { await pool.query("ALTER TABLE devices ADD COLUMN manufacturer VARCHAR(100)"); } catch (e) { }
         try { await pool.query("ALTER TABLE devices ADD COLUMN model VARCHAR(100)"); } catch (e) { }
+        try { await pool.query("ALTER TABLE devices ADD COLUMN template_id INT NULL"); } catch (e) { }
 
         const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM devices ORDER BY dmx_address');
         return rows as IDevice[];
@@ -89,8 +92,8 @@ export class Device {
     public static async create(device: IDevice): Promise<number> {
         const pool = Database.getPool();
         const [result] = await pool.query<ResultSetHeader>(
-            `INSERT INTO devices (name, manufacturer, model, dmx_address, universe, channel_count, device_type, category, position)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO devices (name, manufacturer, model, dmx_address, universe, channel_count, device_type, category, position, template_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 device.name,
                 device.manufacturer,
@@ -100,7 +103,8 @@ export class Device {
                 device.channel_count,
                 device.device_type || DeviceType.GENERIC,
                 device.category || 'sonstiges',
-                device.position || 'front'
+                device.position || 'front',
+                device.template_id || null
             ]
         );
         return result.insertId;
@@ -121,7 +125,8 @@ export class Device {
                 channel_count = COALESCE(?, channel_count),
                 device_type = COALESCE(?, device_type),
                 category = COALESCE(?, category),
-                position = COALESCE(?, position)
+                position = COALESCE(?, position),
+                template_id = COALESCE(?, template_id)
              WHERE id = ?`,
             [
                 device.name,
@@ -133,6 +138,7 @@ export class Device {
                 device.device_type,
                 device.category,
                 device.position,
+                device.template_id,
                 id
             ]
         );

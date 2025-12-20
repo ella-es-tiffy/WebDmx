@@ -101,11 +101,28 @@ export class FaderController {
             const pool = Database.getPool();
 
             // 1. Get functional assignments
-            const [assignmentRows] = await pool.execute(`
+            let assignmentRows: any = await pool.execute(`
                 SELECT dmx_channel, function_type
                 FROM fixture_channel_assignments
                 WHERE fixture_id = ?
             `, [fixtureId]);
+            assignmentRows = assignmentRows[0];
+
+            // If no assignments, check if fixture has a template
+            if (assignmentRows.length === 0) {
+                const [fixtureRows]: any = await pool.execute('SELECT template_id FROM devices WHERE id = ?', [fixtureId]);
+                if (fixtureRows.length > 0 && fixtureRows[0].template_id) {
+                    const templateId = fixtureRows[0].template_id;
+                    const [templateChannels]: any = await pool.execute(
+                        'SELECT channel_num, function_type FROM fixture_template_channels WHERE template_id = ?',
+                        [templateId]
+                    );
+                    assignmentRows = templateChannels.map((tc: any) => ({
+                        dmx_channel: tc.channel_num,
+                        function_type: tc.function_type
+                    }));
+                }
+            }
 
             // 2. Get channel states from new table
             const [stateRows] = await pool.execute(`
