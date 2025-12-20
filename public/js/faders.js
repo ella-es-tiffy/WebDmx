@@ -1248,39 +1248,51 @@ class FaderConsole {
         const g = parseInt(hex.slice(3, 5), 16);
         const b = parseInt(hex.slice(5, 7), 16);
 
-        if (shouldSave) {
-            console.log(`Macro Action: Applying & Saving ${hex} to active RGB channels`);
-        } else {
-            console.log(`Macro Action: Applying ${hex} (LIVE) to active RGB channels`);
+        console.log(`🎨 Applying color ${hex} to selected fixtures:`, this.selectedFixtureIds);
+
+        // Apply to ALL selected fixtures
+        for (const fixtureId of this.selectedFixtureIds) {
+            const fixture = this.availableFixtures.find(f => f.id === fixtureId);
+            if (!fixture) continue;
+
+            const assignments = this.assignmentCache[fixtureId];
+            if (!assignments) {
+                console.warn(`Fixture ${fixtureId} has no assignments yet`);
+                continue;
+            }
+
+            // For each channel with R/G/B assignment, send DMX
+            Object.keys(assignments).forEach(relCh => {
+                const functions = assignments[relCh];
+                const relChNum = parseInt(relCh);
+                const absAddr = fixture.dmx_address + relChNum - 1;
+
+                functions.forEach(f => {
+                    if (f === 'R') this.sendAbsoluteDMX(absAddr, r);
+                    if (f === 'G') this.sendAbsoluteDMX(absAddr, g);
+                    if (f === 'B') this.sendAbsoluteDMX(absAddr, b);
+                });
+            });
         }
 
-        let count = 0;
-        this.channels.forEach(ch => {
-            let chChanged = false;
-
-            // Log what we found - only if saving
-            if (shouldSave && (ch.assignments.r || ch.assignments.g || ch.assignments.b)) {
-                console.log(`CH${ch.channel} has RGB assignments:`, ch.assignments);
-            }
-
-            if (ch.assignments.r) {
-                this.updateFaderValue(ch, r, shouldSave);
-                chChanged = true;
-            }
-            if (ch.assignments.g) {
-                this.updateFaderValue(ch, g, shouldSave);
-                chChanged = true;
-            }
-            if (ch.assignments.b) {
-                this.updateFaderValue(ch, b, shouldSave);
-                chChanged = true;
-            }
-
-            if (chChanged) count++;
-        });
-
-        if (shouldSave) {
-            console.log(`Macro update complete. Updated ${count} faders.`);
+        // Also update UI if active fixture is in selection
+        if (this.selectedFixtureIds.includes(this.fixtureId)) {
+            let count = 0;
+            this.channels.forEach(ch => {
+                if (ch.assignments.r) {
+                    this.updateFaderValue(ch, r, shouldSave);
+                    count++;
+                }
+                if (ch.assignments.g) {
+                    this.updateFaderValue(ch, g, shouldSave);
+                    count++;
+                }
+                if (ch.assignments.b) {
+                    this.updateFaderValue(ch, b, shouldSave);
+                    count++;
+                }
+            });
+            console.log(`Updated ${count} faders in UI`);
         }
     }
 
