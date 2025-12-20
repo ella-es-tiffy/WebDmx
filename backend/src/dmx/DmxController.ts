@@ -129,6 +129,54 @@ export class DmxController implements IDmxController {
     }
 
     /**
+     * Set a single DMX channel value
+     */
+    public setChannel(channel: number, value: number): void {
+        if (channel < 1 || channel > DMX_UNIVERSE_SIZE) {
+            throw new Error(`Channel ${channel} out of range (1-512)`);
+        }
+        if (value < 0 || value > 255) {
+            throw new Error(`Value ${value} out of range (0-255)`);
+        }
+
+        this.dmxData[channel] = Math.floor(value);
+    }
+
+    /**
+     * Set multiple channels at once
+     */
+    public setChannels(startChannel: number, values: number[]): void {
+        if (startChannel < 1 || startChannel > DMX_UNIVERSE_SIZE) {
+            throw new Error(`Start channel ${startChannel} out of range (1-512)`);
+        }
+        if (startChannel + values.length - 1 > DMX_UNIVERSE_SIZE) {
+            throw new Error(`Channel range exceeds universe size`);
+        }
+
+        for (let i = 0; i < values.length; i++) {
+            const value = Math.max(0, Math.min(255, Math.floor(values[i])));
+            this.dmxData[startChannel + i] = value;
+        }
+    }
+
+    /**
+     * Get current value of a channel
+     */
+    public getChannel(channel: number): number {
+        if (channel < 1 || channel > DMX_UNIVERSE_SIZE) {
+            throw new Error(`Channel ${channel} out of range (1-512)`);
+        }
+        return this.dmxData[channel];
+    }
+
+    /**
+     * Get all channel values
+     */
+    public getAllChannels(): number[] {
+        return Array.from(this.dmxData.slice(1));
+    }
+
+    /**
      * Blackout - set all channels to 0
      */
     public blackout(): void {
