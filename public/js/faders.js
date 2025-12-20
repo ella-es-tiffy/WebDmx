@@ -1,9 +1,11 @@
 /**
- * DMX Fader Console - Professional Mixing Desk
- * Features: Channel assignment (R,G,B,P,T,W), Drag-rotatable encoders, Mute/Unmute
+ * DMX Fader Console - Fixture Configuration System
+ * Assignments (R,G,B,W,P,T) are stored in database per fixture
+ * Encoders work on ALL channels with P/T assignments (ignores SELECT)
  */
 
 const API = 'http://localhost:3000';
+const FIXTURE_ID = 1; // Currently configuring fixture 1
 
 class FaderConsole {
     constructor(channelCount = 16) {
@@ -13,8 +15,8 @@ class FaderConsole {
 
         // Encoder states
         this.encoders = {
-            pan: { value: 0, rotation: 0 },
-            tilt: { value: 0, rotation: 0 },
+            pan: { value: 127, rotation: 0 },
+            tilt: { value: 127, rotation: 0 },
             rgbw: { hue: 0, rotation: 0 }
         };
 
@@ -22,7 +24,7 @@ class FaderConsole {
     }
 
     async init() {
-        console.log('🎚️ Initializing Fader Console...');
+        console.log('🎚️ Initializing Fader Console (Fixture Configuration)...');
 
         // Create faders
         this.createFaders();
@@ -30,12 +32,62 @@ class FaderConsole {
         // Initialize encoders
         this.initEncoders();
 
-        // Load names from backend
+        // Load names and assignments from database
         await this.loadFaderNames();
+        await this.loadChannelAssignments();
 
         // Start backend monitoring
         this.startBackendMonitor();
         this.startHeartbeat();
+    }
+
+    /**
+     * Load channel assignments from database
+     */
+    async loadChannelAssignments() {
+        try {
+            const res = await fetch(`${API}/api/faders/assignments/${FIXTURE_ID}`);
+            const data = await res.json();
+
+            if (data.success && data.assignments) {
+                // Apply assignments to channels
+                // Format: { 1: ['p'], 8: ['r'], 9: ['g'], ... }
+                Object.keys(data.assignments).forEach(channelStr => {
+                    const channelNum = parseInt(channelStr);
+                    const state = this.channels.find(c => c.channel === channelNum);
+                    if (state) {
+                        data.assignments[channelNum].forEach(func => {
+                            state.assignments[func] = true;
+                            state.assignBtns[func].classList.add('active');
+                        });
+                        console.log(`CH${channelNum}: Loaded assignments: ${data.assignments[channelNum].join(',')}`);
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('Failed to load channel assignments:', e);
+        }
+    }
+
+    /**
+     * Save channel assignment to database
+     */
+    async saveChannelAssignment(channel, functionType, enabled) {
+        try {
+            await fetch(`${API}/api/faders/assignments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fixtureId: FIXTURE_ID,
+                    channel,
+                    functionType: functionType.toUpperCase(),
+                    enabled
+                })
+            });
+            console.log(`CH${channel}: ${enabled ? 'Assigned' : 'Unassigned'} ${functionType.toUpperCase()}`);
+        } catch (e) {
+            console.error('Failed to save channel assignment:', e);
+        }
     }
 
     /**
@@ -77,18 +129,15 @@ class FaderConsole {
                 const currentAngle = getAngle(e, wheel);
                 let delta = currentAngle - startAngle;
 
-                // Handle wrap-around
                 if (delta > 180) delta -= 360;
                 if (delta < -180) delta += 360;
 
                 currentRotation += delta;
                 startAngle = currentAngle;
 
-                // Apply rotation
                 wheel.style.transform = `rotate(${currentRotation}deg)`;
                 this.encoders[type].rotation = currentRotation;
 
-                // Update value based on rotation
                 this.handleEncoderChange(type, delta);
             };
 
@@ -97,12 +146,10 @@ class FaderConsole {
                 wheel.style.cursor = 'grab';
             };
 
-            // Mouse events
             wheel.addEventListener('mousedown', start);
             document.addEventListener('mousemove', move);
             document.addEventListener('mouseup', end);
 
-            // Touch events
             wheel.addEventListener('touchstart', start);
             document.addEventListener('touchmove', move, { passive: false });
             document.addEventListener('touchend', end);
@@ -113,61 +160,69 @@ class FaderConsole {
      * Handle encoder value changes
      */
     handleEncoderChange(type, delta) {
-        const sensitivity = 0.7; // Adjust rotation sensitivity
+        const sensitivity = 0.7;
         const change = Math.round(delta * sensitivity);
 
         if (type === 'pan' || type === 'tilt') {
-            // Pan/Tilt: 0-255
             this.encoders[type].value = Math.max(0, Math.min(255, this.encoders[type].value + change));
-            const degrees = Math.round((this.encoders[type].value / 255) * 540 - 270); // -270° to +270°
+            const degrees = Math.round((this.encoders[type].value / 255) * 540 - 270);
 
             document.getElementById(`${type}-value`).textContent = `${degrees}°`;
 
-            // Apply to selected channels with appropriate assignment
+            // Apply to ALL channels with P or T assignment (ignores SELECT!)
             this.applyEncoderToChannels(type, this.encoders[type].value);
 
         } else if (type === 'rgbw') {
-            // RGBW: Rainbow color wheel (0-360°)
             this.encoders.rgbw.hue = (this.encoders.rgbw.hue + change) % 360;
             if (this.encoders.rgbw.hue < 0) this.encoders.rgbw.hue += 360;
 
-            // Convert HSV to RGB
             const rgb = this.hsvToRgb(this.encoders.rgbw.hue, 1, 1);
             document.getElementById('rgbw-value').textContent = `${this.encoders.rgbw.hue}°`;
 
-            // Apply rainbow to selected channels
             this.applyRainbowToChannels(rgb);
         }
     }
 
     /**
-     * Apply encoder value to selected channels with correct assignment
+     * Apply encoder to ALL channels with P or T assignment
+     * Does NOT check isSelected!
      */
     applyEncoderToChannels(type, value) {
         const assignKey = type === 'pan' ? 'p' : 't';
 
         this.channels.forEach(state => {
-            if (!state.isSelected) return;
+            // Check if channel has P or T assignment
             if (!state.assignments[assignKey]) return;
 
-            // Send value to the assigned channel
-            const targetChannel = state.channel; // Or offset based on assignment
-            this.sendToBackend(targetChannel, value);
+            // Move fader
+            state.fader.value = value;
+            state.currentValue = value;
+            state.valueDisplay.textContent = value;
+
+            const percentage = (value / 255) * 100;
+            state.ledFill.style.height = `${percentage}%`;
+
+            if (value > 0) {
+                state.element.classList.add('active');
+            } else {
+                state.element.classList.remove('active');
+            }
+
+            if (state.isOn) {
+                this.sendToBackend(state.channel, value);
+            }
         });
     }
 
     /**
-     * Apply rainbow color to selected channels (R,G,B,W assignments)
+     * Apply rainbow to ALL channels with R,G,B,W assignments
      */
     applyRainbowToChannels(rgb) {
         this.channels.forEach(state => {
-            if (!state.isSelected) return;
-
-            // Apply RGB values to assigned channels
             if (state.assignments.r) this.sendToBackend(state.channel, Math.round(rgb.r * 255));
             if (state.assignments.g) this.sendToBackend(state.channel, Math.round(rgb.g * 255));
             if (state.assignments.b) this.sendToBackend(state.channel, Math.round(rgb.b * 255));
-            if (state.assignments.w) this.sendToBackend(state.channel, 0); // White off for pure RGB
+            if (state.assignments.w) this.sendToBackend(state.channel, 0);
         });
     }
 
@@ -205,7 +260,6 @@ class FaderConsole {
                     const state = this.channels.find(c => c.channel === channelNum);
                     if (state) {
                         state.label.textContent = data.faders[channel];
-                        console.log(`CH${channelNum}: Loaded name "${data.faders[channel]}"`);
                     }
                 });
             }
@@ -224,7 +278,6 @@ class FaderConsole {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ channel, name })
             });
-            console.log(`CH${channel}: Saved name "${name}"`);
         } catch (e) {
             console.error('Failed to save fader name:', e);
         }
@@ -244,29 +297,40 @@ class FaderConsole {
     }
 
     /**
-     * Create a single fader channel with R,G,B,P,T,W assignment buttons
+     * Create a single fader channel
      */
     createFaderChannel(channelNum) {
-        // Channel container
         const channelEl = document.createElement('div');
         channelEl.className = 'fader-channel';
         channelEl.dataset.channel = channelNum;
 
-        // Channel label
         const label = document.createElement('div');
         label.className = 'channel-label';
         label.textContent = `CH ${channelNum}`;
 
-        // Control buttons container
         const controls = document.createElement('div');
         controls.className = 'fader-controls';
 
-        // SELECT button
         const selectBtn = document.createElement('button');
         selectBtn.className = 'btn-select';
         selectBtn.textContent = 'SELECT';
 
-        // Channel Assignment Grid (2x3: RGB / PTW)
+        // ABC Group Buttons (3x1 grid)
+        const groupGrid = document.createElement('div');
+        groupGrid.className = 'channel-groups';
+
+        const groups = ['A', 'B', 'C'];
+        const groupBtns = {};
+
+        groups.forEach(letter => {
+            const btn = document.createElement('button');
+            btn.className = `btn-group btn-${letter.toLowerCase()}`;
+            btn.textContent = letter;
+            groupBtns[letter.toLowerCase()] = btn;
+            groupGrid.appendChild(btn);
+        });
+
+        // RGBPTW Assignment Buttons (2x3 grid)
         const assignmentGrid = document.createElement('div');
         assignmentGrid.className = 'channel-assignment';
 
@@ -281,20 +345,18 @@ class FaderConsole {
             assignmentGrid.appendChild(btn);
         });
 
-        // ON button
         const onBtn = document.createElement('button');
         onBtn.className = 'btn-on';
         onBtn.textContent = 'ON';
 
         controls.appendChild(selectBtn);
+        controls.appendChild(groupGrid);
         controls.appendChild(assignmentGrid);
         controls.appendChild(onBtn);
 
-        // Fader + LED container
         const faderLedContainer = document.createElement('div');
         faderLedContainer.className = 'fader-led-container';
 
-        // LED Strip
         const ledStrip = document.createElement('div');
         ledStrip.className = 'led-strip';
 
@@ -302,7 +364,6 @@ class FaderConsole {
         ledFill.className = 'led-fill';
         ledStrip.appendChild(ledFill);
 
-        // Fader container
         const faderContainer = document.createElement('div');
         faderContainer.className = 'fader-container';
 
@@ -322,18 +383,15 @@ class FaderConsole {
         faderLedContainer.appendChild(ledStrip);
         faderLedContainer.appendChild(faderContainer);
 
-        // Value display
         const valueDisplay = document.createElement('div');
         valueDisplay.className = 'value-display';
         valueDisplay.textContent = '0';
 
-        // Assemble channel
         channelEl.appendChild(label);
         channelEl.appendChild(controls);
         channelEl.appendChild(faderLedContainer);
         channelEl.appendChild(valueDisplay);
 
-        // Channel state
         const state = {
             channel: channelNum,
             element: channelEl,
@@ -342,73 +400,66 @@ class FaderConsole {
             ledFill: ledFill,
             valueDisplay: valueDisplay,
             selectBtn: selectBtn,
+            groupBtns: groupBtns,
             assignBtns: assignBtns,
             onBtn: onBtn,
             currentValue: 0,
             isOn: true,
             isSelected: false,
+            groups: { a: false, b: false, c: false },
             assignments: { r: false, g: false, b: false, p: false, t: false, w: false },
             hasLoadedOnce: false
         };
 
-        // Set ON button active by default
         onBtn.classList.add('active');
 
-        // Inline name editing
         label.addEventListener('dblclick', () => {
             this.makeLabelEditable(state);
         });
 
-        // Event listeners
         this.attachFaderEvents(state);
 
         return state;
     }
 
     /**
-     * Attach event listeners to fader controls
+     * Attach event listeners
      */
     attachFaderEvents(state) {
-        // Fader manual control
         state.fader.addEventListener('input', (e) => {
             const value = parseInt(e.target.value);
             state.currentValue = value;
             state.valueDisplay.textContent = value;
 
+            const percentage = (value / 255) * 100;
+            state.ledFill.style.height = `${percentage}%`;
+
             if (state.isOn) {
-                this.updateChannelValue(state, value, true);
+                this.sendToBackend(state.channel, value);
             }
         });
 
-        // SELECT button
         state.selectBtn.addEventListener('click', () => {
             state.isSelected = !state.isSelected;
-            if (state.isSelected) {
-                state.selectBtn.classList.add('active');
-            } else {
-                state.selectBtn.classList.remove('active');
-            }
+            state.selectBtn.classList.toggle('active');
         });
 
-        // Channel assignment buttons (R,G,B,P,T,W)
+        // Assignment buttons - save to database
         Object.keys(state.assignBtns).forEach(key => {
             state.assignBtns[key].addEventListener('click', () => {
                 state.assignments[key] = !state.assignments[key];
-                if (state.assignments[key]) {
-                    state.assignBtns[key].classList.add('active');
-                } else {
-                    state.assignBtns[key].classList.remove('active');
-                }
+                state.assignBtns[key].classList.toggle('active');
+
+                // Save to database
+                this.saveChannelAssignment(state.channel, key, state.assignments[key]);
             });
         });
 
-        // ON button (mute/unmute)
         state.onBtn.addEventListener('click', () => {
             state.isOn = !state.isOn;
             if (state.isOn) {
                 state.onBtn.classList.add('active');
-                const faderValue = parseInt(state.fader.value);
-                this.updateChannelValue(state, faderValue, true);
+                this.sendToBackend(state.channel, parseInt(state.fader.value));
             } else {
                 state.onBtn.classList.remove('active');
                 this.sendToBackend(state.channel, 0);
@@ -462,29 +513,6 @@ class FaderConsole {
     }
 
     /**
-     * Update channel value
-     */
-    async updateChannelValue(state, value, sendToBackend = true) {
-        state.currentValue = value;
-        state.valueDisplay.textContent = value;
-
-        const percentage = (value / 255) * 100;
-        state.ledFill.style.height = `${percentage}%`;
-
-        if (value > 0) {
-            state.element.classList.add('active');
-        } else {
-            state.element.classList.remove('active');
-        }
-
-        if (sendToBackend && state.isOn) {
-            await this.sendToBackend(state.channel, value);
-        } else if (sendToBackend && !state.isOn) {
-            await this.sendToBackend(state.channel, 0);
-        }
-    }
-
-    /**
      * Send DMX value to backend
      */
     async sendToBackend(channel, value) {
@@ -527,7 +555,6 @@ class FaderConsole {
                             }
 
                             state.hasLoadedOnce = true;
-                            console.log(`CH${state.channel}: Loaded value ${backendValue}`);
                         }
                     });
                 }
@@ -567,7 +594,6 @@ class FaderConsole {
     }
 }
 
-// Initialize fader console when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     window.faderConsole = new FaderConsole(16);
 });
