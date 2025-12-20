@@ -141,9 +141,20 @@ html {
 
 .window-content {
     flex: 1;
-    overflow: auto;
+    overflow: hidden;
     position: relative;
     background: rgba(0, 0, 0, 0.2);
+}
+
+.window-resize {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 15px;
+    height: 15px;
+    cursor: se-resize;
+    background: linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.2) 50%);
+    z-index: 1001;
 }
 
 /* Taskbar */
@@ -179,4 +190,47 @@ html {
 .taskbar-item:hover {
     background: rgba(255, 255, 255, 0.1);
     transform: translateY(-5px);
+}
+
+/* Global Status Bar (Bottom Right) */
+#system-status-global {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 20px;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 8px 15px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff4444;
+    /* Default offline */
+    box-shadow: 0 0 5px #ff4444;
+    transition: all 0.3s ease;
+}
+
+.status-indicator.online {
+    background: #00ff88;
+    box-shadow: 0 0 10px #00ff88;
 }

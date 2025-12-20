@@ -64,8 +64,7 @@ export class DmxController implements IDmxController {
                 // Send initial blackout to valid signal
                 this.blackout();
 
-                // Start continuous update loop (30Hz refresh rate for stability)
-                console.log('🚀 Starting DMX Transmission Loop (30Hz)...');
+                // Start optimized DMX transmission loop
                 this.startTransmissionLoop();
 
                 resolve();
@@ -115,50 +114,58 @@ export class DmxController implements IDmxController {
         }, 1000);
     }
 
-    private startTransmissionLoop() {
-        if (this.updateInterval) clearInterval(this.updateInterval);
+    private isUpdating: boolean = false;
 
-        this.updateInterval = setInterval(() => {
-            this.update().catch(err => {
+    private startTransmissionLoop() {
+        if (this.updateInterval) clearTimeout(this.updateInterval as any);
+
+        const loop = async () => {
+            if (!this.connected) return;
+
+            try {
+                await this.update();
+            } catch (err: any) {
                 const msg = err.message || '';
-                // Only log real errors, not the typical "port busy" jitter
                 if (!msg.includes('Interrupted') && !msg.includes('temporarily unavailable')) {
                     console.error('TX Error:', msg);
                 }
-            });
-        }, 33); // 30Hz - stable refresh rate for DMX
+            }
+
+            // Schedule next frame (30Hz -> ~33ms total cycle time)
+            // Using 25ms delay to target 40Hz, or 30ms for rock-solid 33Hz
+            this.updateInterval = setTimeout(loop, 25) as any;
+        };
+
+        console.log('🚀 Starting Optimized DMX Transmission Loop (40Hz target)...');
+        loop();
     }
 
     /**
      * Send DMX data to serial port
-     * Based on proven Enttec Open DMX USB implementation
-     * https://github.com/moritzruth/node-enttec-open-dmx-usb
-     * Optimized with setImmediate for stable timing
+     * Optimized Baud-Rate-Break method for high stability on Mac
      */
     public async update(): Promise<void> {
-        if (!this.port || !this.port.isOpen) return;
+        if (!this.port || !this.port.isOpen || this.isUpdating) return;
+        this.isUpdating = true;
 
-        // Atomic buffer swap BEFORE transmission (non-blocking)
         this.writeBuffer.copy(this.readBuffer);
 
         return new Promise((resolve) => {
-            // Step 1: Assert BREAK with RTS low (Enttec method)
-            this.port!.set({ brk: true, rts: false }, () => {
-                // Step 2: Clear BREAK immediately (hardware BREAK is sufficient)
-                setImmediate(() => {
-                    this.port!.set({ brk: false, rts: false }, () => {
-                        // Step 3: Send data immediately (MAB is automatic)
-                        setImmediate(() => {
-                            // Step 4: Transmit readBuffer
-                            this.port!.write(this.readBuffer, () => {
-                                // DEBUG PROBE (reduced frequency to minimize overhead)
-                                if (Math.random() < 0.005) {
-                                    const sample = [];
-                                    for (let i = 1; i <= 16; i++) sample.push(this.readBuffer[i]);
-                                    console.log('📡 DMX TX (Ch 1-16):', sample.join(', '));
-                                }
-                                resolve();
-                            });
+            // STEP 1: Assert BREAK
+            this.port!.set({ brk: true, rts: false }, (err) => {
+                if (err) { this.isUpdating = false; return resolve(); }
+
+                // The OS latency for the next call is usually enough for the BREAK
+                this.port!.set({ brk: false, rts: false }, (err) => {
+                    if (err) { this.isUpdating = false; return resolve(); }
+
+                    // STEP 2: MAB (Mark After Break)
+                    // We give the serial port a tiny moment to "settle"
+                    setImmediate(() => {
+                        this.port!.write(this.readBuffer, (err) => {
+                            if (err) { /* ignore write errors */ }
+                            this.isUpdating = false;
+                            resolve();
                         });
                     });
                 });

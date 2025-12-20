@@ -7,22 +7,7 @@
     <link rel="stylesheet" href="css/faders.css?v=<?php echo time(); ?>">
 </head>
 <body>
-    <!-- Top Bar -->
-    <header class="top-bar">
-        <div class="logo">
-            <span class="logo-text">DMX Fader Console</span>
-        </div>
-        <div class="system-status">
-            <div class="status-item">
-                <span class="status-label">Backend</span>
-                <span class="status-indicator" id="backend-status"></span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">DMX</span>
-                <span class="status-indicator" id="dmx-status"></span>
-            </div>
-        </div>
-    </header>
+
 
     <!-- Main Layout: Faders + Encoders -->
     <div class="main-layout">
@@ -30,6 +15,11 @@
         <div class="fader-bank-container">
             <div id="fader-bank" class="fader-bank">
                 <!-- Faders will be dynamically generated here -->
+            </div>
+            
+            <!-- Fixture Selection Bar -->
+            <div id="fixture-selector" class="fixture-selector-bar">
+                <!-- Fixture buttons will be dynamically generated here -->
             </div>
         </div>
 

@@ -10,7 +10,7 @@ export class DeviceController {
      * GET /api/devices
      * Get all devices
      */
-    public async getAll(req: Request, res: Response): Promise<void> {
+    public async getAll(_req: Request, res: Response): Promise<void> {
         try {
             const devices = await Device.getAll();
             res.json(devices);
@@ -49,8 +49,8 @@ export class DeviceController {
         try {
             const device: IDevice = req.body;
 
-            if (!device.name || !device.dmx_address || !device.channel_count) {
-                res.status(400).json({ error: 'Missing required fields' });
+            if (!device.name || !device.dmx_address || !device.channel_count || !device.category || !device.position) {
+                res.status(400).json({ error: 'Missing required fields (name, dmx_address, channel_count, category, position)' });
                 return;
             }
 

@@ -36,8 +36,16 @@ export function createFaderRoutes(dmxController?: IDmxController): Router {
     router.post('/faders/presets', controller.savePreset);
     router.post('/faders/presets/create', controller.createPreset);
     router.post('/faders/presets/rename', controller.updatePresetName);
+    router.post('/faders/presets/delete', controller.deletePreset);
     // DMX Monitor
     router.get('/dmx-output', controller.getDmxOutput);
+
+    // Global Palettes
+    router.get('/faders/palettes', controller.getGlobalPalettes);
+    router.post('/faders/palettes', controller.saveGlobalPalette);
+    router.post('/faders/palettes/create', controller.createGlobalPalette);
+    router.delete('/faders/palettes/:id', controller.deleteGlobalPalette);
+    router.get('/faders/all-assignments', controller.getAllAssignments);
 
     return router;
 }

@@ -5,13 +5,23 @@
  */
 
 const API = `http://${window.location.hostname}:3000`;
-const FIXTURE_ID = 1; // Currently configuring fixture 1
+// FIXTURE_ID is now handled dynamically within the class
 
 class FaderConsole {
     constructor(channelCount = 16) {
         this.channelCount = channelCount;
+        this.startChannel = 1; // Default to Layer 1 (1-16)
+        this.fixtureId = 1; // Current selected fixture
+        this.fixtureStartAddress = 1; // Base DMX address of current fixture
+        this.fixtureChannelCount = 16; // How many channels this fixture has
+        this.availableFixtures = [];
         this.channels = [];
+        this.globalValueCache = {}; // Global cache for all 512 channels
         this.backendValues = new Array(512).fill(0);
+        this.assignmentCache = {}; // Cache for all 32 assignments per fixture
+        this.selectedFixtureIds = [1]; // For multi-fixture actions
+        this.isInitializing = false; // Flag to prevent accidental DMX pushes
+        this.globalPaletteStates = [];
 
         // Encoder states
         this.encoders = {
@@ -26,16 +36,30 @@ class FaderConsole {
     async init() {
         console.log('🎚️ Initializing Fader Console (Fixture Configuration)...');
 
+        // Setup Layer Switchers
+        const layerBtns = document.querySelectorAll('.layer-btn');
+        layerBtns.forEach(btn => {
+            btn.onclick = () => {
+                const layer = parseInt(btn.dataset.layer);
+                this.switchLayer(layer);
+
+                layerBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            };
+        });
+
+        // Initial load
+        await this.loadFixtures();
+        this.renderFixtureSelector();
+
         // Create faders
         this.createFaders();
 
         // Initialize encoders
         this.initEncoders();
 
-        // Load names, assignments, and groups from database
-        await this.loadFaderNames();
-        await this.loadChannelAssignments();
-        await this.loadChannelGroups();
+        // Load data for the initial fixture
+        await this.refreshFixtureData();
 
         // Start backend monitoring
         this.startBackendMonitor();
@@ -44,6 +68,99 @@ class FaderConsole {
         this.initMacros();
         await this.loadMacros();
         await this.loadPresets();
+        await this.loadGlobalPalettes();
+    }
+
+    async refreshFixtureData() {
+        console.log(`📡 Refreshing data for Fixture ${this.fixtureId}...`);
+        await this.loadFaders(); // This loads names and other channel info
+        await this.loadChannelAssignments();
+        await this.loadChannelGroups();
+    }
+
+    async loadFixtures() {
+        try {
+            const res = await fetch(`${API}/api/devices`);
+            this.availableFixtures = await res.json();
+            console.log('Fixtures loaded:', this.availableFixtures);
+        } catch (e) {
+            console.error('Failed to load fixtures:', e);
+        }
+    }
+
+    renderFixtureSelector() {
+        const container = document.getElementById('fixture-selector');
+        if (!container) return;
+
+        container.innerHTML = '';
+        this.availableFixtures.forEach(fix => {
+            const btn = document.createElement('div');
+            const isActive = this.fixtureId === fix.id;
+            const isSelected = this.selectedFixtureIds.includes(fix.id);
+
+            btn.className = `fixture-btn ${isActive ? 'active' : ''} ${isSelected ? 'selected' : ''}`;
+            btn.innerHTML = `
+                <div class="fix-btn-id">#${fix.id}</div>
+                <div class="fix-btn-name">${fix.name}</div>
+                <div style="font-size:7px; opacity:0.5;">CH ${fix.dmx_address}</div>
+            `;
+
+            btn.onclick = (e) => {
+                if (e.shiftKey || e.ctrlKey || e.metaKey) {
+                    this.toggleFixtureSelection(fix.id);
+                } else {
+                    this.selectFixture(fix);
+                }
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    toggleFixtureSelection(id) {
+        if (this.selectedFixtureIds.includes(id)) {
+            if (this.selectedFixtureIds.length > 1) {
+                this.selectedFixtureIds = this.selectedFixtureIds.filter(fid => fid !== id);
+            }
+        } else {
+            this.selectedFixtureIds.push(id);
+        }
+        this.renderFixtureSelector();
+    }
+
+    async selectFixture(fixture) {
+        if (this.fixtureId === fixture.id) {
+            // If already active, just ensure it's selected
+            if (!this.selectedFixtureIds.includes(fixture.id)) {
+                this.selectedFixtureIds = [fixture.id];
+                this.renderFixtureSelector();
+            }
+            return;
+        }
+        this.isInitializing = true; // Block DMX pushes while switching
+
+        this.fixtureId = fixture.id;
+        this.selectedFixtureIds = [fixture.id]; // Reset selection to just this one
+        this.fixtureStartAddress = fixture.dmx_address;
+        this.fixtureChannelCount = fixture.channel_count || 16;
+        this.startChannel = 1; // Reset to Page 1 (Relative 1-16)
+
+        console.log(`🎯 Active Fixture changed to: ${fixture.name} (ID: ${fixture.id}, DMX Start: ${fixture.dmx_address})`);
+
+        // Update UI
+        this.renderFixtureSelector();
+
+        // Re-create faders starting at the fixture's DMX address
+        this.createFaders();
+
+        // Immediate sync from backend before allowing pushes
+        if (this.updateValues) await this.updateValues();
+
+        // Reload all data for the new fixture
+        await this.refreshFixtureData();
+        await this.loadMacros();
+        await this.loadPresets();
+
+        this.isInitializing = false; // Allow DMX pushes again
     }
 
     /**
@@ -51,20 +168,24 @@ class FaderConsole {
      */
     async loadChannelAssignments() {
         try {
-            const res = await fetch(`${API}/api/faders/assignments/${FIXTURE_ID}`);
+            const res = await fetch(`${API}/api/faders/assignments/${this.fixtureId}`);
             const data = await res.json();
 
             if (data.success) {
                 // 1. Process assignments (R, G, B, P, T, W)
                 if (data.assignments) {
+                    this.assignmentCache[this.fixtureId] = data.assignments; // Full 32-ch assignments
+
                     Object.keys(data.assignments).forEach(channelStr => {
                         const channelNum = parseInt(channelStr);
                         const state = this.channels.find(c => c.channel === channelNum);
                         if (state) {
                             state.element.classList.remove('has-r', 'has-g', 'has-b', 'has-w', 'has-p', 'has-t');
+                            Object.keys(state.assignments).forEach(k => state.assignments[k] = false);
+
                             data.assignments[channelNum].forEach(func => {
                                 state.assignments[func] = true;
-                                state.assignBtns[func].classList.add('active');
+                                if (state.assignBtns[func]) state.assignBtns[func].classList.add('active');
                                 state.element.classList.add(`has-${func}`);
                             });
                         }
@@ -122,7 +243,7 @@ class FaderConsole {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    fixtureId: FIXTURE_ID,
+                    fixtureId: this.fixtureId,
                     channel,
                     functionType: functionType.toUpperCase(),
                     enabled
@@ -236,29 +357,35 @@ class FaderConsole {
      */
     applyEncoderToChannels(type, value) {
         const assignKey = type === 'pan' ? 'p' : 't';
+        const assignments = this.assignmentCache[this.fixtureId] || {};
 
-        this.channels.forEach(state => {
-            // Check if channel has P or T assignment
-            if (!state.assignments[assignKey]) return;
+        // Apply to ALL 32 channels of the fixture
+        for (let relCh = 1; relCh <= 32; relCh++) {
+            const channelAssignments = assignments[relCh] || [];
+            if (!channelAssignments.includes(assignKey.toUpperCase())) continue;
 
-            // Move fader
-            state.fader.value = value;
-            state.currentValue = value;
-            state.valueDisplay.textContent = value;
+            // 1. Send DMX
+            if (!this.globalValueCache[this.fixtureId]) this.globalValueCache[this.fixtureId] = {};
+            const cached = this.globalValueCache[this.fixtureId][relCh] || { value: 0, isOn: true };
 
-            const percentage = (value / 255) * 100;
-            state.ledFill.style.height = `${percentage}%`;
-
-            if (value > 0) {
-                state.element.classList.add('active');
-            } else {
-                state.element.classList.remove('active');
+            if (cached.isOn) {
+                this.sendToBackend(relCh, value);
             }
 
-            if (state.isOn) {
-                this.sendToBackend(state.channel, value);
+            // 2. Update Cache
+            this.globalValueCache[this.fixtureId][relCh] = { value, isOn: cached.isOn };
+
+            // 3. Update UI if fader is visible
+            const state = this.channels.find(c => c.channel === relCh);
+            if (state) {
+                state.fader.value = value;
+                state.currentValue = value;
+                state.valueDisplay.textContent = value;
+                state.ledFill.style.height = `${(value / 255) * 100}%`;
+                if (value > 0) state.element.classList.add('active');
+                else state.element.classList.remove('active');
             }
-        });
+        }
     }
 
     /**
@@ -272,36 +399,46 @@ class FaderConsole {
             b: Math.round(rgb.b * 255)
         };
 
+        const assignments = this.assignmentCache[this.fixtureId] || {};
+        if (!this.globalValueCache[this.fixtureId]) this.globalValueCache[this.fixtureId] = {};
+
         // Update the preview display in the encoder column
         const preview = document.getElementById('rgbw-value');
         preview.style.backgroundColor = `rgb(${rgbValues.r}, ${rgbValues.g}, ${rgbValues.b})`;
         preview.style.color = (rgb.r + rgb.g + rgb.b > 1.5) ? '#000' : '#fff';
         preview.textContent = `${this.encoders.rgbw.hue}°`;
 
-        this.channels.forEach(state => {
+        for (let relCh = 1; relCh <= 32; relCh++) {
+            const channelAssignments = assignments[relCh] || [];
             let valueToSet = -1;
 
-            if (state.assignments.r) valueToSet = rgbValues.r;
-            else if (state.assignments.g) valueToSet = rgbValues.g;
-            else if (state.assignments.b) valueToSet = rgbValues.b;
-            // Note: We leave 'w' (White) untouched here so the user can mix it manually!
+            if (channelAssignments.includes('R')) valueToSet = rgbValues.r;
+            else if (channelAssignments.includes('G')) valueToSet = rgbValues.g;
+            else if (channelAssignments.includes('B')) valueToSet = rgbValues.b;
 
             if (valueToSet !== -1) {
-                state.fader.value = valueToSet;
-                state.currentValue = valueToSet;
-                state.valueDisplay.textContent = valueToSet;
+                const cached = this.globalValueCache[this.fixtureId][relCh] || { value: 0, isOn: true };
 
-                const percentage = (valueToSet / 255) * 100;
-                state.ledFill.style.height = `${percentage}%`;
+                // 1. Send DMX
+                if (cached.isOn) {
+                    this.sendToBackend(relCh, valueToSet);
+                }
 
-                if (valueToSet > 0) state.element.classList.add('active');
-                else state.element.classList.remove('active');
+                // 2. Update Cache
+                this.globalValueCache[this.fixtureId][relCh] = { value: valueToSet, isOn: cached.isOn };
 
-                if (state.isOn) {
-                    this.sendToBackend(state.channel, valueToSet);
+                // 3. Update UI if fader is visible
+                const state = this.channels.find(c => c.channel === relCh);
+                if (state) {
+                    state.fader.value = valueToSet;
+                    state.currentValue = valueToSet;
+                    state.valueDisplay.textContent = valueToSet;
+                    state.ledFill.style.height = `${(valueToSet / 255) * 100}%`;
+                    if (valueToSet > 0) state.element.classList.add('active');
+                    else state.element.classList.remove('active');
                 }
             }
-        });
+        }
     }
 
     /**
@@ -327,9 +464,9 @@ class FaderConsole {
     /**
      * Load fader names from database
      */
-    async loadFaderNames() {
+    async loadFaders() {
         try {
-            const res = await fetch(`${API}/api/faders`);
+            const res = await fetch(`${API}/api/faders?fixtureId=${this.fixtureId}`);
             const data = await res.json();
 
             if (data.success && data.faders) {
@@ -354,7 +491,7 @@ class FaderConsole {
             await fetch(`${API}/api/faders/name`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ channel, name })
+                body: JSON.stringify({ fixtureId: this.fixtureId, channel, name })
             });
         } catch (e) {
             console.error('Failed to save fader name:', e);
@@ -362,16 +499,30 @@ class FaderConsole {
     }
 
     /**
-     * Create dynamic fader channels
+     * Create fader elements for the current layer
      */
     createFaders() {
         const bank = document.getElementById('fader-bank');
+        bank.innerHTML = ''; // Clear existing faders
+        this.channels = []; // Clear existing channel states
 
-        for (let i = 1; i <= this.channelCount; i++) {
-            const channel = this.createFaderChannel(i);
-            bank.appendChild(channel.element);
-            this.channels.push(channel);
+        for (let i = 0; i < this.channelCount; i++) {
+            const channelNum = this.startChannel + i;
+            if (channelNum > 512) break; // DMX limit
+            if (channelNum > this.fixtureChannelCount) break; // Fixture limit
+
+            const channelState = this.createFaderChannel(channelNum); // Create channel state
+            bank.appendChild(channelState.element); // Append its element to the bank
+            this.channels.push(channelState); // Add state to our list
         }
+    }
+
+    async switchLayer(layer) {
+        this.startChannel = (layer - 1) * 16 + 1;
+        console.log(`🔄 Switching to Layer ${layer} (starting at CH ${this.startChannel})`);
+
+        this.createFaders();
+        await this.refreshFixtureData();
     }
 
     /**
@@ -509,6 +660,17 @@ class FaderConsole {
             this.updateFaderValue(state, value, true); // Save to DB
         });
 
+        // Double click to manually edit value
+        state.valueDisplay.addEventListener('dblclick', () => {
+            const input = prompt(`DMX Wert für CH ${state.channel} (0-255):`, state.currentValue);
+            if (input !== null) {
+                let val = parseInt(input);
+                if (isNaN(val)) return;
+                val = Math.max(0, Math.min(255, val));
+                this.updateFaderValue(state, val, true);
+            }
+        });
+
         this.bindButton(state.selectBtn, () => {
             state.isSelected = !state.isSelected;
             state.selectBtn.classList.toggle('active');
@@ -537,8 +699,9 @@ class FaderConsole {
         });
     }
 
-    toggleOnState(state, forceState = null) {
+    toggleOnState(state, forceState = null, shouldSave = true) {
         state.isOn = (forceState !== null) ? forceState : !state.isOn;
+
         if (state.isOn) {
             state.onBtn.classList.add('active');
             this.sendToBackend(state.channel, parseInt(state.fader.value));
@@ -546,7 +709,31 @@ class FaderConsole {
             state.onBtn.classList.remove('active');
             this.sendToBackend(state.channel, 0);
         }
-        this.saveChannelState(state.channel, 'on', state.isOn);
+
+        if (shouldSave) {
+            this.saveChannelState(state.channel, 'on', state.isOn);
+        }
+
+        // Update cache
+        if (!this.globalValueCache[this.fixtureId]) this.globalValueCache[this.fixtureId] = {};
+
+        const currentVal = parseInt(state.fader.value);
+        if (this.globalValueCache[this.fixtureId][state.channel]) {
+            this.globalValueCache[this.fixtureId][state.channel].isOn = state.isOn;
+            this.globalValueCache[this.fixtureId][state.channel].value = currentVal;
+        } else {
+            this.globalValueCache[this.fixtureId][state.channel] = {
+                value: currentVal,
+                isOn: state.isOn
+            };
+        }
+    }
+
+    toggleFullLayer(forceOn) {
+        console.log(`💡 Toggling Layer: ${forceOn ? 'ALL ON' : 'ALL OFF'}`);
+        this.channels.forEach(state => {
+            this.toggleOnState(state, forceOn, true);
+        });
     }
 
     /**
@@ -563,6 +750,13 @@ class FaderConsole {
         if (state.isOn) {
             this.sendToBackend(state.channel, value);
         }
+
+        // Cache the value globally so it persists across layer switches
+        if (!this.globalValueCache[this.fixtureId]) this.globalValueCache[this.fixtureId] = {};
+        this.globalValueCache[this.fixtureId][state.channel] = {
+            value: value,
+            isOn: state.isOn
+        };
 
         if (shouldSaveValue) {
             // Debounce or just send - for now send
@@ -626,6 +820,51 @@ class FaderConsole {
         const macrosContainer = document.createElement('div');
         macrosContainer.className = 'macros-container';
 
+        // --- LAYER HEADER ---
+        const layerHeader = document.createElement('div');
+        layerHeader.className = 'sidebar-layers';
+
+        const layers = [
+            { id: 1, label: '1-16', start: 1 },
+            { id: 2, label: '17-32', start: 17 }
+        ].filter(l => l.start <= this.fixtureChannelCount);
+
+        layers.forEach(l => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-select layer-btn-sidebar';
+
+            const currentLayer = Math.floor((this.startChannel - 1) / 16) + 1;
+            if (currentLayer === l.id) btn.classList.add('active');
+
+            btn.textContent = `CH ${l.label}`;
+
+            btn.onclick = (e) => {
+                this.switchLayer(l.id);
+                this.renderMacros();
+                e.stopPropagation();
+            };
+            layerHeader.appendChild(btn);
+        });
+
+        // FULL ON/OFF Toggle Badge
+        const fullToggle = document.createElement('div');
+        fullToggle.className = 'full-toggle-badge';
+
+        // Count visible faders that are ON
+        const visibleOnCount = this.channels.filter(c => c.isOn).length;
+        const allOn = visibleOnCount > this.channels.length / 2;
+
+        fullToggle.textContent = allOn ? 'FULL OFF' : 'FULL ON';
+        if (allOn) fullToggle.classList.add('all-on');
+
+        fullToggle.onclick = () => {
+            this.toggleFullLayer(!allOn);
+            this.renderMacros(); // Re-render to update the badge state
+        };
+
+        layerHeader.appendChild(fullToggle);
+        macrosContainer.appendChild(layerHeader);
+
         // --- COLOR MACROS (4) ---
         this.macroStates.forEach(state => {
             const item = document.createElement('div');
@@ -678,19 +917,45 @@ class FaderConsole {
         // --- PRESET MACROS ---
         this.presetStates.forEach(p => this.createPresetElement(p, macrosContainer));
 
-        // --- ADD PRESET BUTTON ---
+        // --- GLOBAL PALETTES ---
+        if (this.globalPaletteStates.length > 0) {
+            const separator = document.createElement('div');
+            separator.className = 'macro-separator';
+            separator.innerHTML = '<span style="font-size: 8px; opacity: 0.3;">GLOBAL PALETTES</span>';
+            separator.style.gridColumn = '1 / -1';
+            separator.style.textAlign = 'center';
+            separator.style.padding = '5px 0';
+            macrosContainer.appendChild(separator);
+
+            this.globalPaletteStates.forEach(p => this.createPaletteElement(p, macrosContainer));
+        }
+
+        // --- ADD BUTTONS ---
         const addItem = document.createElement('div');
         addItem.className = 'macro-item';
-        const addBtn = document.createElement('div');
-        addBtn.className = 'macro-box add-macro-btn';
-        addBtn.innerHTML = '<span style="font-size: 24px;">+</span><br><span style="font-size: 8px;">ADD PRESET</span>';
-        addBtn.style.background = '#222';
-        addBtn.style.borderStyle = 'dashed';
+        addItem.style.display = 'flex';
+        addItem.style.flexDirection = 'column';
+        addItem.style.gap = '5px';
 
-        addItem.appendChild(addBtn);
+        const addLocalBtn = document.createElement('div');
+        addLocalBtn.className = 'macro-box add-macro-btn';
+        addLocalBtn.innerHTML = '<span style="font-size: 14px;">+ PRESET</span>';
+        addLocalBtn.style.background = '#222';
+        addLocalBtn.style.borderStyle = 'dashed';
+        addLocalBtn.style.height = '35px';
+        this.bindButton(addLocalBtn, () => this.createNewPreset());
+
+        const addGlobalBtn = document.createElement('div');
+        addGlobalBtn.className = 'macro-box add-macro-btn';
+        addGlobalBtn.innerHTML = '<span style="font-size: 14px;">+ GLOBAL</span>';
+        addGlobalBtn.style.background = '#222';
+        addGlobalBtn.style.borderStyle = 'dashed';
+        addGlobalBtn.style.height = '35px';
+        this.bindButton(addGlobalBtn, () => this.createNewGlobalPalette());
+
+        addItem.appendChild(addLocalBtn);
+        addItem.appendChild(addGlobalBtn);
         macrosContainer.appendChild(addItem);
-
-        this.bindButton(addBtn, () => this.createNewPreset());
 
         // Insert between faders and encoders
         layout.insertBefore(macrosContainer, encodersCol);
@@ -773,7 +1038,7 @@ class FaderConsole {
 
     async loadMacros() {
         try {
-            const res = await fetch(`${API}/api/faders/macros?fixtureId=${FIXTURE_ID}`);
+            const res = await fetch(`${API}/api/faders/macros?fixtureId=${this.fixtureId}`);
             const data = await res.json();
             if (data.success && data.macros) {
                 data.macros.forEach(m => {
@@ -795,7 +1060,7 @@ class FaderConsole {
             await fetch(`${API}/api/faders/macros`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, color, fixtureId: FIXTURE_ID })
+                body: JSON.stringify({ id, color, fixtureId: this.fixtureId })
             });
         } catch (e) {
             console.error('Failed to save macro:', e);
@@ -804,7 +1069,7 @@ class FaderConsole {
 
     async loadPresets() {
         try {
-            const res = await fetch(`${API}/api/faders/presets?fixtureId=${FIXTURE_ID}`);
+            const res = await fetch(`${API}/api/faders/presets?fixtureId=${this.fixtureId}`);
             const data = await res.json();
             if (data.success && data.presets) {
                 this.presetStates = data.presets.map(p => ({
@@ -820,12 +1085,12 @@ class FaderConsole {
     }
 
     async createNewPreset() {
-        console.log('Attempting to create a new preset for fixture:', FIXTURE_ID);
+        console.log('Attempting to create a new preset for fixture:', this.fixtureId);
         try {
             const res = await fetch(`${API}/api/faders/presets/create`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fixtureId: FIXTURE_ID, name: 'New Preset' })
+                body: JSON.stringify({ fixtureId: this.fixtureId, name: 'New Preset' })
             });
             const data = await res.json();
             if (data.success) {
@@ -848,16 +1113,29 @@ class FaderConsole {
 
     async savePresetToDB(state) {
         try {
-            const values = this.channels.map(ch => ({
-                channel: ch.channel,
-                value: ch.currentValue,
-                isOn: ch.isOn
-            }));
+            // Collect values only for the channels this fixture actually has
+            const values = [];
+            if (!this.globalValueCache[this.fixtureId]) this.globalValueCache[this.fixtureId] = {};
+
+            for (let i = 1; i <= this.fixtureChannelCount; i++) {
+                // Use cached value if available, otherwise use backend value or 0
+                const cached = this.globalValueCache[this.fixtureId][i];
+
+                // For backend lookup during save, we need the absolute address
+                const absAddr = this.fixtureStartAddress + i - 1;
+                const bkValue = this.backendValues[absAddr - 1] || 0;
+
+                values.push({
+                    channel: i,
+                    value: cached ? cached.value : bkValue,
+                    isOn: cached ? cached.isOn : true
+                });
+            }
 
             await fetch(`${API}/api/faders/presets`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: state.id, values })
+                body: JSON.stringify({ id: state.id, values, fixtureId: this.fixtureId })
             });
 
             state.values = values;
@@ -882,14 +1160,31 @@ class FaderConsole {
         console.log(`Recalling preset ${state.id}...`);
 
         state.values.forEach(v => {
+            // CRITICAL: Only recall channels that are within the current fixture's range
+            if (v.channel > this.fixtureChannelCount) return;
+
+            // Ensure isOn has a sane default (true) if missing or null
+            const is_on = (v.is_on === 1 || v.is_on === true || v.is_on === undefined || v.is_on === null);
+
+            // Update global cache
+            if (!this.globalValueCache[this.fixtureId]) this.globalValueCache[this.fixtureId] = {};
+            this.globalValueCache[this.fixtureId][v.channel] = {
+                value: v.value,
+                isOn: is_on
+            };
+
+            // If channel is currently visible, update the UI
             const chState = this.channels.find(c => c.channel === v.channel);
             if (chState) {
-                // Restore value
-                this.updateFaderValue(chState, v.value, true);
-
-                // Restore ON state (is_on comes from DB, mapped to isOn in state)
-                const isOn = v.isOn !== undefined ? v.isOn : (v.is_on === 1);
-                this.toggleOnState(chState, isOn);
+                this.updateFaderValue(chState, v.value, false);
+                this.toggleOnState(chState, is_on, false); // Don't save to DB while recalling
+            } else {
+                // Even if not visible, send to DMX output
+                if (is_on) {
+                    this.sendToBackend(v.channel, v.value);
+                } else {
+                    this.sendToBackend(v.channel, 0);
+                }
             }
         });
     }
@@ -899,7 +1194,7 @@ class FaderConsole {
             await fetch(`${API}/api/faders/presets/rename`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: state.id, name: newName })
+                body: JSON.stringify({ id: state.id, name: newName, fixtureId: this.fixtureId })
             });
             state.name = newName;
             state.nameEl.textContent = newName;
@@ -914,7 +1209,7 @@ class FaderConsole {
             const res = await fetch(`${API}/api/faders/presets/delete`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: state.id })
+                body: JSON.stringify({ id: state.id, fixtureId: this.fixtureId })
             });
             const data = await res.json();
             if (data.success) {
@@ -1045,11 +1340,15 @@ class FaderConsole {
      * Send DMX value to backend
      */
     async sendToBackend(channel, value) {
+        if (this.isInitializing) return; // Ignore pushes during fixture/layer switch
+
+        // channel is relative (1..32)
+        const dmxAddress = this.fixtureStartAddress + channel - 1;
         try {
             await fetch(`${API}/api/dmx/channel`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ channel, value })
+                body: JSON.stringify({ channel: dmxAddress, value })
             });
         } catch (e) {
             // Silent fail
@@ -1068,8 +1367,22 @@ class FaderConsole {
                 if (data.channels) {
                     this.backendValues = data.channels;
 
+                    // Update global cache for the current fixture with latest backend data
+                    if (!this.globalValueCache[this.fixtureId]) this.globalValueCache[this.fixtureId] = {};
+                    for (let i = 1; i <= 32; i++) {
+                        const absAddr = this.fixtureStartAddress + i - 1;
+                        if (absAddr > 512) break;
+                        const val = this.backendValues[absAddr - 1] || 0;
+                        if (!this.globalValueCache[this.fixtureId][i]) {
+                            this.globalValueCache[this.fixtureId][i] = { value: val, isOn: true };
+                        } else {
+                            this.globalValueCache[this.fixtureId][i].value = val;
+                        }
+                    }
+
                     this.channels.forEach(state => {
-                        const backendValue = this.backendValues[state.channel - 1] || 0;
+                        const absoluteChannel = this.fixtureStartAddress + state.channel - 1;
+                        const backendValue = this.backendValues[absoluteChannel - 1] || 0;
 
                         const percentage = (backendValue / 255) * 100;
                         state.ledFill.style.height = `${percentage}%`;
@@ -1092,8 +1405,9 @@ class FaderConsole {
             }
         };
 
+        this.updateValues = updateValues;
         await updateValues();
-        setInterval(updateValues, 1000);
+        setInterval(updateValues, 150); // High-speed sync
     }
 
     /**
@@ -1105,16 +1419,23 @@ class FaderConsole {
                 const res = await fetch(`${API}/health`);
                 const data = await res.json();
 
-                document.getElementById('backend-status').classList.add('online');
+                const bStatus = document.getElementById('backend-status');
+                const dStatus = document.getElementById('dmx-status');
 
-                if (data.dmx) {
-                    document.getElementById('dmx-status').classList.add('online');
-                } else {
-                    document.getElementById('dmx-status').classList.remove('online');
+                if (bStatus) bStatus.classList.add('online');
+
+                if (dStatus) {
+                    if (data.dmx) {
+                        dStatus.classList.add('online');
+                    } else {
+                        dStatus.classList.remove('online');
+                    }
                 }
             } catch (e) {
-                document.getElementById('backend-status').classList.remove('online');
-                document.getElementById('dmx-status').classList.remove('online');
+                const bStatus = document.getElementById('backend-status');
+                const dStatus = document.getElementById('dmx-status');
+                if (bStatus) bStatus.classList.remove('online');
+                if (dStatus) dStatus.classList.remove('online');
             }
         };
 
@@ -1131,7 +1452,7 @@ class FaderConsole {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    fixtureId: FIXTURE_ID,
+                    fixtureId: this.fixtureId,
                     channel,
                     type,
                     enabled
@@ -1148,19 +1469,25 @@ class FaderConsole {
      */
     async loadChannelGroups() {
         try {
-            const res = await fetch(`${API}/api/faders/groups`);
+            const res = await fetch(`${API}/api/faders/groups?fixtureId=${this.fixtureId}`);
             const data = await res.json();
 
             if (data.success && data.groups) {
+                this.groupCache[this.fixtureId] = data.groups; // Cache all 32 groups
+
                 Object.keys(data.groups).forEach(channelStr => {
                     const channelNum = parseInt(channelStr);
                     const state = this.channels.find(c => c.channel === channelNum);
                     if (state) {
-                        data.groups[channelNum].forEach(group => {
-                            state.groups[group] = true;
-                            state.groupBtns[group].classList.add('active');
+                        const groups = data.groups[channelNum];
+                        Object.keys(state.groups).forEach(letter => {
+                            const active = groups.includes(letter.toUpperCase());
+                            state.groups[letter] = active;
+                            if (state.groupBtns[letter]) {
+                                if (active) state.groupBtns[letter].classList.add('active');
+                                else state.groupBtns[letter].classList.remove('active');
+                            }
                         });
-                        console.log(`CH${channelNum}: Loaded groups: ${data.groups[channelNum].join(',')}`);
                     }
                 });
             }
@@ -1169,6 +1496,188 @@ class FaderConsole {
         }
     }
 
+
+    async loadGlobalPalettes() {
+        try {
+            const res = await fetch(`${API}/api/faders/palettes`);
+            const data = await res.json();
+            if (data.success) {
+                this.globalPaletteStates = data.palettes;
+            }
+        } catch (e) {
+            console.error('Failed to load global palettes:', e);
+        }
+    }
+
+    createPaletteElement(state, container) {
+        const item = document.createElement('div');
+        item.className = 'macro-item';
+
+        const box = document.createElement('div');
+        box.className = 'macro-box palette-box';
+        box.style.border = '1px solid #444';
+        box.style.background = 'linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'preset-name';
+        nameEl.textContent = state.name;
+        nameEl.style.color = '#fff';
+        box.appendChild(nameEl);
+
+        const controls = document.createElement('div');
+        controls.className = 'preset-controls';
+
+        const saveBtn = document.createElement('div');
+        saveBtn.className = 'macro-save-btn';
+        saveBtn.style.background = '#00695c';
+        saveBtn.textContent = 'SAVE';
+
+        const delBtn = document.createElement('div');
+        delBtn.className = 'preset-delete-btn-new';
+        delBtn.textContent = 'DEL';
+
+        controls.appendChild(saveBtn);
+        controls.appendChild(delBtn);
+
+        item.appendChild(box);
+        item.appendChild(controls);
+        container.appendChild(item);
+
+        this.bindButton(box, () => this.recallGlobalPalette(state));
+        this.bindButton(saveBtn, () => this.saveGlobalPaletteToDB(state));
+        this.bindButton(delBtn, () => this.deleteGlobalPalette(state));
+    }
+
+    async recallGlobalPalette(state) {
+        console.log(`🌍 Recalling Global Palette: ${state.name} for fixtures:`, this.selectedFixtureIds);
+
+        try {
+            // 1. Get current assignments for ALL fixtures
+            const res = await fetch(`${API}/api/faders/all-assignments`);
+            const data = await res.json();
+            if (!data.success) return;
+
+            const assignmentMapping = data.mapping;
+
+            // 2. Map palette values for easier lookup
+            const paletteMap = {};
+            state.values.forEach(v => {
+                paletteMap[v.type.toUpperCase()] = v.value;
+            });
+
+            // 3. For each selected fixture, apply palette to assigned channels
+            for (const fixtureId of this.selectedFixtureIds) {
+                const fixtureAssignments = assignmentMapping[fixtureId];
+                if (!fixtureAssignments) continue;
+
+                // Find the fixture object to get its start address
+                const fixture = this.availableFixtures.find(f => f.id === fixtureId);
+                const startAddr = fixture ? fixture.dmx_address : 1;
+
+                // Iterate channels of this fixture and check assignments
+                Object.keys(fixtureAssignments).forEach(relChannel => {
+                    const functions = fixtureAssignments[relChannel];
+                    const relChNum = parseInt(relChannel);
+
+                    // Check if any function of this channel is in our palette
+                    functions.forEach(f => {
+                        const val = paletteMap[f.toUpperCase()];
+                        if (val !== undefined) {
+                            // Send to backend via absolute DMX
+                            this.sendAbsoluteDMX(startAddr + relChNum - 1, val);
+                        }
+                    });
+                });
+            }
+
+            // Sync UI if the active fixture was modified
+            if (this.selectedFixtureIds.includes(this.fixtureId)) {
+                setTimeout(() => this.updateValues(), 200);
+            }
+        } catch (e) {
+            console.error('Failed to recall global palette:', e);
+        }
+    }
+
+    async sendAbsoluteDMX(address, value) {
+        try {
+            await fetch(`${API}/api/dmx/set`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ channel: address, value })
+            });
+        } catch (e) { }
+    }
+
+    async createNewGlobalPalette() {
+        const name = prompt('Name für neue globale Palette:', 'Global Color');
+        if (!name) return;
+        try {
+            const res = await fetch(`${API}/api/faders/palettes/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            const data = await res.json();
+            if (data.success) {
+                await this.loadGlobalPalettes();
+                this.renderMacros();
+            }
+        } catch (e) { }
+    }
+
+    async saveGlobalPaletteToDB(state) {
+        try {
+            const values = [];
+            const processedTypes = new Set();
+
+            await this.loadChannelAssignments();
+            const assignments = this.assignmentCache[this.fixtureId];
+            if (!assignments) {
+                alert('Zuerst Assignments (R,G,B...) für dieses Fixture anlegen!');
+                return;
+            }
+
+            Object.keys(assignments).forEach(relCh => {
+                const types = assignments[relCh];
+                const relChNum = parseInt(relCh);
+
+                const cached = (this.globalValueCache[this.fixtureId] || {})[relChNum];
+                const absAddr = this.fixtureStartAddress + relChNum - 1;
+                const val = cached ? cached.value : (this.backendValues[absAddr - 1] || 0);
+
+                types.forEach(t => {
+                    if (!processedTypes.has(t)) {
+                        values.push({ type: t, value: val });
+                        processedTypes.add(t);
+                    }
+                });
+            });
+
+            if (values.length === 0) {
+                alert('Keine Kanäle mit Zuweisungen (R,G,B...) gefunden!');
+                return;
+            }
+
+            await fetch(`${API}/api/faders/palettes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: state.id, values })
+            });
+
+            await this.loadGlobalPalettes();
+            alert(`Palette "${state.name}" gespeichert!`);
+        } catch (e) { }
+    }
+
+    async deleteGlobalPalette(state) {
+        if (!confirm(`Global Palette "${state.name}" löschen?`)) return;
+        try {
+            await fetch(`${API}/api/faders/palettes/${state.id}`, { method: 'DELETE' });
+            await this.loadGlobalPalettes();
+            this.renderMacros();
+        } catch (e) { }
+    }
 
     /**
      * Save channel group to database
@@ -1182,7 +1691,7 @@ class FaderConsole {
                     channel,
                     groupLetter: groupLetter.toUpperCase(),
                     enabled,
-                    fixtureId: FIXTURE_ID
+                    fixtureId: this.fixtureId
                 })
             });
             console.log(`CH${channel}: Group ${groupLetter.toUpperCase()} ${enabled ? 'ON' : 'OFF'}`);
@@ -1200,7 +1709,7 @@ class FaderConsole {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    fixtureId: FIXTURE_ID,
+                    fixtureId: this.fixtureId,
                     channel,
                     value
                 })
@@ -1219,7 +1728,7 @@ class FaderConsole {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    fixtureId: FIXTURE_ID,
+                    fixtureId: this.fixtureId,
                     channel,
                     type,
                     enabled
@@ -1240,7 +1749,7 @@ class FaderConsole {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    fixtureId: FIXTURE_ID,
+                    fixtureId: this.fixtureId,
                     channel,
                     color
                 })

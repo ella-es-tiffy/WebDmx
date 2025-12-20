@@ -5,7 +5,12 @@ class DmxVisualizer {
         this.fixtures = [];
         this.dmxData = new Array(512).fill(0);
 
+        this.isDragging = false;
+        this.draggedFixture = null;
+        this.dragOffset = { x: 0, y: 0 };
+
         this.init();
+        this.initEventListeners();
     }
 
     init() {
@@ -26,12 +31,74 @@ class DmxVisualizer {
         this.startLoop();
     }
 
+    initEventListeners() {
+        this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+        this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+        this.canvas.addEventListener('mouseup', () => this.handleMouseUp());
+
+        // Touch support
+        this.canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) this.handleMouseDown(e.touches[0]);
+        }, { passive: false });
+        this.canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1) this.handleMouseMove(e.touches[0]);
+        }, { passive: false });
+        this.canvas.addEventListener('touchend', () => this.handleMouseUp());
+    }
+
+    getMousePos(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+    }
+
+    handleMouseDown(e) {
+        const pos = this.getMousePos(e);
+
+        // Find fixture under mouse (hit box 40x40)
+        const clickedFixture = this.fixtures.find(fix =>
+            Math.abs(fix.x - pos.x) < 20 && Math.abs(fix.y - pos.y) < 20
+        );
+
+        if (clickedFixture) {
+            this.isDragging = true;
+            this.draggedFixture = clickedFixture;
+            this.dragOffset.x = pos.x - clickedFixture.x;
+            this.dragOffset.y = pos.y - clickedFixture.y;
+
+            // Select it
+            this.fixtures.forEach(f => f.selected = false);
+            clickedFixture.selected = true;
+        } else {
+            // Deselect all
+            this.fixtures.forEach(f => f.selected = false);
+        }
+    }
+
+    handleMouseMove(e) {
+        if (!this.isDragging || !this.draggedFixture) return;
+
+        const pos = this.getMousePos(e);
+        this.draggedFixture.x = pos.x - this.dragOffset.x;
+        this.draggedFixture.y = pos.y - this.dragOffset.y;
+    }
+
+    handleMouseUp() {
+        if (this.isDragging && this.draggedFixture) {
+            console.log(`Fixture ${this.draggedFixture.id} moved to:`, this.draggedFixture.x, this.draggedFixture.y);
+            // In a real app, save to DB here
+        }
+        this.isDragging = false;
+        this.draggedFixture = null;
+    }
+
     addFixture(id, name, x, y, config) {
         this.fixtures.push({ id, name, x, y, config, selected: false });
     }
 
     updateDmx(data) {
-        // Expected data format from backend API
         this.dmxData = data;
     }
 
@@ -73,20 +140,30 @@ class DmxVisualizer {
                 this.ctx.fill();
             }
 
+            // Selection Glow
+            if (fix.selected) {
+                this.ctx.shadowBlur = 15;
+                this.ctx.shadowColor = '#00d4ff';
+            } else {
+                this.ctx.shadowBlur = 0;
+            }
+
             // Draw Fixture Body
             this.ctx.fillStyle = fix.selected ? '#00d4ff' : '#444';
             this.ctx.beginPath();
             this.ctx.roundRect(fix.x - 15, fix.y - 15, 30, 30, 5);
             this.ctx.fill();
-            this.ctx.strokeStyle = '#fff';
+            this.ctx.strokeStyle = fix.selected ? '#fff' : '#666';
             this.ctx.lineWidth = 2;
             this.ctx.stroke();
 
+            this.ctx.shadowBlur = 0; // Reset shadow
+
             // Label
-            this.ctx.fillStyle = '#fff';
-            this.ctx.font = '10px Inter';
+            this.ctx.fillStyle = fix.selected ? '#00d4ff' : '#fff';
+            this.ctx.font = '500 11px Inter';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(fix.name, fix.x, fix.y + 30);
+            this.ctx.fillText(fix.name, fix.x, fix.y + 35);
         });
     }
 }

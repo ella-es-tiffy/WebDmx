@@ -29,17 +29,33 @@ export class FaderController {
         this.createPreset = this.createPreset.bind(this);
         this.deletePreset = this.deletePreset.bind(this);
         this.getDmxOutput = this.getDmxOutput.bind(this);
+        this.getGlobalPalettes = this.getGlobalPalettes.bind(this);
+        this.saveGlobalPalette = this.saveGlobalPalette.bind(this);
+        this.createGlobalPalette = this.createGlobalPalette.bind(this);
+        this.deleteGlobalPalette = this.deleteGlobalPalette.bind(this);
+        this.getAllAssignments = this.getAllAssignments.bind(this);
     }
 
-    async getAllFaders(_req: Request, res: Response): Promise<void> {
+    async getAllFaders(req: Request, res: Response): Promise<void> {
         try {
+            const fixtureId = parseInt(req.query.fixtureId as string) || 1;
             const pool = Database.getPool();
-            const [rows] = await pool.execute(`
-                SELECT start_address as channel, name
-                FROM fixtures
-                WHERE active = TRUE
-                ORDER BY start_address
+
+            // Ensure table exists
+            await pool.execute(`
+                CREATE TABLE IF NOT EXISTS fixture_channel_names (
+                    fixture_id INT,
+                    dmx_channel INT,
+                    name VARCHAR(255),
+                    PRIMARY KEY (fixture_id, dmx_channel)
+                )
             `);
+
+            const [rows] = await pool.execute(`
+                SELECT dmx_channel as channel, name
+                FROM fixture_channel_names
+                WHERE fixture_id = ?
+            `, [fixtureId]);
 
             const faderMap: { [key: number]: string } = {};
             (rows as any[]).forEach(row => {
@@ -54,7 +70,7 @@ export class FaderController {
 
     async updateFaderName(req: Request, res: Response): Promise<void> {
         try {
-            const { channel, name } = req.body;
+            const { fixtureId = 1, channel, name } = req.body;
 
             if (!channel || channel < 1 || channel > 512) {
                 res.status(400).json({ success: false, error: 'Invalid channel' });
@@ -67,24 +83,13 @@ export class FaderController {
             }
 
             const pool = Database.getPool();
-            const [existing] = await pool.execute(
-                'SELECT id FROM fixtures WHERE start_address = ?',
-                [channel]
-            );
+            await pool.execute(`
+                INSERT INTO fixture_channel_names (fixture_id, dmx_channel, name)
+                VALUES (?, ?, ?)
+                ON DUPLICATE KEY UPDATE name = VALUES(name)
+            `, [fixtureId, channel, name.trim()]);
 
-            if ((existing as any[]).length > 0) {
-                await pool.execute(
-                    'UPDATE fixtures SET name = ? WHERE start_address = ?',
-                    [name.trim(), channel]
-                );
-            } else {
-                await pool.execute(`
-                    INSERT INTO fixtures (name, fixture_type_id, start_address, universe, active)
-                    VALUES (?, NULL, ?, 1, TRUE)
-                `, [name.trim(), channel]);
-            }
-
-            res.json({ success: true, channel, name: name.trim() });
+            res.json({ success: true, fixtureId, channel, name: name.trim() });
         } catch (error: any) {
             res.status(500).json({ success: false, error: error.message });
         }
@@ -190,7 +195,7 @@ export class FaderController {
      * Get all channel groups (A, B, C)
      * Returns { groups: { 1: ['a', 'c'], 5: ['b'], ... } }
      */
-    async getChannelGroups(req: Request, res: Response): Promise<void> {
+    async getChannelGroups(_req: Request, res: Response): Promise<void> {
         try {
             const pool = Database.getPool();
             const [rows] = await pool.execute(`
@@ -374,10 +379,32 @@ export class FaderController {
         try {
             const { fixtureId = 1 } = req.query;
             const pool = Database.getPool();
-            const [presets]: any = await pool.execute(
-                'SELECT * FROM preset_macros WHERE fixture_id = ? ORDER BY id',
+
+            // Migration: Add manufacturer and model to preset_macros for instancing
+            try { await pool.execute('ALTER TABLE preset_macros ADD COLUMN manufacturer VARCHAR(100)'); } catch (e) { }
+            try { await pool.execute('ALTER TABLE preset_macros ADD COLUMN model VARCHAR(100)'); } catch (e) { }
+
+            // Get current fixture details
+            const [fixtures]: any = await pool.execute(
+                'SELECT manufacturer, model FROM devices WHERE id = ?',
                 [fixtureId]
             );
+
+            const currentMf = fixtures[0]?.manufacturer;
+            const currentMd = fixtures[0]?.model;
+
+            // Fetch presets for this specific fixture OR same manufacturer and model (instanced)
+            let query = 'SELECT * FROM preset_macros WHERE fixture_id = ?';
+            const params: any[] = [fixtureId];
+
+            if (currentMf && currentMd) {
+                query += ' OR (manufacturer = ? AND model = ?)';
+                params.push(currentMf, currentMd);
+            }
+
+            query += ' ORDER BY id';
+
+            const [presets]: any = await pool.execute(query, params);
 
             for (const preset of presets) {
                 const [values] = await pool.execute(
@@ -417,13 +444,27 @@ export class FaderController {
      */
     async savePreset(req: Request, res: Response): Promise<void> {
         try {
-            const { id, values } = req.body; // values = { channel: value }
+            const { id, values, fixtureId } = req.body;
             if (id === undefined || !values) {
                 res.status(400).json({ success: false, error: 'Missing required fields' });
                 return;
             }
 
             const pool = Database.getPool();
+
+            // If we have a fixtureId, update the preset's manufacturer/model for instancing
+            if (fixtureId) {
+                const [fixtures]: any = await pool.execute(
+                    'SELECT manufacturer, model FROM devices WHERE id = ?',
+                    [fixtureId]
+                );
+                if (fixtures[0]) {
+                    await pool.execute(
+                        'UPDATE preset_macros SET manufacturer = ?, model = ? WHERE id = ?',
+                        [fixtures[0].manufacturer, fixtures[0].model, id]
+                    );
+                }
+            }
 
             // Delete old values
             await pool.execute('DELETE FROM preset_macro_values WHERE macro_id = ?', [id]);
@@ -477,6 +518,8 @@ export class FaderController {
             }
 
             const pool = Database.getPool();
+            // Delete values first (optional if cascade is on, but safer)
+            await pool.execute('DELETE FROM preset_macro_values WHERE macro_id = ?', [id]);
             await pool.execute('DELETE FROM preset_macros WHERE id = ?', [id]);
 
             res.json({ success: true, id });
@@ -488,7 +531,7 @@ export class FaderController {
     /**
      * Get real-time DMX output state for the entire universe
      */
-    async getDmxOutput(req: Request, res: Response): Promise<void> {
+    async getDmxOutput(_req: Request, res: Response): Promise<void> {
         try {
             if (!this.dmxController) {
                 res.status(503).json({ success: false, error: 'DMX Controller not ready' });
@@ -497,6 +540,124 @@ export class FaderController {
 
             const universe = this.dmxController.getAllChannels();
             res.json({ success: true, universe });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
+
+    /**
+     * Get all global palettes
+     */
+    async getGlobalPalettes(_req: Request, res: Response): Promise<void> {
+        try {
+            const pool = Database.getPool();
+
+            // Ensure tables exist
+            await pool.execute(`
+                CREATE TABLE IF NOT EXISTS global_palettes (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    color VARCHAR(50) DEFAULT '#ffffff'
+                )
+            `);
+            await pool.execute(`
+                CREATE TABLE IF NOT EXISTS global_palette_values (
+                    palette_id INT,
+                    function_type VARCHAR(10),
+                    value INT,
+                    PRIMARY KEY (palette_id, function_type)
+                )
+            `);
+
+            const [palettes]: any = await pool.execute('SELECT * FROM global_palettes ORDER BY id');
+
+            for (const p of palettes) {
+                const [values] = await pool.execute(
+                    'SELECT function_type as type, value FROM global_palette_values WHERE palette_id = ?',
+                    [p.id]
+                );
+                p.values = values;
+            }
+
+            res.json({ success: true, palettes });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
+
+    /**
+     * Create a new global palette
+     */
+    async createGlobalPalette(req: Request, res: Response): Promise<void> {
+        try {
+            const { name = 'New Palette', color = '#ffffff' } = req.body;
+            const pool = Database.getPool();
+            const [result]: any = await pool.execute(
+                'INSERT INTO global_palettes (name, color) VALUES (?, ?)',
+                [name, color]
+            );
+            res.json({ success: true, id: result.insertId, name, color });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
+
+    /**
+     * Save values to a global palette
+     */
+    async saveGlobalPalette(req: Request, res: Response): Promise<void> {
+        try {
+            const { id, values } = req.body; // values = [ { type: 'R', value: 255 }, ... ]
+            const pool = Database.getPool();
+
+            await pool.execute('DELETE FROM global_palette_values WHERE palette_id = ?', [id]);
+            for (const v of values) {
+                await pool.execute(
+                    'INSERT INTO global_palette_values (palette_id, function_type, value) VALUES (?, ?, ?)',
+                    [id, v.type.toUpperCase(), v.value]
+                );
+            }
+            res.json({ success: true, id });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
+
+    /**
+     * Delete a global palette
+     */
+    async deleteGlobalPalette(req: Request, res: Response): Promise<void> {
+        try {
+            const { id } = req.params;
+            const pool = Database.getPool();
+            await pool.execute('DELETE FROM global_palettes WHERE id = ?', [id]);
+            await pool.execute('DELETE FROM global_palette_values WHERE palette_id = ?', [id]);
+            res.json({ success: true });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
+
+    /**
+     * Fetch all assignments for all fixtures (for global apply)
+     */
+    async getAllAssignments(_req: Request, res: Response): Promise<void> {
+        try {
+            const pool = Database.getPool();
+            const [rows]: any = await pool.execute(`
+                SELECT fixture_id, dmx_channel, function_type 
+                FROM fixture_channel_assignments
+            `);
+
+            const mapping: any = {};
+            rows.forEach((r: any) => {
+                const fId = r.fixture_id;
+                if (!mapping[fId]) mapping[fId] = {};
+                if (!mapping[fId][r.dmx_channel]) mapping[fId][r.dmx_channel] = [];
+                mapping[fId][r.dmx_channel].push(r.function_type);
+            });
+
+            res.json({ success: true, mapping });
         } catch (error: any) {
             res.status(500).json({ success: false, error: error.message });
         }

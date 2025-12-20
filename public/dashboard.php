@@ -42,15 +42,28 @@
         <div class="taskbar-item"><i class="fas fa-cog"></i></div>
     </div>
 
+    <!-- Global System Status -->
+    <div id="system-status-global">
+        <div class="status-item">
+            <span class="status-label">Backend</span>
+            <span class="status-indicator" id="backend-status"></span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">DMX</span>
+            <span class="status-indicator" id="dmx-status"></span>
+        </div>
+    </div>
+
     <script src="js/window_manager.js?v=<?php echo time(); ?>"></script>
     <script src="js/visualizer.js?v=<?php echo time(); ?>"></script>
+    <script src="js/patch.js?v=<?php echo time(); ?>"></script>
     <script>
         let visualizer = null;
 
         function openProgrammer() {
             wm.createWindow('programmer', 'Fixture Programmer', {
-                width: '1080px',
-                height: '750px',
+                width: '1100px',
+                height: '700px',
                 left: '50px',
                 top: '50px',
                 content: '<iframe src="faders.php" style="width:100%; height:100%; border:none;"></iframe>'
@@ -87,20 +100,33 @@
 
         function openPatch() {
             wm.createWindow('patch', 'Fixture Library & Patching', {
-                width: '600px',
-                height: '500px',
-                top: '200px',
-                content: '<div style="padding:30px; line-height:1.6;">' +
-                         '<h3>Fixture Universe 1</h3>' +
-                         '<div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.1);">' +
-                         '<b>[001]</b> Varytec Hero Wash 340 (16ch)<br>' +
-                         '<b>[017]</b> Varytec Hero Wash 340 (16ch)<br>' +
-                         '<b>[033]</b> Stairville LED Par 56 (7ch)' +
-                         '</div>' +
-                         '<button style="margin-top:20px; padding:10px 20px; background:#4488ff; border:none; border-radius:5px; color:white; cursor:pointer;">+ Add New Fixture</button>' +
-                         '</div>'
+                width: '800px',
+                height: '600px',
+                top: '100px',
+                left: '200px',
+                content: '<div id="content-patch">Loading...</div>'
             });
+            patchManager.init();
         }
+
+        async function startDashboardStatus() {
+            const checkStatus = async () => {
+                try {
+                    const res = await fetch(`http://${window.location.hostname}:3000/health`);
+                    const data = await res.json();
+                    document.getElementById('backend-status').classList.add('online');
+                    if (data.dmx) document.getElementById('dmx-status').classList.add('online');
+                    else document.getElementById('dmx-status').classList.remove('online');
+                } catch (e) {
+                    document.getElementById('backend-status').classList.remove('online');
+                    document.getElementById('dmx-status').classList.remove('online');
+                }
+            };
+            setInterval(checkStatus, 3000);
+            checkStatus();
+        }
+
+        startDashboardStatus();
     </script>
 </body>
 </html>
