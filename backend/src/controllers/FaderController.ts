@@ -680,6 +680,8 @@ export class FaderController {
     async getAllAssignments(_req: Request, res: Response): Promise<void> {
         try {
             const pool = Database.getPool();
+
+            // 1. Get manual assignments from database
             const [rows]: any = await pool.execute(`
                 SELECT fixture_id, dmx_channel, function_type 
                 FROM fixture_channel_assignments
@@ -692,6 +694,33 @@ export class FaderController {
                 if (!mapping[fId][r.dmx_channel]) mapping[fId][r.dmx_channel] = [];
                 mapping[fId][r.dmx_channel].push(r.function_type);
             });
+
+            // 2. Get all fixtures with template_id
+            const [fixtures]: any = await pool.execute(`
+                SELECT id, template_id FROM devices WHERE template_id IS NOT NULL
+            `);
+
+            // 3. For each fixture with a template, load template assignments
+            for (const fixture of fixtures) {
+                if (!fixture.template_id) continue;
+
+                const [templateChannels]: any = await pool.execute(`
+                    SELECT channel_num, function_type 
+                    FROM template_channels 
+                    WHERE template_id = ?
+                `, [fixture.template_id]);
+
+                templateChannels.forEach((tc: any) => {
+                    const fId = fixture.id;
+                    if (!mapping[fId]) mapping[fId] = {};
+                    if (!mapping[fId][tc.channel_num]) mapping[fId][tc.channel_num] = [];
+
+                    // Only add if not already manually assigned
+                    if (!mapping[fId][tc.channel_num].includes(tc.function_type)) {
+                        mapping[fId][tc.channel_num].push(tc.function_type);
+                    }
+                });
+            }
 
             res.json({ success: true, mapping });
         } catch (error: any) {
