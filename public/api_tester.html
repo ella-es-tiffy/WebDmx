@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebDMX API Debug Console</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            background: #0d1117;
+            color: #c9d1d9;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #161b22;
+            padding: 15px 20px;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            color: #58a6ff;
+            font-weight: 600;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: #21262d;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #f85149;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #3fb950;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        button {
+            padding: 8px 16px;
+            background: #238636;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #2ea043;
+        }
+
+        button.danger {
+            background: #da3633;
+        }
+
+        button.danger:hover {
+            background: #f85149;
+        }
+
+        button.secondary {
+            background: #21262d;
+            border: 1px solid #30363d;
+        }
+
+        button.secondary:hover {
+            background: #30363d;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #161b22;
+            border-right: 1px solid #30363d;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-section {
+            border-bottom: 1px solid #30363d;
+            padding: 15px;
+        }
+
+        .sidebar-section h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #8b949e;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .api-endpoints {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .endpoint-category {
+            margin-bottom: 15px;
+        }
+
+        .endpoint-category h4 {
+            font-size: 11px;
+            color: #58a6ff;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .endpoint {
+            padding: 6px 10px;
+            margin: 2px 0;
+            background: #0d1117;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .endpoint:hover {
+            background: #21262d;
+        }
+
+        .endpoint.active {
+            background: #1f6feb;
+            color: white;
+        }
+
+        .method {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        .method.GET { background: #3fb950; color: white; }
+        .method.POST { background: #58a6ff; color: white; }
+        .method.PUT { background: #d29922; color: white; }
+        .method.DELETE { background: #f85149; color: white; }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .request-panel {
+            background: #161b22;
+            padding: 20px;
+            border-bottom: 1px solid #30363d;
+            max-height: 40%;
+            overflow-y: auto;
+        }
+
+        .request-panel h2 {
+            font-size: 14px;
+            margin-bottom: 15px;
+            color: #58a6ff;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: #8b949e;
+            margin-bottom: 5px;
+        }
+
+        textarea, input[type="text"], input[type="number"] {
+            width: 100%;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: #c9d1d9;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+
+        .console {
+            flex: 1;
+            background: #0d1117;
+            padding: 15px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .console-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 15px 10px;
+            background: #0d1117;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .console-header h3 {
+            font-size: 12px;
+            color: #8b949e;
+            text-transform: uppercase;
+        }
+
+        .log-entry {
+            margin: 8px 0;
+            padding: 8px 12px;
+            background: #161b22;
+            border-left: 3px solid #30363d;
+            border-radius: 3px;
+        }
+
+        .log-entry.request {
+            border-left-color: #58a6ff;
+        }
+
+        .log-entry.response {
+            border-left-color: #3fb950;
+        }
+
+        .log-entry.error {
+            border-left-color: #f85149;
+            background: #1c1211;
+        }
+
+        .log-entry.system {
+            border-left-color: #d29922;
+        }
+
+        .log-timestamp {
+            color: #6e7681;
+            font-size: 10px;
+        }
+
+        .log-content {
+            margin-top: 5px;
+        }
+
+        .json-view {
+            background: #0d1117;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 5px;
+            overflow-x: auto;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .quick-actions button {
+            padding: 6px 12px;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>WebDMX API Debug Console</h1>
+        <div class="header-controls">
+            <div class="status">
+                <div class="status-dot" id="apiStatus"></div>
+                <span id="statusText">Disconnected</span>
+            </div>
+            <button class="danger" onclick="restartAPI()">🔄 Restart API</button>
+            <button class="secondary" onclick="clearConsole()">🗑️ Clear Console</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <h3>Quick Actions</h3>
+                <div class="quick-actions">
+                    <button onclick="quickTest('health')">Health</button>
+                    <button onclick="quickTest('blackout')">Blackout</button>
+                    <button onclick="quickTest('fullon')">Full On</button>
+                    <button onclick="quickTest('status')">Status</button>
+                </div>
+            </div>
+
+            <div class="api-endpoints">
+                <div class="sidebar-section">
+                    <div class="endpoint-category">
+                        <h4>System</h4>
+                        <div class="endpoint" onclick="selectEndpoint('GET', '/health')">
+                            <span class="method GET">GET</span> /health
+                        </div>
+                        <div class="endpoint" onclick="selectEndpoint('GET', '/system/status')">
+                            <span class="method GET">GET</span> /system/status
+                        </div>
+                    </div>
+
+                    <div class="endpoint-category">
+                        <h4>DMX Control</h4>
+                        <div class="endpoint" onclick="selectEndpoint('GET', '/dmx/universes')">
+                            <span class="method GET">GET</span> /dmx/universes
+                        </div>
+                        <div class="endpoint" onclick="selectEndpoint('POST', '/dmx/channel')">
+                            <span class="method POST">POST</span> /dmx/channel
+                        </div>
+                        <div class="endpoint" onclick="selectEndpoint('POST', '/dmx/channels')">
+                            <span class="method POST">POST</span> /dmx/channels
+                        </div>
+                        <div class="endpoint" onclick="selectEndpoint('POST', '/dmx/blackout')">
+                            <span class="method POST">POST</span> /dmx/blackout
+                        </div>
+                    </div>
+
+                    <div class="endpoint-category">
+                        <h4>Fixtures</h4>
+                        <div class="endpoint" onclick="selectEndpoint('GET', '/fixtures')">
+                            <span class="method GET">GET</span> /fixtures
+                        </div>
+                        <div class="endpoint" onclick="selectEndpoint('POST', '/fixtures')">
+                            <span class="method POST">POST</span> /fixtures
+                        </div>
+                        <div class="endpoint" onclick="selectEndpoint('GET', '/fixtures/library')">
+                            <span class="method GET">GET</span> /fixtures/library
+                        </div>
+                    </div>
+
+                    <div class="endpoint-category">
+                        <h4>Groups</h4>
+                        <div class="endpoint" onclick="selectEndpoint('GET', '/groups')">
+                            <span class="method GET">GET</span> /groups
+                        </div>
+                        <div class="endpoint" onclick="selectEndpoint('POST', '/groups')">
+                            <span class="method POST">POST</span> /groups
+                        </div>
+                    </div>
+
+                    <div class="endpoint-category">
+                        <h4>Programmer</h4>
+                        <div class="endpoint" onclick="selectEndpoint('GET', '/programmer')">
+                            <span class="method GET">GET</span> /programmer
+                        </div>
+                        <div class="endpoint" onclick="selectEndpoint('POST', '/programmer/select')">
+                            <span class="method POST">POST</span> /programmer/select
+                        </div>
+                        <div class="endpoint" onclick="selectEndpoint('POST', '/programmer/set-attribute')">
+                            <span class="method POST">POST</span> /programmer/set-attribute
+                        </div>
+                        <div class="endpoint" onclick="selectEndpoint('POST', '/programmer/clear')">
+                            <span class="method POST">POST</span> /programmer/clear
+                        </div>
+                    </div>
+
+                    <div class="endpoint-category">
+                        <h4>Sequences & Cues</h4>
+                        <div class="endpoint" onclick="selectEndpoint('GET', '/sequences')">
+                            <span class="method GET">GET</span> /sequences
+                        </div>
+                        <div class="endpoint" onclick="selectEndpoint('POST', '/sequences')">
+                            <span class="method POST">POST</span> /sequences
+                        </div>
+                        <div class="endpoint" onclick="selectEndpoint('GET', '/sequences/1/cues')">
+                            <span class="method GET">GET</span> /sequences/:id/cues
+                        </div>
+                        <div class="endpoint" onclick="selectEndpoint('POST', '/sequences/1/cues')">
+                            <span class="method POST">POST</span> /sequences/:id/cues
+                        </div>
+                    </div>
+
+                    <div class="endpoint-category">
+                        <h4>Executors</h4>
+                        <div class="endpoint" onclick="selectEndpoint('GET', '/executors')">
+                            <span class="method GET">GET</span> /executors
+                        </div>
+                        <div class="endpoint" onclick="selectEndpoint('POST', '/executors/1/go')">
+                            <span class="method POST">POST</span> /executors/:id/go
+                        </div>
+                    </div>
+
+                    <div class="endpoint-category">
+                        <h4>Presets</h4>
+                        <div class="endpoint" onclick="selectEndpoint('GET', '/presets')">
+                            <span class="method GET">GET</span> /presets
+                        </div>
+                        <div class="endpoint" onclick="selectEndpoint('POST', '/presets')">
+                            <span class="method POST">POST</span> /presets
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="request-panel">
+                <h2 id="currentEndpoint">Select an endpoint from the sidebar</h2>
+                <div class="form-group">
+                    <label>Request Body (JSON)</label>
+                    <textarea id="requestBody" placeholder='{"key": "value"}'></textarea>
+                </div>
+                <button onclick="sendRequest()">▶ Send Request</button>
+            </div>
+
+            <div class="console-header">
+                <h3>Console Output</h3>
+                <span class="log-timestamp" id="consoleTime"></span>
+            </div>
+
+            <div class="console" id="console">
+                <div class="log-entry system">
+                    <div class="log-timestamp">System</div>
+                    <div class="log-content">WebDMX API Debug Console initialized. Ready for testing.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        let currentMethod = 'GET';
+        let currentPath = '';
+
+        function log(type, message, data = null) {
+            const console = document.getElementById('console');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+
+            const timestamp = new Date().toLocaleTimeString();
+            const timestampDiv = document.createElement('div');
+            timestampDiv.className = 'log-timestamp';
+            timestampDiv.textContent = timestamp;
+
+            const content = document.createElement('div');
+            content.className = 'log-content';
+            content.textContent = message;
+
+            entry.appendChild(timestampDiv);
+            entry.appendChild(content);
+
+            if (data) {
+                const jsonView = document.createElement('div');
+                jsonView.className = 'json-view';
+                jsonView.textContent = JSON.stringify(data, null, 2);
+                entry.appendChild(jsonView);
+            }
+
+            console.appendChild(entry);
+            console.scrollTop = console.scrollHeight;
+
+            updateConsoleTime();
+        }
+
+        function updateConsoleTime() {
+            document.getElementById('consoleTime').textContent = new Date().toLocaleTimeString();
+        }
+
+        function clearConsole() {
+            document.getElementById('console').innerHTML = '';
+            log('system', 'Console cleared');
+        }
+
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch('http://localhost:3000/health');
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    document.getElementById('apiStatus').classList.add('connected');
+                    document.getElementById('statusText').textContent = `Connected ${data.dmx ? '(DMX OK)' : '(DMX Error)'}`;
+                } else {
+                    document.getElementById('apiStatus').classList.remove('connected');
+                    document.getElementById('statusText').textContent = 'API Error';
+                }
+            } catch (error) {
+                document.getElementById('apiStatus').classList.remove('connected');
+                document.getElementById('statusText').textContent = 'Disconnected';
+            }
+        }
+
+        function selectEndpoint(method, path) {
+            currentMethod = method;
+            currentPath = path;
+
+            // Update UI
+            document.querySelectorAll('.endpoint').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            document.getElementById('currentEndpoint').textContent = `${method} ${path}`;
+
+            // Set example request body for POST/PUT
+            if (method === 'POST' || method === 'PUT') {
+                const examples = {
+                    '/dmx/channel': '{"channel": 1, "value": 255}',
+                    '/dmx/channels': '{"startChannel": 1, "values": [255, 128, 64]}',
+                    '/fixtures': '{"name": "LED Par 1", "manufacturer": "Generic", "model": "RGB Par", "universe": 1, "dmxAddress": 10, "channelCount": 3}',
+                    '/groups': '{"name": "All Pars", "fixtures": [1, 2, 3]}',
+                    '/programmer/select': '{"fixtures": [1, 2, 3]}',
+                    '/programmer/set-attribute': '{"attribute": "intensity", "value": 255}',
+                    '/sequences': '{"name": "Main Show", "defaultFadeIn": 3.0, "defaultFadeOut": 3.0}',
+                    '/presets': '{"name": "Red", "type": "color", "values": {"red": 255, "green": 0, "blue": 0}}'
+                };
+
+                const example = examples[path] || examples[path.replace(/\/\d+/, '/:id')] || '{}';
+                document.getElementById('requestBody').value = example;
+            } else {
+                document.getElementById('requestBody').value = '';
+            }
+        }
+
+        async function sendRequest() {
+            if (!currentPath) {
+                log('error', 'No endpoint selected');
+                return;
+            }
+
+            const url = API_BASE + currentPath;
+            const options = {
+                method: currentMethod,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            };
+
+            let body = null;
+            if (currentMethod === 'POST' || currentMethod === 'PUT') {
+                const bodyText = document.getElementById('requestBody').value.trim();
+                if (bodyText) {
+                    try {
+                        body = JSON.parse(bodyText);
+                        options.body = JSON.stringify(body);
+                    } catch (e) {
+                        log('error', 'Invalid JSON in request body', {error: e.message});
+                        return;
+                    }
+                }
+            }
+
+            log('request', `${currentMethod} ${currentPath}`, body);
+
+            try {
+                const response = await fetch(url, options);
+                const data = await response.json();
+
+                if (response.ok) {
+                    log('response', `✓ ${response.status} ${response.statusText}`, data);
+                } else {
+                    log('error', `✗ ${response.status} ${response.statusText}`, data);
+                }
+            } catch (error) {
+                log('error', `Network error: ${error.message}`);
+            }
+        }
+
+        async function quickTest(test) {
+            switch(test) {
+                case 'health':
+                    selectEndpoint('GET', '/health');
+                    await sendRequest();
+                    break;
+                case 'blackout':
+                    selectEndpoint('POST', '/dmx/blackout');
+                    await sendRequest();
+                    break;
+                case 'fullon':
+                    currentMethod = 'POST';
+                    currentPath = '/dmx/channels';
+                    document.getElementById('requestBody').value = '{"startChannel": 1, "values": ' + JSON.stringify(Array(512).fill(255)) + '}';
+                    await sendRequest();
+                    break;
+                case 'status':
+                    selectEndpoint('GET', '/system/status');
+                    await sendRequest();
+                    break;
+            }
+        }
+
+        async function restartAPI() {
+            log('system', '🔄 Restarting API server...');
+
+            try {
+                // Try to kill the process via shell command (requires server endpoint)
+                const response = await fetch('http://localhost:3000/api/system/restart', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    log('system', '✓ API restart command sent');
+                } else {
+                    log('error', '✗ API restart failed - endpoint not implemented yet');
+                    log('system', 'Manual restart: pkill -f "ts-node-dev" && cd backend && npm run dev');
+                }
+            } catch (error) {
+                log('error', 'Cannot restart API - server not responding');
+                log('system', 'Manual restart required in terminal:');
+                log('system', 'cd /Users/tiffy/html/neko/dmx_web/backend && npm run dev');
+            }
+
+            // Check status after 3 seconds
+            setTimeout(checkAPIStatus, 3000);
+        }
+
+        // Auto-update status
+        checkAPIStatus();
+        setInterval(checkAPIStatus, 5000);
+
+        // Update console time
+        setInterval(updateConsoleTime, 1000);
+    </script>
+</body>
+</html>
