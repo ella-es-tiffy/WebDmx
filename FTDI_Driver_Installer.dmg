@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="en-US" class="loading-site no-js">
+<head>
+	<meta charset="UTF-8" />
+	<link rel="profile" href="https://gmpg.org/xfn/11" />
+	<link rel="pingback" href="https://ftdichip.com/xmlrpc.php" />
+
+					<script>document.documentElement.className = document.documentElement.className + ' yes-js js_active js'</script>
+			<script>(function(html){html.className = html.className.replace(/\bno-js\b/,'js')})(document.documentElement);</script>
+<meta name='robots' content='noindex, follow' />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<!-- This site is optimized with the Yoast SEO plugin v26.5 - https://yoast.com/wordpress/plugins/seo/ -->
+	<title>Page not found - FTDI</title>
+	<meta property="og:locale" content="en_US" />
+	<meta property="og:title" content="Page not found - FTDI" />
+	<meta property="og:site_name" content="FTDI" />
+	<script type="application/ld+json" class="yoast-schema-graph">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://ftdichip.com/#website","url":"https://ftdichip.com/","name":"FTDI","description":"","publisher":{"@id":"https://ftdichip.com/#organization"},"potentialAction":[{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https://ftdichip.com/?s={search_term_string}"},"query-input":{"@type":"PropertyValueSpecification","valueRequired":true,"valueName":"search_term_string"}}],"inLanguage":"en-US"},{"@type":"Organization","@id":"https://ftdichip.com/#organization","name":"FTDI","url":"https://ftdichip.com/","logo":{"@type":"ImageObject","inLanguage":"en-US","@id":"https://ftdichip.com/#/schema/logo/image/","url":"https://ftdichip.com/wp-content/uploads/2020/07/ftdi-chip-logo-approved.png","contentUrl":"https://ftdichip.com/wp-content/uploads/2020/07/ftdi-chip-logo-approved.png","width":1000,"height":500,"caption":"FTDI"},"image":{"@id":"https://ftdichip.com/#/schema/logo/image/"}}]}</script>
+	<!-- / Yoast SEO plugin. -->
+
+
+<link rel='prefetch' href='https://ftdichip.com/wp-content/themes/flatsome/assets/js/flatsome.js?ver=8e60d746741250b4dd4e' />
+<link rel='prefetch' href='https://ftdichip.com/wp-content/themes/flatsome/assets/js/chunk.slider.js?ver=3.19.7' />
+<link rel='prefetch' href='https://ftdichip.com/wp-content/themes/flatsome/assets/js/chunk.popups.js?ver=3.19.7' />
+<link rel='prefetch' href='https://ftdichip.com/wp-content/themes/flatsome/assets/js/chunk.tooltips.js?ver=3.19.7' />
+<link rel='prefetch' href='https://ftdichip.com/wp-content/themes/flatsome/assets/js/woocommerce.js?ver=dd6035ce106022a74757' />
+<link rel="alternate" type="application/rss+xml" title="FTDI &raquo; Feed" href="https://ftdichip.com/feed/" />
+		<!-- This site uses the Google Analytics by MonsterInsights plugin v9.11.0 - Using Analytics tracking - https://www.monsterinsights.com/ -->
+							<script src="//www.googletagmanager.com/gtag/js?id=G-DT8F5GS40N"  data-cfasync="false" data-wpfc-render="false" type="text/javascript" async></script>
+			<script data-cfasync="false" data-wpfc-render="false" type="text/javascript">
+				var mi_version = '9.11.0';
+				var mi_track_user = true;
+				var mi_no_track_reason = '';
+								var MonsterInsightsDefaultLocations = {"page_location":"https:\/\/ftdichip.com\/wp-content\/uploads\/2022\/07\/FTDIUSBSerialDriv_v2_4_4.dmg\/"};
+								if ( typeof MonsterInsightsPrivacyGuardFilter === 'function' ) {
+					var MonsterInsightsLocations = (typeof MonsterInsightsExcludeQuery === 'object') ? MonsterInsightsPrivacyGuardFilter( MonsterInsightsExcludeQuery ) : MonsterInsightsPrivacyGuardFilter( MonsterInsightsDefaultLocations );
+				} else {
+					var MonsterInsightsLocations = (typeof MonsterInsightsExcludeQuery === 'object') ? MonsterInsightsExcludeQuery : MonsterInsightsDefaultLocations;
+				}
+
+								var disableStrs = [
+										'ga-disable-G-DT8F5GS40N',
+									];
+
+				/* Function to detect opted out users */
+				function __gtagTrackerIsOptedOut() {
+					for (var index = 0; index < disableStrs.length; index++) {
+						if (document.cookie.indexOf(disableStrs[index] + '=true') > -1) {
+							return true;
+						}
+					}
+
+					return false;
+				}
+
+				/* Disable tracking if the opt-out cookie exists. */
+				if (__gtagTrackerIsOptedOut()) {
+					for (var index = 0; index < disableStrs.length; index++) {
+						window[disableStrs[index]] = true;
+					}
+				}
+
+				/* Opt-out function */
+				function __gtagTrackerOptout() {
+					for (var index = 0; index < disableStrs.length; index++) {
+						document.cookie = disableStrs[index] + '=true; expires=Thu, 31 Dec 2099 23:59:59 UTC; path=/';
+						window[disableStrs[index]] = true;
+					}
+				}
+
+				if ('undefined' === typeof gaOptout) {
+					function gaOptout() {
+						__gtagTrackerOptout();
+					}
+				}
+								window.dataLayer = window.dataLayer || [];
+
+				window.MonsterInsightsDualTracker = {
+					helpers: {},
+					trackers: {},
+				};
+				if (mi_track_user) {
+					function __gtagDataLayer() {
+						dataLayer.push(arguments);
+					}
+
+					function __gtagTracker(type, name, parameters) {
+						if (!parameters) {
+							parameters = {};
+						}
+
+						if (parameters.send_to) {
+							__gtagDataLayer.apply(null, arguments);
+							return;
+						}
+
+						if (type === 'event') {
+														parameters.send_to = monsterinsights_frontend.v4_id;
+							var hookName = name;
+							if (typeof parameters['event_category'] !== 'undefined') {
+								hookName = parameters['event_category'] + ':' + name;
+							}
+
+							if (typeof MonsterInsightsDualTracker.trackers[hookName] !== 'undefined') {
+								MonsterInsightsDualTracker.trackers[hookName](parameters);
+							} else {
+								__gtagDataLayer('event', name, parameters);
+							}
+							
+						} else {
+							__gtagDataLayer.apply(null, arguments);
+						}
+					}
+
+					__gtagTracker('js', new Date());
+					__gtagTracker('set', {
+						'developer_id.dZGIzZG': true,
+											});
+					if ( MonsterInsightsLocations.page_location ) {
+						__gtagTracker('set', MonsterInsightsLocations);
+					}
+										__gtagTracker('config', 'G-DT8F5GS40N', {"forceSSL":"true","link_attribution":"true","page_path":'\/404.html?page=' + document.location.pathname + document.location.search + '&from=' + document.referrer} );
+										window.gtag = __gtagTracker;										(function () {
+						/* https://developers.google.com/analytics/devguides/collection/analyticsjs/ */
+						/* ga and __gaTracker compatibility shim. */
+						var noopfn = function () {
+							return null;
+						};
+						var newtracker = function () {
+							return new Tracker();
+						};
+						var Tracker = function () {
+							return null;
+						};
+						var p = Tracker.prototype;
+						p.get = noopfn;
+						p.set = noopfn;
+						p.send = function () {
+							var args = Array.prototype.slice.call(arguments);
+							args.unshift('send');
+							__gaTracker.apply(null, args);
+						};
+						var __gaTracker = function () {
+							var len = arguments.length;
+							if (len === 0) {
+								return;
+							}
+							var f = arguments[len - 1];
+							if (typeof f !== 'object' || f === null || typeof f.hitCallback !== 'function') {
+								if ('send' === arguments[0]) {
+									var hitConverted, hitObject = false, action;
+									if ('event' === arguments[1]) {
+										if ('undefined' !== typeof arguments[3]) {
+											hitObject = {
+												'eventAction': arguments[3],
+												'eventCategory': arguments[2],
+												'eventLabel': arguments[4],
+												'value': arguments[5] ? arguments[5] : 1,
+											}
+										}
+									}
+									if ('pageview' === arguments[1]) {
+										if ('undefined' !== typeof arguments[2]) {
+											hitObject = {
+												'eventAction': 'page_view',
+												'page_path': arguments[2],
+											}
+										}
+									}
+									if (typeof arguments[2] === 'object') {
+										hitObject = arguments[2];
+									}
+									if (typeof arguments[5] === 'object') {
+										Object.assign(hitObject, arguments[5]);
+									}
+									if ('undefined' !== typeof arguments[1].hitType) {
+										hitObject = arguments[1];
+										if ('pageview' === hitObject.hitType) {
+											hitObject.eventAction = 'page_view';
+										}
+									}
+									if (hitObject) {
+										action = 'timing' === arguments[1].hitType ? 'timing_complete' : hitObject.eventAction;
+										hitConverted = mapArgs(hitObject);
+										__gtagTracker('event', action, hitConverted);
+									}
+								}
+								return;
+							}
+
+							function mapArgs(args) {
+								var arg, hit = {};
+								var gaMap = {
+									'eventCategory': 'event_category',
+									'eventAction': 'event_action',
+									'eventLabel': 'event_label',
+									'eventValue': 'event_value',
+									'nonInteraction': 'non_interaction',
+									'timingCategory': 'event_category',
+									'timingVar': 'name',
+									'timingValue': 'value',
+									'timingLabel': 'event_label',
+									'page': 'page_path',
+									'location': 'page_location',
+									'title': 'page_title',
+									'referrer' : 'page_referrer',
+								};
+								for (arg in args) {
+																		if (!(!args.hasOwnProperty(arg) || !gaMap.hasOwnProperty(arg))) {
+										hit[gaMap[arg]] = args[arg];
+									} else {
+										hit[arg] = args[arg];
+									}
+								}
+								return hit;
+							}
+
+							try {
+								f.hitCallback();
+							} catch (ex) {
+							}
+						};
+						__gaTracker.create = newtracker;
+						__gaTracker.getByName = newtracker;
+						__gaTracker.getAll = function () {
+							return [];
+						};
+						__gaTracker.remove = noopfn;
+						__gaTracker.loaded = true;
+						window['__gaTracker'] = __gaTracker;
+					})();
+									} else {
+										console.log("");
+					(function () {
+						function __gtagTracker() {
+							return null;
+						}
+
+						window['__gtagTracker'] = __gtagTracker;
+						window['gtag'] = __gtagTracker;
+					})();
+									}
+			</script>
+							<!-- / Google Analytics by MonsterInsights -->
+		<style id='wp-img-auto-sizes-contain-inline-css' type='text/css'>
+img:is([sizes=auto i],[sizes^="auto," i]){contain-intrinsic-size:3000px 1500px}
+/*# sourceURL=wp-img-auto-sizes-contain-inline-css */
+</style>
+<link rel='stylesheet' id='wp-components-css' href='https://ftdichip.com/wp-includes/css/dist/components/style.min.css?ver=745dd95a6ffb6d464e2f9223877b7210' type='text/css' media='all' />
+<link rel='stylesheet' id='wp-preferences-css' href='https://ftdichip.com/wp-includes/css/dist/preferences/style.min.css?ver=745dd95a6ffb6d464e2f9223877b7210' type='text/css' media='all' />
+<link rel='stylesheet' id='wp-block-editor-css' href='https://ftdichip.com/wp-includes/css/dist/block-editor/style.min.css?ver=745dd95a6ffb6d464e2f9223877b7210' type='text/css' media='all' />
+<link rel='stylesheet' id='popup-maker-block-library-style-css' href='https://ftdichip.com/wp-content/plugins/popup-maker/dist/packages/block-library-style.css?ver=dbea705cfafe089d65f1' type='text/css' media='all' />
+<link rel='stylesheet' id='contact-form-7-css' href='https://ftdichip.com/wp-content/plugins/contact-form-7/includes/css/styles.css?ver=6.1.4' type='text/css' media='all' />
+<link rel='stylesheet' id='menu-image-css' href='https://ftdichip.com/wp-content/plugins/menu-image/includes/css/menu-image.css?ver=3.13' type='text/css' media='all' />
+<link rel='stylesheet' id='dashicons-css' href='https://ftdichip.com/wp-includes/css/dashicons.min.css?ver=745dd95a6ffb6d464e2f9223877b7210' type='text/css' media='all' />
+<style id='dashicons-inline-css' type='text/css'>
+[data-font="Dashicons"]:before {font-family: 'Dashicons' !important;content: attr(data-icon) !important;speak: none !important;font-weight: normal !important;font-variant: normal !important;text-transform: none !important;line-height: 1 !important;font-style: normal !important;-webkit-font-smoothing: antialiased !important;-moz-osx-font-smoothing: grayscale !important;}
+/*# sourceURL=dashicons-inline-css */
+</style>
+<link rel='stylesheet' id='modal-window-css' href='https://ftdichip.com/wp-content/plugins/modal-window/public/assets/css/modal.min.css?ver=6.2.3' type='text/css' media='all' />
+<link rel='stylesheet' id='slicewp-style-css' href='https://ftdichip.com/wp-content/plugins/slicewp/assets/css/style-front-end.css?ver=1.2.2' type='text/css' media='all' />
+<style id='woocommerce-inline-inline-css' type='text/css'>
+.woocommerce form .form-row .required { visibility: visible; }
+/*# sourceURL=woocommerce-inline-inline-css */
+</style>
+<link rel='stylesheet' id='brands-styles-css' href='https://ftdichip.com/wp-content/plugins/woocommerce/assets/css/brands.css?ver=10.3.6' type='text/css' media='all' />
+<link rel='stylesheet' id='flatsome-woocommerce-wishlist-css' href='https://ftdichip.com/wp-content/themes/flatsome/inc/integrations/wc-yith-wishlist/wishlist.css?ver=3.19.7' type='text/css' media='all' />
+<link rel='stylesheet' id='trp-language-switcher-v2-css' href='https://ftdichip.com/wp-content/plugins/translatepress-multilingual/assets/css/trp-language-switcher-v2.css?ver=3.0.5' type='text/css' media='all' />
+<link rel='stylesheet' id='flatsome-main-css' href='https://ftdichip.com/wp-content/themes/flatsome/assets/css/flatsome.css?ver=3.19.7' type='text/css' media='all' />
+<style id='flatsome-main-inline-css' type='text/css'>
+@font-face {
+				font-family: "fl-icons";
+				font-display: block;
+				src: url(https://ftdichip.com/wp-content/themes/flatsome/assets/css/icons/fl-icons.eot?v=3.19.7);
+				src:
+					url(https://ftdichip.com/wp-content/themes/flatsome/assets/css/icons/fl-icons.eot#iefix?v=3.19.7) format("embedded-opentype"),
+					url(https://ftdichip.com/wp-content/themes/flatsome/assets/css/icons/fl-icons.woff2?v=3.19.7) format("woff2"),
+					url(https://ftdichip.com/wp-content/themes/flatsome/assets/css/icons/fl-icons.ttf?v=3.19.7) format("truetype"),
+					url(https://ftdichip.com/wp-content/themes/flatsome/assets/css/icons/fl-icons.woff?v=3.19.7) format("woff"),
+					url(https://ftdichip.com/wp-content/themes/flatsome/assets/css/icons/fl-icons.svg?v=3.19.7#fl-icons) format("svg");
+			}
+/*# sourceURL=flatsome-main-inline-css */
+</style>
+<link rel='stylesheet' id='flatsome-shop-css' href='https://ftdichip.com/wp-content/themes/flatsome/assets/css/flatsome-shop.css?ver=3.19.7' type='text/css' media='all' />
+<link rel='stylesheet' id='flatsome-style-css' href='https://ftdichip.com/wp-content/themes/flatsome-child/style.css?ver=3.0' type='text/css' media='all' />
+<link rel='stylesheet' id='moove_gdpr_frontend-css' href='https://ftdichip.com/wp-content/plugins/gdpr-cookie-compliance/dist/styles/gdpr-main.css?ver=5.0.9' type='text/css' media='all' />
+<style id='moove_gdpr_frontend-inline-css' type='text/css'>
+#moove_gdpr_cookie_modal,#moove_gdpr_cookie_info_bar,.gdpr_cookie_settings_shortcode_content{font-family:&#039;Nunito&#039;,sans-serif}#moove_gdpr_save_popup_settings_button{background-color:#373737;color:#fff}#moove_gdpr_save_popup_settings_button:hover{background-color:#000}#moove_gdpr_cookie_info_bar .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content a.mgbutton,#moove_gdpr_cookie_info_bar .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content button.mgbutton{background-color:#0C4DA2}#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-modal-footer-content .moove-gdpr-button-holder a.mgbutton,#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-modal-footer-content .moove-gdpr-button-holder button.mgbutton,.gdpr_cookie_settings_shortcode_content .gdpr-shr-button.button-green{background-color:#0C4DA2;border-color:#0C4DA2}#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-modal-footer-content .moove-gdpr-button-holder a.mgbutton:hover,#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-modal-footer-content .moove-gdpr-button-holder button.mgbutton:hover,.gdpr_cookie_settings_shortcode_content .gdpr-shr-button.button-green:hover{background-color:#fff;color:#0C4DA2}#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-modal-close i,#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-modal-close span.gdpr-icon{background-color:#0C4DA2;border:1px solid #0C4DA2}#moove_gdpr_cookie_info_bar span.moove-gdpr-infobar-allow-all.focus-g,#moove_gdpr_cookie_info_bar span.moove-gdpr-infobar-allow-all:focus,#moove_gdpr_cookie_info_bar button.moove-gdpr-infobar-allow-all.focus-g,#moove_gdpr_cookie_info_bar button.moove-gdpr-infobar-allow-all:focus,#moove_gdpr_cookie_info_bar span.moove-gdpr-infobar-reject-btn.focus-g,#moove_gdpr_cookie_info_bar span.moove-gdpr-infobar-reject-btn:focus,#moove_gdpr_cookie_info_bar button.moove-gdpr-infobar-reject-btn.focus-g,#moove_gdpr_cookie_info_bar button.moove-gdpr-infobar-reject-btn:focus,#moove_gdpr_cookie_info_bar span.change-settings-button.focus-g,#moove_gdpr_cookie_info_bar span.change-settings-button:focus,#moove_gdpr_cookie_info_bar button.change-settings-button.focus-g,#moove_gdpr_cookie_info_bar button.change-settings-button:focus{-webkit-box-shadow:0 0 1px 3px #0C4DA2;-moz-box-shadow:0 0 1px 3px #0C4DA2;box-shadow:0 0 1px 3px #0C4DA2}#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-modal-close i:hover,#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-modal-close span.gdpr-icon:hover,#moove_gdpr_cookie_info_bar span[data-href]>u.change-settings-button{color:#0C4DA2}#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-modal-left-content #moove-gdpr-menu li.menu-item-selected a span.gdpr-icon,#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-modal-left-content #moove-gdpr-menu li.menu-item-selected button span.gdpr-icon{color:inherit}#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-modal-left-content #moove-gdpr-menu li a span.gdpr-icon,#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-modal-left-content #moove-gdpr-menu li button span.gdpr-icon{color:inherit}#moove_gdpr_cookie_modal .gdpr-acc-link{line-height:0;font-size:0;color:transparent;position:absolute}#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-modal-close:hover i,#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-modal-left-content #moove-gdpr-menu li a,#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-modal-left-content #moove-gdpr-menu li button,#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-modal-left-content #moove-gdpr-menu li button i,#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-modal-left-content #moove-gdpr-menu li a i,#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-tab-main .moove-gdpr-tab-main-content a:hover,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content a.mgbutton:hover,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content button.mgbutton:hover,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content a:hover,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content button:hover,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content span.change-settings-button:hover,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content button.change-settings-button:hover,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content u.change-settings-button:hover,#moove_gdpr_cookie_info_bar span[data-href]>u.change-settings-button,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content a.mgbutton.focus-g,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content button.mgbutton.focus-g,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content a.focus-g,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content button.focus-g,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content a.mgbutton:focus,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content button.mgbutton:focus,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content a:focus,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content button:focus,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content span.change-settings-button.focus-g,span.change-settings-button:focus,button.change-settings-button.focus-g,button.change-settings-button:focus,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content u.change-settings-button.focus-g,#moove_gdpr_cookie_info_bar.moove-gdpr-dark-scheme .moove-gdpr-info-bar-container .moove-gdpr-info-bar-content u.change-settings-button:focus{color:#0C4DA2}#moove_gdpr_cookie_modal .moove-gdpr-branding.focus-g span,#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-tab-main a.focus-g,#moove_gdpr_cookie_modal .moove-gdpr-modal-content .moove-gdpr-tab-main .gdpr-cd-details-toggle.focus-g{color:#0C4DA2}#moove_gdpr_cookie_modal.gdpr_lightbox-hide{display:none}
+/*# sourceURL=moove_gdpr_frontend-inline-css */
+</style>
+<!--n2css--><!--n2js--><script defer type="text/javascript" src="https://ftdichip.com/wp-content/plugins/google-analytics-for-wordpress/assets/js/frontend-gtag.min.js?ver=9.11.0" id="monsterinsights-frontend-script-js" async="async" data-wp-strategy="async"></script>
+<script data-cfasync="false" data-wpfc-render="false" type="text/javascript" id='monsterinsights-frontend-script-js-extra'>/* <![CDATA[ */
+var monsterinsights_frontend = {"js_events_tracking":"true","download_extensions":"doc,pdf,ppt,zip,xls,docx,pptx,xlsx","inbound_paths":"[{\"path\":\"\\\/go\\\/\",\"label\":\"affiliate\"},{\"path\":\"\\\/recommend\\\/\",\"label\":\"affiliate\"}]","home_url":"https:\/\/ftdichip.com","hash_tracking":"false","v4_id":"G-DT8F5GS40N"};/* ]]> */
+</script>
+<script type="text/javascript" src="https://ftdichip.com/wp-includes/js/jquery/jquery.min.js?ver=3.7.1" id="jquery-core-js"></script>
+<script type="text/javascript" src="https://ftdichip.com/wp-includes/js/jquery/jquery-migrate.min.js?ver=3.4.1" id="jquery-migrate-js"></script>
+<script defer type="text/javascript" src="https://ftdichip.com/wp-content/plugins/woocommerce/assets/js/jquery-blockui/jquery.blockUI.min.js?ver=2.7.0-wc.10.3.6" id="wc-jquery-blockui-js" data-wp-strategy="defer"></script>
+<script type="text/javascript" id="wc-add-to-cart-js-extra">
+/* <![CDATA[ */
+var wc_add_to_cart_params = {"ajax_url":"/wp-admin/admin-ajax.php","wc_ajax_url":"/?wc-ajax=%%endpoint%%","i18n_view_cart":"View cart","cart_url":"https://ftdichip.com/cart/","is_cart":"","cart_redirect_after_add":"no"};
+//# sourceURL=wc-add-to-cart-js-extra
+/* ]]> */
+</script>
+<script defer type="text/javascript" src="https://ftdichip.com/wp-content/plugins/woocommerce/assets/js/frontend/add-to-cart.min.js?ver=10.3.6" id="wc-add-to-cart-js" defer="defer" data-wp-strategy="defer"></script>
+<script defer type="text/javascript" src="https://ftdichip.com/wp-content/plugins/woocommerce/assets/js/js-cookie/js.cookie.min.js?ver=2.1.4-wc.10.3.6" id="wc-js-cookie-js" data-wp-strategy="defer"></script>
+<script defer type="text/javascript" src="https://ftdichip.com/wp-content/plugins/translatepress-multilingual/assets/js/trp-frontend-compatibility.js?ver=3.0.5" id="trp-frontend-compatibility-js"></script>
+<script defer type="text/javascript" id="slicewp-script-tracking-js-before">
+/* <![CDATA[ */
+var slicewp_ajaxurl = "https:\/\/ftdichip.com\/wp-admin\/admin-ajax.php";
+var slicewp = {"ajaxurl":"https:\/\/ftdichip.com\/wp-admin\/admin-ajax.php","cookie_duration":30,"affiliate_credit":"last","affiliate_keyword":"aff","predefined_date_ranges":{"past_7_days":"Past 7 days","past_30_days":"Past 30 days","week_to_date":"Week to date","month_to_date":"Month to date","year_to_date":"Year to date","last_week":"Last week","last_month":"Last month","last_year":"Last year"},"settings":{"active_currency":"USD","currency_symbol_position":"before","currency_thousands_separator":",","currency_decimal_separator":"."}};
+//# sourceURL=slicewp-script-tracking-js-before
+/* ]]> */
+</script>
+<script defer type="text/javascript" src="https://ftdichip.com/wp-content/plugins/slicewp/assets/js/script-trk.js?ver=1.2.2" id="slicewp-script-tracking-js"></script>
+<script defer type="text/javascript" src="https://ftdichip.com/wp-content/plugins/translatepress-multilingual/assets/js/trp-frontend-language-switcher.js?ver=3.0.5" id="trp-language-switcher-js-v2-js"></script>
+<link rel="https://api.w.org/" href="https://ftdichip.com/wp-json/" /><link rel="alternate" hreflang="en-US" href="https://ftdichip.com/wp-content/uploads/2022/07/FTDIUSBSerialDriv_v2_4_4.dmg"/>
+<link rel="alternate" hreflang="zh-CN" href="https://ftdichip.com/wp-content/uploads/2022/07/FTDIUSBSerialDriv_v2_4_4.dmg"/>
+<link rel="alternate" hreflang="en" href="https://ftdichip.com/wp-content/uploads/2022/07/FTDIUSBSerialDriv_v2_4_4.dmg"/>
+<link rel="alternate" hreflang="zh" href="https://ftdichip.com/wp-content/uploads/2022/07/FTDIUSBSerialDriv_v2_4_4.dmg"/>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-37216416-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-37216416-1');
+var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-37216416-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+</script>
+
+	<noscript><style>.woocommerce-product-gallery{ opacity: 1 !important; }</style></noscript>
+	<link rel="icon" href="https://ftdichip.com/wp-content/uploads/2020/07/favicon.png" sizes="32x32" />
+<link rel="icon" href="https://ftdichip.com/wp-content/uploads/2020/07/favicon.png" sizes="192x192" />
+<link rel="apple-touch-icon" href="https://ftdichip.com/wp-content/uploads/2020/07/favicon.png" />
+<meta name="msapplication-TileImage" content="https://ftdichip.com/wp-content/uploads/2020/07/favicon.png" />
+<style id="custom-css" type="text/css">:root {--primary-color: #1e1e1e;--fs-color-primary: #1e1e1e;--fs-color-secondary: #b71c26;--fs-color-success: #7a9c59;--fs-color-alert: #b20000;--fs-experimental-link-color: #1a86d9;--fs-experimental-link-color-hover: #b32029;}.tooltipster-base {--tooltip-color: #fff;--tooltip-bg-color: #000;}.off-canvas-right .mfp-content, .off-canvas-left .mfp-content {--drawer-width: 300px;}.off-canvas .mfp-content.off-canvas-cart {--drawer-width: 360px;}.container-width, .full-width .ubermenu-nav, .container, .row{max-width: 1680px}.row.row-collapse{max-width: 1650px}.row.row-small{max-width: 1672.5px}.row.row-large{max-width: 1710px}.header-main{height: 121px}#logo img{max-height: 121px}#logo{width:210px;}.header-top{min-height: 30px}.transparent .header-main{height: 90px}.transparent #logo img{max-height: 90px}.has-transparent + .page-title:first-of-type,.has-transparent + #main > .page-title,.has-transparent + #main > div > .page-title,.has-transparent + #main .page-header-wrapper:first-of-type .page-title{padding-top: 90px;}.header.show-on-scroll,.stuck .header-main{height:70px!important}.stuck #logo img{max-height: 70px!important}.header-bottom {background-color: #f1f1f1}@media (max-width: 549px) {.header-main{height: 70px}#logo img{max-height: 70px}}.nav-dropdown{font-size:100%}body{color: #222222}h1,h2,h3,h4,h5,h6,.heading-font{color: #222222;}body{font-size: 100%;}@media screen and (max-width: 549px){body{font-size: 100%;}}body{font-family: Roboto, sans-serif;}body {font-weight: 400;font-style: normal;}.nav > li > a {font-family: Roboto, sans-serif;}.mobile-sidebar-levels-2 .nav > li > ul > li > a {font-family: Roboto, sans-serif;}.nav > li > a,.mobile-sidebar-levels-2 .nav > li > ul > li > a {font-weight: 500;font-style: normal;}h1,h2,h3,h4,h5,h6,.heading-font, .off-canvas-center .nav-sidebar.nav-vertical > li > a{font-family: Roboto, sans-serif;}h1,h2,h3,h4,h5,h6,.heading-font,.banner h1,.banner h2 {font-weight: 700;font-style: normal;}.alt-font{font-family: "Dancing Script", sans-serif;}.alt-font {font-weight: 400!important;font-style: normal!important;}.breadcrumbs{text-transform: none;}button,.button{text-transform: none;}.section-title span{text-transform: none;}h3.widget-title,span.widget-title{text-transform: none;}.header:not(.transparent) .header-nav-main.nav > li > a {color: #222222;}@media screen and (min-width: 550px){.products .box-vertical .box-image{min-width: 247px!important;width: 247px!important;}}.footer-1{background-color: #f9f9f9}.absolute-footer, html{background-color: #b71c26}.nav-vertical-fly-out > li + li {border-top-width: 1px; border-top-style: solid;}/* Custom CSS */@media(min-width:1024px) and (max-width:1440px){#logo{width: 150px;margin: 0;}#masthead .nav > li.menu-item > a {font-size: 14px;padding: 0px 8px;}.tax-product_cat .row, .gallery, .woocommerce-tabs .row, .woocommerce-tabs .gallery{width: 100%;}#table-products th, #table-products td{font-size: 15px !important;}table.dataTable thead .sorting::before, table.dataTable thead .sorting::after{display: block;position: static !important;}#table-products{width: auto !important;}#table-products th{min-width: inherit !important;padding-left:0 !important;padding-right: 0 !important;}#table-products tbody td:nth-child(1){width: 50px !important;box-sizing: border-box !important;padding: 0 !important;}#table-products th:nth-child(1){ padding-left: 2px !important;width:60px !important; }table.dataTable thead .sorting::before, table.dataTable thead .sorting::after {position: absolute;font-size: 10px;right: 1px;}#table-products tbody td:nth-child(2){width: 120px !important;box-sizing: border-box !important;}#table-products th:nth-child(2){ padding-left: 2px !important; width: 114px !important; }#table-products tbody td:nth-child(3) img, #table-products tbody td:nth-child(3) .product-images{width: 50px !important;margin: 0 auto;}#table-products tbody td:nth-child(3){width: 50px !important;min-width: 50px !important;box-sizing: border-box !important;padding: 0 !important;}#table-products th:nth-child(3){ padding-left: 2px !important; width: 42px !important; }#table-products .woocommerce-Price-currencyCode{display: block;}.hide-for-tablet{ display: none !important;}}#table-products{width: 100% !important;}.label-new.menu-item > a:after{content:"New";}.label-hot.menu-item > a:after{content:"Hot";}.label-sale.menu-item > a:after{content:"Sale";}.label-popular.menu-item > a:after{content:"Popular";}</style>		<style type="text/css" id="wp-custom-css">
+			
+/* Remove add to cart on shop page*/
+.add_to_cart_button, .cart, .price-product-single {
+	
+/* 	display:none !important; */
+}
+
+/* Remove add to cart on Product page*/
+.single_add_to_cart_button {
+	
+/* 	display:none !important; */
+}
+
+.header-language-dropdown {
+display: none !important;}
+
+.woocommerce-privacy-policy-text {
+display: none}
+
+
+.wpcf7 label {
+    display: inline-block;
+    width: 100%;
+    text-align: left;
+    font-family: 'Roboto';
+    font-size: .97em !important;
+    font-weight: 400;
+}
+
+
+p.woocommerce-form-row.terms-check label {
+    font-size: .97em !important;
+	
+}
+.wpcf7-form-control.wpcf7-submit {
+    float: left;
+    font-weight: 400;
+    text-transform: none;
+    font-family: 'Roboto';
+	font-size: 14px;
+	background-color: #b71c26 !important;
+	opacity: 1;
+}
+
+a.button.primary.is-link.newlinks {
+    font-size: 16px;
+    font-weight: bold;
+    font-family: 'Roboto';
+		margin-bottom: 0;
+}
+
+.flexthis .col-inner {
+display: flex;
+flex-wrap: wrap;
+flex-direction: column; 
+align-items: flex-start}
+
+.trp-language-switcher {
+display: none !important;}
+
+.desktop-view {
+
+}
+
+.mobile-view {
+	display: none;
+}
+
+@media (max-width: 767px) {
+	.mobile-view {
+		display: block;
+	}
+	
+	.desktop-view {
+		display: none
+	}
+}		</style>
+		<style id="kirki-inline-styles">/* cyrillic-ext */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3GUBGEe.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3iUBGEe.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3CUBGEe.woff2) format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3-UBGEe.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* math */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMawCUBGEe.woff2) format('woff2');
+  unicode-range: U+0302-0303, U+0305, U+0307-0308, U+0310, U+0312, U+0315, U+031A, U+0326-0327, U+032C, U+032F-0330, U+0332-0333, U+0338, U+033A, U+0346, U+034D, U+0391-03A1, U+03A3-03A9, U+03B1-03C9, U+03D1, U+03D5-03D6, U+03F0-03F1, U+03F4-03F5, U+2016-2017, U+2034-2038, U+203C, U+2040, U+2043, U+2047, U+2050, U+2057, U+205F, U+2070-2071, U+2074-208E, U+2090-209C, U+20D0-20DC, U+20E1, U+20E5-20EF, U+2100-2112, U+2114-2115, U+2117-2121, U+2123-214F, U+2190, U+2192, U+2194-21AE, U+21B0-21E5, U+21F1-21F2, U+21F4-2211, U+2213-2214, U+2216-22FF, U+2308-230B, U+2310, U+2319, U+231C-2321, U+2336-237A, U+237C, U+2395, U+239B-23B7, U+23D0, U+23DC-23E1, U+2474-2475, U+25AF, U+25B3, U+25B7, U+25BD, U+25C1, U+25CA, U+25CC, U+25FB, U+266D-266F, U+27C0-27FF, U+2900-2AFF, U+2B0E-2B11, U+2B30-2B4C, U+2BFE, U+3030, U+FF5B, U+FF5D, U+1D400-1D7FF, U+1EE00-1EEFF;
+}
+/* symbols */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMaxKUBGEe.woff2) format('woff2');
+  unicode-range: U+0001-000C, U+000E-001F, U+007F-009F, U+20DD-20E0, U+20E2-20E4, U+2150-218F, U+2190, U+2192, U+2194-2199, U+21AF, U+21E6-21F0, U+21F3, U+2218-2219, U+2299, U+22C4-22C6, U+2300-243F, U+2440-244A, U+2460-24FF, U+25A0-27BF, U+2800-28FF, U+2921-2922, U+2981, U+29BF, U+29EB, U+2B00-2BFF, U+4DC0-4DFF, U+FFF9-FFFB, U+10140-1018E, U+10190-1019C, U+101A0, U+101D0-101FD, U+102E0-102FB, U+10E60-10E7E, U+1D2C0-1D2D3, U+1D2E0-1D37F, U+1F000-1F0FF, U+1F100-1F1AD, U+1F1E6-1F1FF, U+1F30D-1F30F, U+1F315, U+1F31C, U+1F31E, U+1F320-1F32C, U+1F336, U+1F378, U+1F37D, U+1F382, U+1F393-1F39F, U+1F3A7-1F3A8, U+1F3AC-1F3AF, U+1F3C2, U+1F3C4-1F3C6, U+1F3CA-1F3CE, U+1F3D4-1F3E0, U+1F3ED, U+1F3F1-1F3F3, U+1F3F5-1F3F7, U+1F408, U+1F415, U+1F41F, U+1F426, U+1F43F, U+1F441-1F442, U+1F444, U+1F446-1F449, U+1F44C-1F44E, U+1F453, U+1F46A, U+1F47D, U+1F4A3, U+1F4B0, U+1F4B3, U+1F4B9, U+1F4BB, U+1F4BF, U+1F4C8-1F4CB, U+1F4D6, U+1F4DA, U+1F4DF, U+1F4E3-1F4E6, U+1F4EA-1F4ED, U+1F4F7, U+1F4F9-1F4FB, U+1F4FD-1F4FE, U+1F503, U+1F507-1F50B, U+1F50D, U+1F512-1F513, U+1F53E-1F54A, U+1F54F-1F5FA, U+1F610, U+1F650-1F67F, U+1F687, U+1F68D, U+1F691, U+1F694, U+1F698, U+1F6AD, U+1F6B2, U+1F6B9-1F6BA, U+1F6BC, U+1F6C6-1F6CF, U+1F6D3-1F6D7, U+1F6E0-1F6EA, U+1F6F0-1F6F3, U+1F6F7-1F6FC, U+1F700-1F7FF, U+1F800-1F80B, U+1F810-1F847, U+1F850-1F859, U+1F860-1F887, U+1F890-1F8AD, U+1F8B0-1F8BB, U+1F8C0-1F8C1, U+1F900-1F90B, U+1F93B, U+1F946, U+1F984, U+1F996, U+1F9E9, U+1FA00-1FA6F, U+1FA70-1FA7C, U+1FA80-1FA89, U+1FA8F-1FAC6, U+1FACE-1FADC, U+1FADF-1FAE9, U+1FAF0-1FAF8, U+1FB00-1FBFF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3OUBGEe.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3KUBGEe.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3yUBA.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3GUBGEe.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3iUBGEe.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3CUBGEe.woff2) format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3-UBGEe.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* math */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMawCUBGEe.woff2) format('woff2');
+  unicode-range: U+0302-0303, U+0305, U+0307-0308, U+0310, U+0312, U+0315, U+031A, U+0326-0327, U+032C, U+032F-0330, U+0332-0333, U+0338, U+033A, U+0346, U+034D, U+0391-03A1, U+03A3-03A9, U+03B1-03C9, U+03D1, U+03D5-03D6, U+03F0-03F1, U+03F4-03F5, U+2016-2017, U+2034-2038, U+203C, U+2040, U+2043, U+2047, U+2050, U+2057, U+205F, U+2070-2071, U+2074-208E, U+2090-209C, U+20D0-20DC, U+20E1, U+20E5-20EF, U+2100-2112, U+2114-2115, U+2117-2121, U+2123-214F, U+2190, U+2192, U+2194-21AE, U+21B0-21E5, U+21F1-21F2, U+21F4-2211, U+2213-2214, U+2216-22FF, U+2308-230B, U+2310, U+2319, U+231C-2321, U+2336-237A, U+237C, U+2395, U+239B-23B7, U+23D0, U+23DC-23E1, U+2474-2475, U+25AF, U+25B3, U+25B7, U+25BD, U+25C1, U+25CA, U+25CC, U+25FB, U+266D-266F, U+27C0-27FF, U+2900-2AFF, U+2B0E-2B11, U+2B30-2B4C, U+2BFE, U+3030, U+FF5B, U+FF5D, U+1D400-1D7FF, U+1EE00-1EEFF;
+}
+/* symbols */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMaxKUBGEe.woff2) format('woff2');
+  unicode-range: U+0001-000C, U+000E-001F, U+007F-009F, U+20DD-20E0, U+20E2-20E4, U+2150-218F, U+2190, U+2192, U+2194-2199, U+21AF, U+21E6-21F0, U+21F3, U+2218-2219, U+2299, U+22C4-22C6, U+2300-243F, U+2440-244A, U+2460-24FF, U+25A0-27BF, U+2800-28FF, U+2921-2922, U+2981, U+29BF, U+29EB, U+2B00-2BFF, U+4DC0-4DFF, U+FFF9-FFFB, U+10140-1018E, U+10190-1019C, U+101A0, U+101D0-101FD, U+102E0-102FB, U+10E60-10E7E, U+1D2C0-1D2D3, U+1D2E0-1D37F, U+1F000-1F0FF, U+1F100-1F1AD, U+1F1E6-1F1FF, U+1F30D-1F30F, U+1F315, U+1F31C, U+1F31E, U+1F320-1F32C, U+1F336, U+1F378, U+1F37D, U+1F382, U+1F393-1F39F, U+1F3A7-1F3A8, U+1F3AC-1F3AF, U+1F3C2, U+1F3C4-1F3C6, U+1F3CA-1F3CE, U+1F3D4-1F3E0, U+1F3ED, U+1F3F1-1F3F3, U+1F3F5-1F3F7, U+1F408, U+1F415, U+1F41F, U+1F426, U+1F43F, U+1F441-1F442, U+1F444, U+1F446-1F449, U+1F44C-1F44E, U+1F453, U+1F46A, U+1F47D, U+1F4A3, U+1F4B0, U+1F4B3, U+1F4B9, U+1F4BB, U+1F4BF, U+1F4C8-1F4CB, U+1F4D6, U+1F4DA, U+1F4DF, U+1F4E3-1F4E6, U+1F4EA-1F4ED, U+1F4F7, U+1F4F9-1F4FB, U+1F4FD-1F4FE, U+1F503, U+1F507-1F50B, U+1F50D, U+1F512-1F513, U+1F53E-1F54A, U+1F54F-1F5FA, U+1F610, U+1F650-1F67F, U+1F687, U+1F68D, U+1F691, U+1F694, U+1F698, U+1F6AD, U+1F6B2, U+1F6B9-1F6BA, U+1F6BC, U+1F6C6-1F6CF, U+1F6D3-1F6D7, U+1F6E0-1F6EA, U+1F6F0-1F6F3, U+1F6F7-1F6FC, U+1F700-1F7FF, U+1F800-1F80B, U+1F810-1F847, U+1F850-1F859, U+1F860-1F887, U+1F890-1F8AD, U+1F8B0-1F8BB, U+1F8C0-1F8C1, U+1F900-1F90B, U+1F93B, U+1F946, U+1F984, U+1F996, U+1F9E9, U+1FA00-1FA6F, U+1FA70-1FA7C, U+1FA80-1FA89, U+1FA8F-1FAC6, U+1FACE-1FADC, U+1FADF-1FAE9, U+1FAF0-1FAF8, U+1FB00-1FBFF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3OUBGEe.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3KUBGEe.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 500;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3yUBA.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3GUBGEe.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3iUBGEe.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3CUBGEe.woff2) format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3-UBGEe.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* math */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMawCUBGEe.woff2) format('woff2');
+  unicode-range: U+0302-0303, U+0305, U+0307-0308, U+0310, U+0312, U+0315, U+031A, U+0326-0327, U+032C, U+032F-0330, U+0332-0333, U+0338, U+033A, U+0346, U+034D, U+0391-03A1, U+03A3-03A9, U+03B1-03C9, U+03D1, U+03D5-03D6, U+03F0-03F1, U+03F4-03F5, U+2016-2017, U+2034-2038, U+203C, U+2040, U+2043, U+2047, U+2050, U+2057, U+205F, U+2070-2071, U+2074-208E, U+2090-209C, U+20D0-20DC, U+20E1, U+20E5-20EF, U+2100-2112, U+2114-2115, U+2117-2121, U+2123-214F, U+2190, U+2192, U+2194-21AE, U+21B0-21E5, U+21F1-21F2, U+21F4-2211, U+2213-2214, U+2216-22FF, U+2308-230B, U+2310, U+2319, U+231C-2321, U+2336-237A, U+237C, U+2395, U+239B-23B7, U+23D0, U+23DC-23E1, U+2474-2475, U+25AF, U+25B3, U+25B7, U+25BD, U+25C1, U+25CA, U+25CC, U+25FB, U+266D-266F, U+27C0-27FF, U+2900-2AFF, U+2B0E-2B11, U+2B30-2B4C, U+2BFE, U+3030, U+FF5B, U+FF5D, U+1D400-1D7FF, U+1EE00-1EEFF;
+}
+/* symbols */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMaxKUBGEe.woff2) format('woff2');
+  unicode-range: U+0001-000C, U+000E-001F, U+007F-009F, U+20DD-20E0, U+20E2-20E4, U+2150-218F, U+2190, U+2192, U+2194-2199, U+21AF, U+21E6-21F0, U+21F3, U+2218-2219, U+2299, U+22C4-22C6, U+2300-243F, U+2440-244A, U+2460-24FF, U+25A0-27BF, U+2800-28FF, U+2921-2922, U+2981, U+29BF, U+29EB, U+2B00-2BFF, U+4DC0-4DFF, U+FFF9-FFFB, U+10140-1018E, U+10190-1019C, U+101A0, U+101D0-101FD, U+102E0-102FB, U+10E60-10E7E, U+1D2C0-1D2D3, U+1D2E0-1D37F, U+1F000-1F0FF, U+1F100-1F1AD, U+1F1E6-1F1FF, U+1F30D-1F30F, U+1F315, U+1F31C, U+1F31E, U+1F320-1F32C, U+1F336, U+1F378, U+1F37D, U+1F382, U+1F393-1F39F, U+1F3A7-1F3A8, U+1F3AC-1F3AF, U+1F3C2, U+1F3C4-1F3C6, U+1F3CA-1F3CE, U+1F3D4-1F3E0, U+1F3ED, U+1F3F1-1F3F3, U+1F3F5-1F3F7, U+1F408, U+1F415, U+1F41F, U+1F426, U+1F43F, U+1F441-1F442, U+1F444, U+1F446-1F449, U+1F44C-1F44E, U+1F453, U+1F46A, U+1F47D, U+1F4A3, U+1F4B0, U+1F4B3, U+1F4B9, U+1F4BB, U+1F4BF, U+1F4C8-1F4CB, U+1F4D6, U+1F4DA, U+1F4DF, U+1F4E3-1F4E6, U+1F4EA-1F4ED, U+1F4F7, U+1F4F9-1F4FB, U+1F4FD-1F4FE, U+1F503, U+1F507-1F50B, U+1F50D, U+1F512-1F513, U+1F53E-1F54A, U+1F54F-1F5FA, U+1F610, U+1F650-1F67F, U+1F687, U+1F68D, U+1F691, U+1F694, U+1F698, U+1F6AD, U+1F6B2, U+1F6B9-1F6BA, U+1F6BC, U+1F6C6-1F6CF, U+1F6D3-1F6D7, U+1F6E0-1F6EA, U+1F6F0-1F6F3, U+1F6F7-1F6FC, U+1F700-1F7FF, U+1F800-1F80B, U+1F810-1F847, U+1F850-1F859, U+1F860-1F887, U+1F890-1F8AD, U+1F8B0-1F8BB, U+1F8C0-1F8C1, U+1F900-1F90B, U+1F93B, U+1F946, U+1F984, U+1F996, U+1F9E9, U+1FA00-1FA6F, U+1FA70-1FA7C, U+1FA80-1FA89, U+1FA8F-1FAC6, U+1FACE-1FADC, U+1FADF-1FAE9, U+1FAF0-1FAF8, U+1FB00-1FBFF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3OUBGEe.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3KUBGEe.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/roboto/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3yUBA.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}/* vietnamese */
+@font-face {
+  font-family: 'Dancing Script';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/dancing-script/If2cXTr6YS-zF4S-kcSWSVi_sxjsohD9F50Ruu7BMSo3Rep8ltA.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Dancing Script';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/dancing-script/If2cXTr6YS-zF4S-kcSWSVi_sxjsohD9F50Ruu7BMSo3ROp8ltA.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Dancing Script';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://ftdichip.com/wp-content/fonts/dancing-script/If2cXTr6YS-zF4S-kcSWSVi_sxjsohD9F50Ruu7BMSo3Sup8.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}</style>				<style type="text/css" id="c4wp-checkout-css">
+					.woocommerce-checkout .c4wp_captcha_field {
+						margin-bottom: 10px;
+						margin-top: 15px;
+						position: relative;
+						display: inline-block;
+					}
+				</style>
+							<style type="text/css" id="c4wp-v3-lp-form-css">
+				.login #login, .login #lostpasswordform {
+					min-width: 350px !important;
+				}
+				.wpforms-field-c4wp iframe {
+					width: 100% !important;
+				}
+			</style>
+			<link rel='stylesheet' id='wc-blocks-style-css' href='https://ftdichip.com/wp-content/plugins/woocommerce/assets/client/blocks/wc-blocks.css?ver=wc-10.3.6' type='text/css' media='all' />
+<style id='global-styles-inline-css' type='text/css'>
+:root{--wp--preset--aspect-ratio--square: 1;--wp--preset--aspect-ratio--4-3: 4/3;--wp--preset--aspect-ratio--3-4: 3/4;--wp--preset--aspect-ratio--3-2: 3/2;--wp--preset--aspect-ratio--2-3: 2/3;--wp--preset--aspect-ratio--16-9: 16/9;--wp--preset--aspect-ratio--9-16: 9/16;--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--color--primary: #1e1e1e;--wp--preset--color--secondary: #b71c26;--wp--preset--color--success: #7a9c59;--wp--preset--color--alert: #b20000;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgb(6,147,227) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgb(252,185,0) 0%,rgb(255,105,0) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgb(255,105,0) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;--wp--preset--spacing--20: 0.44rem;--wp--preset--spacing--30: 0.67rem;--wp--preset--spacing--40: 1rem;--wp--preset--spacing--50: 1.5rem;--wp--preset--spacing--60: 2.25rem;--wp--preset--spacing--70: 3.38rem;--wp--preset--spacing--80: 5.06rem;--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);--wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, 0.4);--wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, 0.2);--wp--preset--shadow--outlined: 6px 6px 0px -3px rgb(255, 255, 255), 6px 6px rgb(0, 0, 0);--wp--preset--shadow--crisp: 6px 6px 0px rgb(0, 0, 0);}:where(body) { margin: 0; }.wp-site-blocks > .alignleft { float: left; margin-right: 2em; }.wp-site-blocks > .alignright { float: right; margin-left: 2em; }.wp-site-blocks > .aligncenter { justify-content: center; margin-left: auto; margin-right: auto; }:where(.is-layout-flex){gap: 0.5em;}:where(.is-layout-grid){gap: 0.5em;}.is-layout-flow > .alignleft{float: left;margin-inline-start: 0;margin-inline-end: 2em;}.is-layout-flow > .alignright{float: right;margin-inline-start: 2em;margin-inline-end: 0;}.is-layout-flow > .aligncenter{margin-left: auto !important;margin-right: auto !important;}.is-layout-constrained > .alignleft{float: left;margin-inline-start: 0;margin-inline-end: 2em;}.is-layout-constrained > .alignright{float: right;margin-inline-start: 2em;margin-inline-end: 0;}.is-layout-constrained > .aligncenter{margin-left: auto !important;margin-right: auto !important;}.is-layout-constrained > :where(:not(.alignleft):not(.alignright):not(.alignfull)){margin-left: auto !important;margin-right: auto !important;}body .is-layout-flex{display: flex;}.is-layout-flex{flex-wrap: wrap;align-items: center;}.is-layout-flex > :is(*, div){margin: 0;}body .is-layout-grid{display: grid;}.is-layout-grid > :is(*, div){margin: 0;}body{padding-top: 0px;padding-right: 0px;padding-bottom: 0px;padding-left: 0px;}a:where(:not(.wp-element-button)){text-decoration: none;}:root :where(.wp-element-button, .wp-block-button__link){background-color: #32373c;border-width: 0;color: #fff;font-family: inherit;font-size: inherit;font-style: inherit;font-weight: inherit;letter-spacing: inherit;line-height: inherit;padding-top: calc(0.667em + 2px);padding-right: calc(1.333em + 2px);padding-bottom: calc(0.667em + 2px);padding-left: calc(1.333em + 2px);text-decoration: none;text-transform: inherit;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-primary-color{color: var(--wp--preset--color--primary) !important;}.has-secondary-color{color: var(--wp--preset--color--secondary) !important;}.has-success-color{color: var(--wp--preset--color--success) !important;}.has-alert-color{color: var(--wp--preset--color--alert) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-primary-background-color{background-color: var(--wp--preset--color--primary) !important;}.has-secondary-background-color{background-color: var(--wp--preset--color--secondary) !important;}.has-success-background-color{background-color: var(--wp--preset--color--success) !important;}.has-alert-background-color{background-color: var(--wp--preset--color--alert) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-primary-border-color{border-color: var(--wp--preset--color--primary) !important;}.has-secondary-border-color{border-color: var(--wp--preset--color--secondary) !important;}.has-success-border-color{border-color: var(--wp--preset--color--success) !important;}.has-alert-border-color{border-color: var(--wp--preset--color--alert) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+/*# sourceURL=global-styles-inline-css */
+</style>
+</head>
+
+<body data-rsssl=1 class="error404 wp-theme-flatsome wp-child-theme-flatsome-child theme-flatsome woocommerce-no-js translatepress-en_US header-shadow lightbox nav-dropdown-has-shadow nav-dropdown-has-border">
+
+
+<a class="skip-link screen-reader-text" href="#main">Skip to content</a>
+
+<div id="wrapper">
+
+	
+	<header id="header" class="header has-sticky sticky-jump">
+		<div class="header-wrapper">
+			<div id="masthead" class="header-main ">
+      <div class="header-inner flex-row container logo-left medium-logo-left" role="navigation">
+
+          <!-- Logo -->
+          <div id="logo" class="flex-col logo">
+            
+<!-- Header logo -->
+<a href="https://ftdichip.com/" title="FTDI" rel="home">
+		<img width="1000" height="500" src="https://ftdichip.com/wp-content/uploads/2023/07/ftdi-chip-logo-approved-1-1.png" class="header_logo header-logo" alt="FTDI"/><img  width="1000" height="500" src="https://ftdichip.com/wp-content/uploads/2023/07/ftdi-chip-logo-approved-1-1.png" class="header-logo-dark" alt="FTDI"/></a>
+          </div>
+
+          <!-- Mobile Left Elements -->
+          <div class="flex-col show-for-medium flex-left">
+            <ul class="mobile-nav nav nav-left ">
+                          </ul>
+          </div>
+
+          <!-- Left Elements -->
+          <div class="flex-col hide-for-medium flex-left
+            flex-grow">
+            <ul class="header-nav header-nav-main nav nav-left  nav-pills nav-uppercase" >
+                          </ul>
+          </div>
+
+          <!-- Right Elements -->
+          <div class="flex-col hide-for-medium flex-right">
+            <ul class="header-nav header-nav-main nav nav-right  nav-pills nav-uppercase">
+              <li id="menu-item-7" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-home menu-item-7 menu-item-design-default"><a href="https://ftdichip.com/" class="nav-top-link">Home</a></li>
+<li id="menu-item-302" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-has-children menu-item-302 menu-item-design-default has-dropdown"><a href="https://ftdichip.com/product-category/products/" class="nav-top-link" aria-expanded="false" aria-haspopup="menu">Products<i class="icon-angle-down" ></i></a>
+<ul class="sub-menu nav-dropdown nav-dropdown-default">
+	<li id="menu-item-304" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-304"><a href="https://ftdichip.com/product-category/products/ic/">IC</a></li>
+	<li id="menu-item-305" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-305"><a href="https://ftdichip.com/product-category/products/modules/">Modules</a></li>
+	<li id="menu-item-303" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-303"><a href="https://ftdichip.com/product-category/products/cables/">Cables</a></li>
+</ul>
+</li>
+<li id="menu-item-11546" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-11546 menu-item-design-default has-dropdown"><a href="https://ftdichip.com/applications/" class="nav-top-link" aria-expanded="false" aria-haspopup="menu">Applications<i class="icon-angle-down" ></i></a>
+<ul class="sub-menu nav-dropdown nav-dropdown-default">
+	<li id="menu-item-11581" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-has-children menu-item-11581 nav-dropdown-col"><a href="https://ftdichip.com/product-category/applications/automotive/">AUTOMOTIVE</a>
+	<ul class="sub-menu nav-column nav-dropdown-default">
+		<li id="menu-item-11790" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-11790"><a href="https://ftdichip.com/product-category/applications/automotive/adas/">ADAS</a></li>
+		<li id="menu-item-12425" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12425"><a href="https://ftdichip.com/product-category/applications/automotive/car-diagnostics-device/">Car Diagnostics Device</a></li>
+		<li id="menu-item-12257" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12257"><a href="https://ftdichip.com/product-category/applications/automotive/ev-charger/">EV Charger</a></li>
+		<li id="menu-item-12578" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12578"><a href="https://ftdichip.com/product-category/applications/automotive/telematics-box/">Telematics Box</a></li>
+		<li id="menu-item-12586" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12586"><a href="https://ftdichip.com/product-category/applications/automotive/vehicle-computer/">Vehicle Computer</a></li>
+		<li id="menu-item-12587" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12587"><a href="https://ftdichip.com/product-category/applications/automotive/vehicle-radar/">Vehicle Radar</a></li>
+	</ul>
+</li>
+	<li id="menu-item-11978" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-has-children menu-item-11978 nav-dropdown-col"><a href="https://ftdichip.com/product-category/applications/communication/">COMMUNICATION</a>
+	<ul class="sub-menu nav-column nav-dropdown-default">
+		<li id="menu-item-12579" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12579"><a href="https://ftdichip.com/product-category/applications/communication/data-centre-server/">Data Centre Server</a></li>
+		<li id="menu-item-12580" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12580"><a href="https://ftdichip.com/product-category/applications/communication/edge-computing/">Edge Computing</a></li>
+		<li id="menu-item-12072" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12072"><a href="https://ftdichip.com/product-category/applications/communication/fpga-programming/">FPGA Programming</a></li>
+		<li id="menu-item-12426" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12426"><a href="https://ftdichip.com/product-category/applications/communication/server-tooling/">Server Tooling</a></li>
+		<li id="menu-item-12115" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12115"><a href="https://ftdichip.com/product-category/applications/communication/5g-network/">5G Network</a></li>
+	</ul>
+</li>
+	<li id="menu-item-11578" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-has-children menu-item-11578 nav-dropdown-col"><a href="https://ftdichip.com/product-category/applications/consumer/">CONSUMER</a>
+	<ul class="sub-menu nav-column nav-dropdown-default">
+		<li id="menu-item-12427" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12427"><a href="https://ftdichip.com/product-category/applications/consumer/drone/">Drone</a></li>
+		<li id="menu-item-12637" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12637"><a href="https://ftdichip.com/product-category/applications/consumer/gaming-controller/">Gaming Controller</a></li>
+		<li id="menu-item-12638" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12638"><a href="https://ftdichip.com/product-category/applications/consumer/monitor/">Monitor</a></li>
+		<li id="menu-item-12259" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12259"><a href="https://ftdichip.com/product-category/applications/consumer/smart-phone/">Smart Phone</a></li>
+		<li id="menu-item-11986" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-11986"><a href="https://ftdichip.com/product-category/applications/consumer/smart-watch/">Smart Watch</a></li>
+	</ul>
+</li>
+	<li id="menu-item-11580" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-has-children menu-item-11580 nav-dropdown-col"><a href="https://ftdichip.com/product-category/applications/home-automation/">HOME AUTOMATION</a>
+	<ul class="sub-menu nav-column nav-dropdown-default">
+		<li id="menu-item-12260" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12260"><a href="https://ftdichip.com/product-category/applications/home-automation/environmental-control/">Environmental Control</a></li>
+		<li id="menu-item-12639" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12639"><a href="https://ftdichip.com/product-category/applications/home-automation/smart-camera/">Smart Camera</a></li>
+		<li id="menu-item-12640" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12640"><a href="https://ftdichip.com/product-category/applications/home-automation/smart-home-controller/">Smart Home Controller</a></li>
+		<li id="menu-item-12581" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12581"><a href="https://ftdichip.com/product-category/applications/home-automation/sweeping-robot/">Sweeping Robot</a></li>
+		<li id="menu-item-12118" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12118"><a href="https://ftdichip.com/product-category/applications/home-automation/wireless-extension/">Wireless Extension</a></li>
+	</ul>
+</li>
+	<li id="menu-item-11582" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-has-children menu-item-11582 nav-dropdown-col"><a href="https://ftdichip.com/product-category/applications/industrial-control/">INDUSTRIAL CONTROL</a>
+	<ul class="sub-menu nav-column nav-dropdown-default">
+		<li id="menu-item-12582" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12582"><a href="https://ftdichip.com/product-category/applications/industrial-control/ai-control/">AI Control</a></li>
+		<li id="menu-item-12428" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12428"><a href="https://ftdichip.com/product-category/applications/industrial-control/factory-testing-programming/">Factory Testing / Programming</a></li>
+		<li id="menu-item-12116" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12116"><a href="https://ftdichip.com/product-category/applications/industrial-control/industrial-camera/">Industrial Camera</a></li>
+		<li id="menu-item-12261" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12261"><a href="https://ftdichip.com/product-category/applications/industrial-control/industrial-control-monitoring/">Industrial Control / Monitoring</a></li>
+		<li id="menu-item-12585" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12585"><a href="https://ftdichip.com/product-category/applications/industrial-control/industrial-robot/">Industrial Robot</a></li>
+	</ul>
+</li>
+	<li id="menu-item-11848" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-has-children menu-item-11848 nav-dropdown-col"><a href="https://ftdichip.com/product-category/applications/medical/">MEDICAL</a>
+	<ul class="sub-menu nav-column nav-dropdown-default">
+		<li id="menu-item-12641" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12641"><a href="https://ftdichip.com/product-category/applications/medical/defibrillator/">Defibrillator</a></li>
+		<li id="menu-item-12429" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12429"><a href="https://ftdichip.com/product-category/applications/medical/medical-monitoring/">Medical Monitoring</a></li>
+		<li id="menu-item-12642" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12642"><a href="https://ftdichip.com/product-category/applications/medical/medical-xray-machine/">Medical X-Ray Machine</a></li>
+		<li id="menu-item-12262" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12262"><a href="https://ftdichip.com/product-category/applications/medical/microscope/">Microscope</a></li>
+		<li id="menu-item-12119" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12119"><a href="https://ftdichip.com/product-category/applications/medical/ultrasound-device/">Ultrasound Device</a></li>
+	</ul>
+</li>
+</ul>
+</li>
+<li id="menu-item-718" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-718 menu-item-design-default has-dropdown"><a href="https://ftdichip.com/drivers/" class="nav-top-link" aria-expanded="false" aria-haspopup="menu">Drivers<i class="icon-angle-down" ></i></a>
+<ul class="sub-menu nav-dropdown nav-dropdown-default">
+	<li id="menu-item-6379" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-6379"><a href="https://ftdichip.com/drivers/vcp-drivers/">VCP Drivers</a></li>
+	<li id="menu-item-6380" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-6380"><a href="https://ftdichip.com/drivers/d2xx-drivers/">D2XX Drivers</a></li>
+	<li id="menu-item-6381" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-6381"><a href="https://ftdichip.com/drivers/d3xx-drivers/">D3XX Drivers</a></li>
+</ul>
+</li>
+<li id="menu-item-546" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-546 menu-item-design-default has-dropdown"><a href="https://ftdichip.com/technical-support/" class="nav-top-link" aria-expanded="false" aria-haspopup="menu">Support<i class="icon-angle-down" ></i></a>
+<ul class="sub-menu nav-dropdown nav-dropdown-default">
+	<li id="menu-item-720" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-720"><a href="https://ftdichip.com/technical-support/">Technical Support</a></li>
+	<li id="menu-item-3525" class="menu-item menu-item-type-taxonomy menu-item-object-document_type menu-item-3525"><a href="https://ftdichip.com/documents-type/data-sheets/">Documentation</a></li>
+	<li id="menu-item-3523" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3523"><a href="https://ftdichip.com/technical-support/reference-designs/">Reference Designs</a></li>
+	<li id="menu-item-3526" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3526"><a href="https://ftdichip.com/software-examples/">Software Examples</a></li>
+	<li id="menu-item-3527" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3527"><a href="https://ftdichip.com/utilities/">Utilities</a></li>
+	<li id="menu-item-4496" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-4496"><a href="https://ftdichip.com/firmware/">Firmware</a></li>
+	<li id="menu-item-4776" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4776"><a href="https://ftdichip.com/related-links/">Related links</a></li>
+</ul>
+</li>
+<li id="menu-item-234" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-234 menu-item-design-default has-dropdown"><a href="https://ftdichip.com/corporate-profile/" class="nav-top-link" aria-expanded="false" aria-haspopup="menu">About Us<i class="icon-angle-down" ></i></a>
+<ul class="sub-menu nav-dropdown nav-dropdown-default">
+	<li id="menu-item-235" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-235"><a href="https://ftdichip.com/corporate-profile/">Corporate Profile</a></li>
+	<li id="menu-item-3375" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3375"><a href="https://ftdichip.com/sales-network/">Sales Network</a></li>
+	<li id="menu-item-238" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-238"><a href="https://ftdichip.com/category/news/">News</a></li>
+	<li id="menu-item-236" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-236"><a href="https://ftdichip.com/careers/">Careers</a></li>
+	<li id="menu-item-3577" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3577"><a href="https://ftdichip.com/ftdi-commnunity/">FTDI Community</a></li>
+	<li id="menu-item-868" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-868"><a href="https://ftdichip.com/faqs/">FAQs</a></li>
+</ul>
+</li>
+<li class="html custom html_topbar_right"><a href="https://www.ftdichip.cn" class="button-custom" target="_blank"><i class="icon-flag"></i><span>China</span></a></li><li class="header-search header-search-dropdown has-icon has-dropdown menu-item-has-children">
+		<a href="#" aria-label="Search" class="is-small"><i class="icon-search" ></i></a>
+		<ul class="nav-dropdown nav-dropdown-default">
+	 	<li class="header-search-form search-form html relative has-icon">
+	<div class="header-search-form-wrapper">
+		<div class="searchform-wrapper ux-search-box relative is-normal"><form role="search" method="get" class="searchform" action="https://ftdichip.com/">
+	<div class="flex-row relative">
+						<div class="flex-col flex-grow">
+			<label class="screen-reader-text" for="woocommerce-product-search-field-0">Search for:</label>
+			<input type="search" id="woocommerce-product-search-field-0" class="search-field mb-0" placeholder="Search&hellip;" value="" name="s" />
+			<input type="hidden" name="post_type" value="product" />
+					</div>
+		<div class="flex-col">
+			<button type="submit" value="Search" class="ux-search-submit submit-button secondary button icon mb-0">
+				<i class="icon-search" ></i>			</button>
+		</div>
+	</div>
+	<div class="live-search-results text-left z-top"></div>
+</form>
+</div>	</div>
+</li>
+	</ul>
+</li>
+
+<li class="account-item has-icon" >
+
+	<a href="https://ftdichip.com/my-account/" class="nav-top-link nav-top-not-logged-in is-small is-small" title="Login" aria-label="Login" >
+		<i class="icon-user" ></i>	</a>
+
+
+
+
+</li>
+<li class="header-wishlist-icon">
+			<a href="https://ftdichip.com/wishlist/" class="wishlist-link" title="Wishlist" aria-label="Wishlist" >
+										<i class="wishlist-icon icon-heart" ></i>
+					</a>
+	</li>
+<li class="has-dropdown header-enquiry-dropdown">
+	<a href="https://ftdichip.com/enquiry-cart" title="Enquiry Cart" class="header-cart-link">
+	  <i class="icon-shopping-cart"></i>
+	  <span id="total-items">0</span>
+	</a>
+	<ul class="nav-dropdown nav-dropdown-default">
+		<li class="html widget_enquiry">
+	      <div class="widget_enquiry_content">
+	      		      		<p class="woocommerce-mini-cart__empty-message">No products in enquiry cart.</p>
+	      		      </div>
+	  </li>
+	</ul>
+</li>
+<li class="cart-item has-icon has-dropdown">
+
+<a href="https://ftdichip.com/cart/" class="header-cart-link is-small" title="购物车" >
+
+
+    <span class="cart-icon image-icon">
+    <strong>0</strong>
+  </span>
+  </a>
+
+ <ul class="nav-dropdown nav-dropdown-default">
+    <li class="html widget_shopping_cart">
+      <div class="widget_shopping_cart_content">
+        
+
+	<div class="ux-mini-cart-empty flex flex-row-col text-center pt pb">
+				<div class="ux-mini-cart-empty-icon">
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 17 19" style="opacity:.1;height:80px;">
+				<path d="M8.5 0C6.7 0 5.3 1.2 5.3 2.7v2H2.1c-.3 0-.6.3-.7.7L0 18.2c0 .4.2.8.6.8h15.7c.4 0 .7-.3.7-.7v-.1L15.6 5.4c0-.3-.3-.6-.7-.6h-3.2v-2c0-1.6-1.4-2.8-3.2-2.8zM6.7 2.7c0-.8.8-1.4 1.8-1.4s1.8.6 1.8 1.4v2H6.7v-2zm7.5 3.4 1.3 11.5h-14L2.8 6.1h2.5v1.4c0 .4.3.7.7.7.4 0 .7-.3.7-.7V6.1h3.5v1.4c0 .4.3.7.7.7s.7-.3.7-.7V6.1h2.6z" fill-rule="evenodd" clip-rule="evenodd" fill="currentColor"></path>
+			</svg>
+		</div>
+				<p class="woocommerce-mini-cart__empty-message empty">No products in the cart.</p>
+					<p class="return-to-shop">
+				<a class="button primary wc-backward" href="https://ftdichip.com/products/">
+					Return to shop				</a>
+			</p>
+				</div>
+
+
+      </div>
+    </li>
+     </ul>
+
+</li>
+            </ul>
+          </div>
+
+          <!-- Mobile Right Elements -->
+          <div class="flex-col show-for-medium flex-right">
+            <ul class="mobile-nav nav nav-right ">
+              <li class="has-dropdown header-enquiry-dropdown">
+	<a href="https://ftdichip.com/enquiry-cart" title="Enquiry Cart" class="header-cart-link">
+	  <i class="icon-shopping-cart"></i>
+	  <span id="total-items">0</span>
+	</a>
+	<ul class="nav-dropdown nav-dropdown-default">
+		<li class="html widget_enquiry">
+	      <div class="widget_enquiry_content">
+	      		      		<p class="woocommerce-mini-cart__empty-message">No products in enquiry cart.</p>
+	      		      </div>
+	  </li>
+	</ul>
+</li>
+<li class="cart-item has-icon">
+
+
+		<a href="https://ftdichip.com/cart/" class="header-cart-link is-small off-canvas-toggle nav-top-link" title="购物车" data-open="#cart-popup" data-class="off-canvas-cart" data-pos="right" >
+
+    <span class="cart-icon image-icon">
+    <strong>0</strong>
+  </span>
+  </a>
+
+
+  <!-- Cart Sidebar Popup -->
+  <div id="cart-popup" class="mfp-hide">
+  <div class="cart-popup-inner inner-padding cart-popup-inner--sticky">
+      <div class="cart-popup-title text-center">
+          <span class="heading-font uppercase">购物车</span>
+          <div class="is-divider"></div>
+      </div>
+	  <div class="widget_shopping_cart">
+		  <div class="widget_shopping_cart_content">
+			  
+
+	<div class="ux-mini-cart-empty flex flex-row-col text-center pt pb">
+				<div class="ux-mini-cart-empty-icon">
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 17 19" style="opacity:.1;height:80px;">
+				<path d="M8.5 0C6.7 0 5.3 1.2 5.3 2.7v2H2.1c-.3 0-.6.3-.7.7L0 18.2c0 .4.2.8.6.8h15.7c.4 0 .7-.3.7-.7v-.1L15.6 5.4c0-.3-.3-.6-.7-.6h-3.2v-2c0-1.6-1.4-2.8-3.2-2.8zM6.7 2.7c0-.8.8-1.4 1.8-1.4s1.8.6 1.8 1.4v2H6.7v-2zm7.5 3.4 1.3 11.5h-14L2.8 6.1h2.5v1.4c0 .4.3.7.7.7.4 0 .7-.3.7-.7V6.1h3.5v1.4c0 .4.3.7.7.7s.7-.3.7-.7V6.1h2.6z" fill-rule="evenodd" clip-rule="evenodd" fill="currentColor"></path>
+			</svg>
+		</div>
+				<p class="woocommerce-mini-cart__empty-message empty">No products in the cart.</p>
+					<p class="return-to-shop">
+				<a class="button primary wc-backward" href="https://ftdichip.com/products/">
+					Return to shop				</a>
+			</p>
+				</div>
+
+
+		  </div>
+	  </div>
+               </div>
+  </div>
+
+</li>
+<li class="nav-icon has-icon">
+  		<a href="#" data-open="#main-menu" data-pos="left" data-bg="main-menu-overlay" data-color="" class="is-small" aria-label="Menu" aria-controls="main-menu" aria-expanded="false">
+
+		  <i class="icon-menu" ></i>
+		  		</a>
+	</li>
+            </ul>
+          </div>
+
+      </div>
+
+      </div>
+
+<div class="header-bg-container fill"><div class="header-bg-image fill"></div><div class="header-bg-color fill"></div></div>		</div>
+	</header>
+
+	
+	<main id="main" class="">
+	<div id="primary" class="content-area">
+		<main id="main" class="site-main container pt" role="main">
+			<section class="error-404 not-found mt mb">
+				<div class="row">
+					<div class="col medium-3"><span class="header-font" style="font-size: 6em; font-weight: bold; opacity: .3">404</span></div>
+					<div class="col medium-9">
+						<header class="page-title">
+							<h1 class="page-title">Oops! That page can&rsquo;t be found.</h1>
+						</header>
+						<div class="page-content">
+							<p>It looks like nothing was found at this location. Maybe try one of the links below or a search?</p>
+							<form method="get" class="searchform" action="https://ftdichip.com/" role="search">
+		<div class="flex-row relative">
+			<div class="flex-col flex-grow">
+	   	   <input type="search" class="search-field mb-0" name="s" value="" id="s" placeholder="Search&hellip;" />
+			</div>
+			<div class="flex-col">
+				<button type="submit" class="ux-search-submit submit-button secondary button icon mb-0" aria-label="Submit">
+					<i class="icon-search" ></i>				</button>
+			</div>
+		</div>
+    <div class="live-search-results text-left z-top"></div>
+</form>
+						</div>
+					</div>
+				</div>
+			</section>
+		</main>
+	</div>
+	<div id="newsletter-form"
+	     class="lightbox-by-id lightbox-content mfp-hide lightbox-white modal-window-content"
+	     style="max-width:650px ;padding:0px">
+		<div class="row row-collapse align-equal align-center"  id="row-758614877">
+
+
+	<div id="col-1324813129" class="col hide-for-small medium-6 small-12 large-6"  >
+				<div class="col-inner"  >
+			
+			
+
+	<div class="img has-hover x md-x lg-x y md-y lg-y" id="image_157040353">
+								<div class="img-inner image-cover dark" style="padding-top:100%;">
+			<img width="445" height="464" src="https://ftdichip.com/wp-content/uploads/2020/07/7_Newsletter.jpg" class="attachment-original size-original" alt="" decoding="async" loading="lazy" srcset="https://ftdichip.com/wp-content/uploads/2020/07/7_Newsletter.jpg 445w, https://ftdichip.com/wp-content/uploads/2020/07/7_Newsletter-288x300.jpg 288w, https://ftdichip.com/wp-content/uploads/2020/07/7_Newsletter-400x417.jpg 400w" sizes="auto, (max-width: 445px) 100vw, 445px" />						
+					</div>
+								
+<style>
+#image_157040353 {
+  width: 100%;
+}
+</style>
+	</div>
+	
+
+
+		</div>
+					</div>
+
+	
+
+	<div id="col-761592164" class="col medium-6 small-12 large-6"  >
+				<div class="col-inner text-center"  >
+			
+			
+
+<div class="container section-title-container" ><h3 class="section-title section-title-center"><b></b><span class="section-title-main" >Newsletter</span><b></b></h3></div>
+
+
+<div class="wpcf7 no-js" id="wpcf7-f5580-o1" lang="en-US" dir="ltr" data-wpcf7-id="5580">
+<div class="screen-reader-response"><p role="status" aria-live="polite" aria-atomic="true"></p> <ul></ul></div>
+<form action="/wp-content/uploads/2022/07/FTDIUSBSerialDriv_v2_4_4.dmg#wpcf7-f5580-o1" method="post" class="wpcf7-form init" aria-label="Contact form" novalidate="novalidate" data-status="init">
+<fieldset class="hidden-fields-container"><input type="hidden" name="_wpcf7" value="5580" /><input type="hidden" name="_wpcf7_version" value="6.1.4" /><input type="hidden" name="_wpcf7_locale" value="en_US" /><input type="hidden" name="_wpcf7_unit_tag" value="wpcf7-f5580-o1" /><input type="hidden" name="_wpcf7_container_post" value="0" /><input type="hidden" name="_wpcf7_posted_data_hash" value="" /><input type="hidden" name="_wpcf7_recaptcha_response" value="" />
+</fieldset>
+<p><span class="wpcf7-form-control-wrap" data-name="your-name"><input size="40" maxlength="400" class="wpcf7-form-control wpcf7-text wpcf7-validates-as-required" aria-required="true" aria-invalid="false" placeholder="Name" value="" type="text" name="your-name" /></span><br />
+<span class="wpcf7-form-control-wrap" data-name="your-phone"><input size="40" maxlength="400" class="wpcf7-form-control wpcf7-tel wpcf7-validates-as-required wpcf7-text wpcf7-validates-as-tel" aria-required="true" aria-invalid="false" placeholder="Phone" value="" type="tel" name="your-phone" /></span><br />
+<span class="wpcf7-form-control-wrap" data-name="your-email"><input size="40" maxlength="400" class="wpcf7-form-control wpcf7-email wpcf7-validates-as-required wpcf7-text wpcf7-validates-as-email" aria-required="true" aria-invalid="false" placeholder="Email" value="" type="email" name="your-email" /></span><br />
+<span class="wpcf7-form-control-wrap" data-name="your-company"><input size="40" maxlength="400" class="wpcf7-form-control wpcf7-text wpcf7-validates-as-required" aria-required="true" aria-invalid="false" placeholder="Company" value="" type="text" name="your-company" /></span><br />
+<span class="wpcf7-form-control-wrap" data-name="your-country"><select class="wpcf7-form-control wpcf7-select wpcf7-validates-as-required" aria-required="true" aria-invalid="false" name="your-country"><option value="">Country</option><option value="Afghanistan">Afghanistan</option><option value="Albania">Albania</option><option value="Algeria">Algeria</option><option value="American Samoa">American Samoa</option><option value="Andorra">Andorra</option><option value="Angola">Angola</option><option value="Anguilla">Anguilla</option><option value="Antarctica">Antarctica</option><option value="Antigua and Barbuda">Antigua and Barbuda</option><option value="Argentina">Argentina</option><option value="Armenia">Armenia</option><option value="Aruba">Aruba</option><option value="Australia">Australia</option><option value="Austria">Austria</option><option value="Azerbaijan">Azerbaijan</option><option value="Bahamas">Bahamas</option><option value="Bahrain">Bahrain</option><option value="Bangladesh">Bangladesh</option><option value="Barbados">Barbados</option><option value="Belarus">Belarus</option><option value="Belgium">Belgium</option><option value="Belize">Belize</option><option value="Benin">Benin</option><option value="Bermuda">Bermuda</option><option value="Bhutan">Bhutan</option><option value="Bolivia">Bolivia</option><option value="Bosnia and Herzegovina">Bosnia and Herzegovina</option><option value="Botswana">Botswana</option><option value="Bouvet Island">Bouvet Island</option><option value="Brazil">Brazil</option><option value="British Indian Ocean Territory">British Indian Ocean Territory</option><option value="Brunei Darussalam">Brunei Darussalam</option><option value="Bulgaria">Bulgaria</option><option value="Burkina Faso">Burkina Faso</option><option value="Burundi">Burundi</option><option value="Cambodia">Cambodia</option><option value="Cameroon">Cameroon</option><option value="Canada">Canada</option><option value="Cape Verde">Cape Verde</option><option value="Cayman Islands">Cayman Islands</option><option value="Central African Republic">Central African Republic</option><option value="Chad">Chad</option><option value="Chile">Chile</option><option value="China">China</option><option value="Christmas Island">Christmas Island</option><option value="Cocos (Keeling) Islands">Cocos (Keeling) Islands</option><option value="Colombia">Colombia</option><option value="Comoros">Comoros</option><option value="Congo">Congo</option><option value="Cook Islands">Cook Islands</option><option value="Costa Rica">Costa Rica</option><option value="Cote D&#039;Ivoire">Cote D&#039;Ivoire</option><option value="Croatia">Croatia</option><option value="Cuba">Cuba</option><option value="Cyprus">Cyprus</option><option value="Czech Republic">Czech Republic</option><option value="Denmark">Denmark</option><option value="Djibouti">Djibouti</option><option value="Dominica">Dominica</option><option value="Dominican Republic">Dominican Republic</option><option value="East Timor">East Timor</option><option value="Ecuador">Ecuador</option><option value="Egypt">Egypt</option><option value="El Salvador">El Salvador</option><option value="Equatorial Guinea">Equatorial Guinea</option><option value="Eritrea">Eritrea</option><option value="Estonia">Estonia</option><option value="Ethiopia">Ethiopia</option><option value="Falkland Islands (Malvinas)">Falkland Islands (Malvinas)</option><option value="Faroe Islands">Faroe Islands</option><option value="Fiji">Fiji</option><option value="Finland">Finland</option><option value="France, Metropolitan">France, Metropolitan</option><option value="French Guiana">French Guiana</option><option value="French Polynesia">French Polynesia</option><option value="French Southern Territories">French Southern Territories</option><option value="Gabon">Gabon</option><option value="Gambia">Gambia</option><option value="Georgia">Georgia</option><option value="Germany">Germany</option><option value="Ghana">Ghana</option><option value="Gibraltar">Gibraltar</option><option value="Greece">Greece</option><option value="Greenland">Greenland</option><option value="Grenada">Grenada</option><option value="Guadeloupe">Guadeloupe</option><option value="Guam">Guam</option><option value="Guatemala">Guatemala</option><option value="Guinea">Guinea</option><option value="Guinea-Bissau">Guinea-Bissau</option><option value="Guyana">Guyana</option><option value="Haiti">Haiti</option><option value="Heard and Mc Donald Islands">Heard and Mc Donald Islands</option><option value="Honduras">Honduras</option><option value="Hong Kong">Hong Kong</option><option value="Hungary">Hungary</option><option value="Iceland">Iceland</option><option value="India">India</option><option value="Indonesia">Indonesia</option><option value="Iran (Islamic Republic of)">Iran (Islamic Republic of)</option><option value="Iraq">Iraq</option><option value="Ireland">Ireland</option><option value="Israel">Israel</option><option value="Italy">Italy</option><option value="Jamaica">Jamaica</option><option value="Japan">Japan</option><option value="Jordan">Jordan</option><option value="Kazakhstan">Kazakhstan</option><option value="Kenya">Kenya</option><option value="Kiribati">Kiribati</option><option value="North Korea">North Korea</option><option value="South Korea">South Korea</option><option value="Kuwait">Kuwait</option><option value="Kyrgyzstan">Kyrgyzstan</option><option value="Lao People&#039;s Democratic Republic">Lao People&#039;s Democratic Republic</option><option value="Latvia">Latvia</option><option value="Lebanon">Lebanon</option><option value="Lesotho">Lesotho</option><option value="Liberia">Liberia</option><option value="Libyan Arab Jamahiriya">Libyan Arab Jamahiriya</option><option value="Liechtenstein">Liechtenstein</option><option value="Lithuania">Lithuania</option><option value="Luxembourg">Luxembourg</option><option value="Macau">Macau</option><option value="FYROM">FYROM</option><option value="Madagascar">Madagascar</option><option value="Malawi">Malawi</option><option value="Malaysia">Malaysia</option><option value="Maldives">Maldives</option><option value="Mali">Mali</option><option value="Malta">Malta</option><option value="Marshall Islands">Marshall Islands</option><option value="Martinique">Martinique</option><option value="Mauritania">Mauritania</option><option value="Mauritius">Mauritius</option><option value="Mayotte">Mayotte</option><option value="Mexico">Mexico</option><option value="Micronesia, Federated States of">Micronesia, Federated States of</option><option value="Moldova, Republic of">Moldova, Republic of</option><option value="Monaco">Monaco</option><option value="Mongolia">Mongolia</option><option value="Montserrat">Montserrat</option><option value="Morocco">Morocco</option><option value="Mozambique">Mozambique</option><option value="Myanmar">Myanmar</option><option value="Namibia">Namibia</option><option value="Nauru">Nauru</option><option value="Nepal">Nepal</option><option value="Netherlands">Netherlands</option><option value="Netherlands Antilles">Netherlands Antilles</option><option value="New Caledonia">New Caledonia</option><option value="New Zealand">New Zealand</option><option value="Nicaragua">Nicaragua</option><option value="Niger">Niger</option><option value="Nigeria">Nigeria</option><option value="Niue">Niue</option><option value="Norfolk Island">Norfolk Island</option><option value="Northern Mariana Islands">Northern Mariana Islands</option><option value="Norway">Norway</option><option value="Oman">Oman</option><option value="Pakistan">Pakistan</option><option value="Palau">Palau</option><option value="Panama">Panama</option><option value="Papua New Guinea">Papua New Guinea</option><option value="Paraguay">Paraguay</option><option value="Peru">Peru</option><option value="Philippines">Philippines</option><option value="Pitcairn">Pitcairn</option><option value="Poland">Poland</option><option value="Portugal">Portugal</option><option value="Puerto Rico">Puerto Rico</option><option value="Qatar">Qatar</option><option value="Reunion">Reunion</option><option value="Romania">Romania</option><option value="Russian Federation">Russian Federation</option><option value="Rwanda">Rwanda</option><option value="Saint Kitts and Nevis">Saint Kitts and Nevis</option><option value="Saint Lucia">Saint Lucia</option><option value="Saint Vincent and the Grenadines">Saint Vincent and the Grenadines</option><option value="Samoa">Samoa</option><option value="San Marino">San Marino</option><option value="Sao Tome and Principe">Sao Tome and Principe</option><option value="Saudi Arabia">Saudi Arabia</option><option value="Senegal">Senegal</option><option value="Seychelles">Seychelles</option><option value="Sierra Leone">Sierra Leone</option><option value="Singapore">Singapore</option><option value="Slovak Republic">Slovak Republic</option><option value="Slovenia">Slovenia</option><option value="Solomon Islands">Solomon Islands</option><option value="Somalia">Somalia</option><option value="South Africa">South Africa</option><option value="South Georgia &amp;amp; South Sandwich Islands">South Georgia &amp;amp; South Sandwich Islands</option><option value="Spain">Spain</option><option value="Sri Lanka">Sri Lanka</option><option value="St. Helena">St. Helena</option><option value="St. Pierre and Miquelon">St. Pierre and Miquelon</option><option value="Sudan">Sudan</option><option value="Suriname">Suriname</option><option value="Svalbard and Jan Mayen Islands">Svalbard and Jan Mayen Islands</option><option value="Swaziland">Swaziland</option><option value="Sweden">Sweden</option><option value="Switzerland">Switzerland</option><option value="Syrian Arab Republic">Syrian Arab Republic</option><option value="Taiwan">Taiwan</option><option value="Tajikistan">Tajikistan</option><option value="Tanzania, United Republic of">Tanzania, United Republic of</option><option value="Thailand">Thailand</option><option value="Togo">Togo</option><option value="Tokelau">Tokelau</option><option value="Tonga">Tonga</option><option value="Trinidad and Tobago">Trinidad and Tobago</option><option value="Tunisia">Tunisia</option><option value="Turkey">Turkey</option><option value="Turkmenistan">Turkmenistan</option><option value="Turks and Caicos Islands">Turks and Caicos Islands</option><option value="Tuvalu">Tuvalu</option><option value="Uganda">Uganda</option><option value="Ukraine">Ukraine</option><option value="United Arab Emirates">United Arab Emirates</option><option value="United Kingdom">United Kingdom</option><option value="United States">United States</option><option value="United States Minor Outlying Islands">United States Minor Outlying Islands</option><option value="Uruguay">Uruguay</option><option value="Uzbekistan">Uzbekistan</option><option value="Vanuatu">Vanuatu</option><option value="Vatican City State (Holy See)">Vatican City State (Holy See)</option><option value="Venezuela">Venezuela</option><option value="Viet Nam">Viet Nam</option><option value="Virgin Islands (British)">Virgin Islands (British)</option><option value="Virgin Islands (U.S.)">Virgin Islands (U.S.)</option><option value="Wallis and Futuna Islands">Wallis and Futuna Islands</option><option value="Western Sahara">Western Sahara</option><option value="Yemen">Yemen</option><option value="Democratic Republic of Congo">Democratic Republic of Congo</option><option value="Zambia">Zambia</option><option value="Zimbabwe">Zimbabwe</option><option value="Montenegro">Montenegro</option><option value="Serbia">Serbia</option><option value="Aaland Islands">Aaland Islands</option><option value="Bonaire, Sint Eustatius and Saba">Bonaire, Sint Eustatius and Saba</option><option value="Curacao">Curacao</option><option value="Palestinian Territory, Occupied">Palestinian Territory, Occupied</option><option value="South Sudan">South Sudan</option><option value="St. Barthelemy">St. Barthelemy</option><option value="St. Martin (French part)">St. Martin (French part)</option><option value="Canary Islands">Canary Islands</option><option value="Ascension Island (British)">Ascension Island (British)</option><option value="Kosovo, Republic of">Kosovo, Republic of</option><option value="Isle of Man">Isle of Man</option><option value="Tristan da Cunha">Tristan da Cunha</option><option value="Guernsey">Guernsey</option><option value="Jersey">Jersey</option></select></span><br />
+<input type="hidden" value="Newsletter Driver" id="subscribe_type" name="subscribe_type" /><br />
+<span class="wpcf7-form-control-wrap" data-name="privacy-policy"><span class="wpcf7-form-control wpcf7-acceptance"><span class="wpcf7-list-item"><label><input type="checkbox" name="privacy-policy" value="1" aria-invalid="false" /><span class="wpcf7-list-item-label"><span>I have read and accepted the <a href="https://ftdichip.com/privacy-policy/" target="_blank">Privacy Policy</a></span></span></label></span></span></span><br />
+<input class="wpcf7-form-control wpcf7-submit has-spinner button secondary btn-radius" type="submit" value="Subscribe" />
+</p><input type='hidden' class='wpcf7-pum' value='{"closepopup":false,"closedelay":0,"openpopup":false,"openpopup_id":0}' /><div class="wpcf7-response-output" aria-hidden="true"></div>
+</form>
+</div>
+
+
+
+		</div>
+				
+<style>
+#col-761592164 > .col-inner {
+  padding: 6% 6% 6% 6%;
+}
+</style>
+	</div>
+
+	
+
+</div>	</div>
+	
+	</main>
+
+<footer id="footer" class="footer-wrapper">
+
+	
+	<section class="section footer-blocks" id="section_472859778">
+		<div class="section-bg fill" >
+									
+			
+
+		</div>
+
+		
+
+		<div class="section-content relative">
+			
+
+<div class="row align-center"  id="row-1215255436">
+
+
+	<div id="col-790083699" class="col contact-info medium-12 small-12 large-3"  >
+				<div class="col-inner"  >
+			
+			
+
+<div class="container section-title-container" ><h3 class="section-title section-title-normal"><b></b><span class="section-title-main" >UK Office</span><b></b></h3></div>
+
+<p>Future Technology Devices International Limited</p>
+<ul>
+<li><i class="fas fa-map-marker-alt"></i> Unit 1, 2 Seaward Place,</li>
+<li>Centurion Business Park,</li>
+<li>Glasgow, G41 1HH,</li>
+<li>United Kingdom</li>
+<li><i class="fas fa-phone-alt"></i> Tel: +44 (0) 141 429 2777<i class="fas fa-fax"></i></li>
+</ul>
+
+		</div>
+					</div>
+
+	
+
+	<div id="col-766931750" class="col flexthis medium-4 small-12 large-3"  >
+				<div class="col-inner"  >
+			
+			
+
+<a href="https://ftdichip.com/technical-support/?contact=singapore" class="button primary is-link newlinks"  >
+    <span>Singapore Office</span>
+  </a>
+
+
+<a href="https://ftdichip.com/technical-support/?contact=us" class="button primary is-link newlinks"  >
+    <span>USA Office</span>
+  </a>
+
+
+<a href="https://ftdichip.com/technical-support/?contact=china" class="button primary is-link newlinks"  >
+    <span>China Office</span>
+  </a>
+
+
+<div class="social-icons follow-icons" ><a href="https://www.facebook.com/FTDIChip" target="_blank" data-label="Facebook" class="icon primary button circle facebook tooltip" title="Follow on Facebook" aria-label="Follow on Facebook" rel="noopener nofollow" ><i class="icon-facebook" ></i></a><a href="https://twitter.com/FTDI_Chip_New" data-label="Twitter" target="_blank" class="icon primary button circle twitter tooltip" title="Follow on Twitter" aria-label="Follow on Twitter" rel="noopener nofollow" ><i class="icon-twitter" ></i></a><a href="https://www.linkedin.com/company/future-technology-devices-international/" data-label="LinkedIn" target="_blank" class="icon primary button circle linkedin tooltip" title="Follow on LinkedIn" aria-label="Follow on LinkedIn" rel="noopener nofollow" ><i class="icon-linkedin" ></i></a><a href="https://www.youtube.com/user/ftdichip" data-label="YouTube" target="_blank" class="icon primary button circle youtube tooltip" title="Follow on YouTube" aria-label="Follow on YouTube" rel="noopener nofollow" ><i class="icon-youtube" ></i></a></div>
+
+
+		</div>
+					</div>
+
+	
+
+	<div id="col-1946980441" class="col medium-4 small-6 large-3"  >
+				<div class="col-inner"  >
+			
+			
+
+<div class="container section-title-container" ><h3 class="section-title section-title-normal"><b></b><span class="section-title-main" >Quick Links</span><b></b></h3></div>
+
+<p><div class="menu-quick-links-container"><ul id="menu-quick-links" class=""><li id="menu-item-87" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-home menu-item-87"><a href="https://ftdichip.com/">Home</a></li>
+<li id="menu-item-848" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-848"><a href="https://ftdichip.com/product-category/products/">Products</a></li>
+<li id="menu-item-849" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-849"><a href="https://ftdichip.com/technical-support/">Technical Support</a></li>
+<li id="menu-item-851" class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-851"><a href="https://ftdichip.com/product-category/applications/">Applications</a></li>
+<li id="menu-item-850" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-850"><a href="https://ftdichip.com/corporate-profile/">About Us</a></li>
+</ul></div></p>
+
+		</div>
+					</div>
+
+	
+
+	<div id="col-1732026501" class="col medium-4 small-6 large-3"  >
+				<div class="col-inner"  >
+			
+			
+
+<div class="container section-title-container" ><h3 class="section-title section-title-normal"><b></b><span class="section-title-main" >Information</span><b></b></h3></div>
+
+<p><div class="menu-information-container"><ul id="menu-information" class=""><li id="menu-item-3508" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-privacy-policy menu-item-3508"><a rel="privacy-policy" href="https://ftdichip.com/privacy-policy/">Privacy Policy</a></li>
+<li id="menu-item-3500" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3500"><a href="https://ftdichip.com/refund-policy-and-customs-duties-taxes/">Terms and Conditions</a></li>
+</ul></div></p>
+
+		</div>
+					</div>
+
+	
+
+</div>
+
+		</div>
+
+		
+<style>
+#section_472859778 {
+  padding-top: 50px;
+  padding-bottom: 50px;
+  background-color: rgb(249, 249, 249);
+}
+</style>
+	</section>
+	
+<div class="absolute-footer dark medium-text-center text-center">
+  <div class="container clearfix">
+
+    
+    <div class="footer-primary pull-left">
+              <div class="menu-contact-menu-container"><ul id="menu-contact-menu" class="links footer-nav uppercase"><li id="menu-item-17" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-17"><a href="#newsletter-form"><i class="far fa-envelope"></i> <span class="hide-for-small">Newsletters</span></a></li>
+</ul></div>            <div class="copyright-footer">
+        Copyright © 2025 Future Technology Devices International Limited. All Rights Reserved      </div>
+          </div>
+  </div>
+</div>
+<a href="#top" class="back-to-top button icon invert plain fixed bottom z-1 is-outline hide-for-medium circle" id="top-link"><i class="icon-angle-up" ></i></a>
+
+</footer>
+
+</div>
+<script type="text/javascript">
+	function delete_cart(id){
+		var ajaxurl = "https://ftdichip.com/wp-admin/admin-ajax.php";
+		jQuery.ajax({
+	        url: ajaxurl,
+	        type: 'POST',
+	        data:{
+	        	action: 'delete_enquiry_cart',
+	          pro:id,
+	        },
+	        success:function(respons) {
+	            if(respons){		
+				
+					jQuery('.header-cart-link #total-items').html(respons.all_num);
+					jQuery('.widget_enquiry_content').html(respons.products);
+					
+					jQuery('.header-enquiry-dropdown').addClass('current-dropdown');
+				}
+	        },
+	        error: function(errorThrown){
+	            console.log(errorThrown);
+	        }
+	    });	
+	}	
+		
+</script>
+<!-- Duc fix ie 11 -->
+<!-- <script type="text/javascript">
+	jQuery(document).ready(function($){
+		jQuery("a.style13").on('click', function(e){
+			var isIE11 = !!window.MSInputMethodContext && !!document.documentMode;
+
+			if(isIE11)
+			{
+			
+		}
+		else
+		{
+
+		}
+		});
+	});
+	
+</script> -->
+<template id="tp-language" data-tp-language="en_US"></template><!-- Mobile Sidebar -->
+<div id="main-menu" class="mobile-sidebar no-scrollbar mfp-hide">
+    <div class="sidebar-menu no-scrollbar ">
+        <ul class="nav nav-sidebar  nav-vertical nav-uppercase">
+              <li class="header-search-form search-form html relative has-icon">
+	<div class="header-search-form-wrapper">
+		<div class="searchform-wrapper ux-search-box relative is-normal"><form role="search" method="get" class="searchform" action="https://ftdichip.com/">
+	<div class="flex-row relative">
+						<div class="flex-col flex-grow">
+			<label class="screen-reader-text" for="woocommerce-product-search-field-1">Search for:</label>
+			<input type="search" id="woocommerce-product-search-field-1" class="search-field mb-0" placeholder="Search&hellip;" value="" name="s" />
+			<input type="hidden" name="post_type" value="product" />
+					</div>
+		<div class="flex-col">
+			<button type="submit" value="Search" class="ux-search-submit submit-button secondary button icon mb-0">
+				<i class="icon-search" ></i>			</button>
+		</div>
+	</div>
+	<div class="live-search-results text-left z-top"></div>
+</form>
+</div>	</div>
+</li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-home menu-item-7"><a href="https://ftdichip.com/">Home</a></li>
+<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-has-children menu-item-302"><a href="https://ftdichip.com/product-category/products/">Products</a>
+<ul class="sub-menu nav-sidebar-ul children">
+	<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-304"><a href="https://ftdichip.com/product-category/products/ic/">IC</a></li>
+	<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-305"><a href="https://ftdichip.com/product-category/products/modules/">Modules</a></li>
+	<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-303"><a href="https://ftdichip.com/product-category/products/cables/">Cables</a></li>
+</ul>
+</li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-11546"><a href="https://ftdichip.com/applications/">Applications</a>
+<ul class="sub-menu nav-sidebar-ul children">
+	<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-has-children menu-item-11581"><a href="https://ftdichip.com/product-category/applications/automotive/">AUTOMOTIVE</a>
+	<ul class="sub-menu nav-sidebar-ul">
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-11790"><a href="https://ftdichip.com/product-category/applications/automotive/adas/">ADAS</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12425"><a href="https://ftdichip.com/product-category/applications/automotive/car-diagnostics-device/">Car Diagnostics Device</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12257"><a href="https://ftdichip.com/product-category/applications/automotive/ev-charger/">EV Charger</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12578"><a href="https://ftdichip.com/product-category/applications/automotive/telematics-box/">Telematics Box</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12586"><a href="https://ftdichip.com/product-category/applications/automotive/vehicle-computer/">Vehicle Computer</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12587"><a href="https://ftdichip.com/product-category/applications/automotive/vehicle-radar/">Vehicle Radar</a></li>
+	</ul>
+</li>
+	<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-has-children menu-item-11978"><a href="https://ftdichip.com/product-category/applications/communication/">COMMUNICATION</a>
+	<ul class="sub-menu nav-sidebar-ul">
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12579"><a href="https://ftdichip.com/product-category/applications/communication/data-centre-server/">Data Centre Server</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12580"><a href="https://ftdichip.com/product-category/applications/communication/edge-computing/">Edge Computing</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12072"><a href="https://ftdichip.com/product-category/applications/communication/fpga-programming/">FPGA Programming</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12426"><a href="https://ftdichip.com/product-category/applications/communication/server-tooling/">Server Tooling</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12115"><a href="https://ftdichip.com/product-category/applications/communication/5g-network/">5G Network</a></li>
+	</ul>
+</li>
+	<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-has-children menu-item-11578"><a href="https://ftdichip.com/product-category/applications/consumer/">CONSUMER</a>
+	<ul class="sub-menu nav-sidebar-ul">
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12427"><a href="https://ftdichip.com/product-category/applications/consumer/drone/">Drone</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12637"><a href="https://ftdichip.com/product-category/applications/consumer/gaming-controller/">Gaming Controller</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12638"><a href="https://ftdichip.com/product-category/applications/consumer/monitor/">Monitor</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12259"><a href="https://ftdichip.com/product-category/applications/consumer/smart-phone/">Smart Phone</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-11986"><a href="https://ftdichip.com/product-category/applications/consumer/smart-watch/">Smart Watch</a></li>
+	</ul>
+</li>
+	<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-has-children menu-item-11580"><a href="https://ftdichip.com/product-category/applications/home-automation/">HOME AUTOMATION</a>
+	<ul class="sub-menu nav-sidebar-ul">
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12260"><a href="https://ftdichip.com/product-category/applications/home-automation/environmental-control/">Environmental Control</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12639"><a href="https://ftdichip.com/product-category/applications/home-automation/smart-camera/">Smart Camera</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12640"><a href="https://ftdichip.com/product-category/applications/home-automation/smart-home-controller/">Smart Home Controller</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12581"><a href="https://ftdichip.com/product-category/applications/home-automation/sweeping-robot/">Sweeping Robot</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12118"><a href="https://ftdichip.com/product-category/applications/home-automation/wireless-extension/">Wireless Extension</a></li>
+	</ul>
+</li>
+	<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-has-children menu-item-11582"><a href="https://ftdichip.com/product-category/applications/industrial-control/">INDUSTRIAL CONTROL</a>
+	<ul class="sub-menu nav-sidebar-ul">
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12582"><a href="https://ftdichip.com/product-category/applications/industrial-control/ai-control/">AI Control</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12428"><a href="https://ftdichip.com/product-category/applications/industrial-control/factory-testing-programming/">Factory Testing / Programming</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12116"><a href="https://ftdichip.com/product-category/applications/industrial-control/industrial-camera/">Industrial Camera</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12261"><a href="https://ftdichip.com/product-category/applications/industrial-control/industrial-control-monitoring/">Industrial Control / Monitoring</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12585"><a href="https://ftdichip.com/product-category/applications/industrial-control/industrial-robot/">Industrial Robot</a></li>
+	</ul>
+</li>
+	<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-has-children menu-item-11848"><a href="https://ftdichip.com/product-category/applications/medical/">MEDICAL</a>
+	<ul class="sub-menu nav-sidebar-ul">
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12641"><a href="https://ftdichip.com/product-category/applications/medical/defibrillator/">Defibrillator</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12429"><a href="https://ftdichip.com/product-category/applications/medical/medical-monitoring/">Medical Monitoring</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12642"><a href="https://ftdichip.com/product-category/applications/medical/medical-xray-machine/">Medical X-Ray Machine</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12262"><a href="https://ftdichip.com/product-category/applications/medical/microscope/">Microscope</a></li>
+		<li class="menu-item menu-item-type-taxonomy menu-item-object-product_cat menu-item-12119"><a href="https://ftdichip.com/product-category/applications/medical/ultrasound-device/">Ultrasound Device</a></li>
+	</ul>
+</li>
+</ul>
+</li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-718"><a href="https://ftdichip.com/drivers/">Drivers</a>
+<ul class="sub-menu nav-sidebar-ul children">
+	<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-6379"><a href="https://ftdichip.com/drivers/vcp-drivers/">VCP Drivers</a></li>
+	<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-6380"><a href="https://ftdichip.com/drivers/d2xx-drivers/">D2XX Drivers</a></li>
+	<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-6381"><a href="https://ftdichip.com/drivers/d3xx-drivers/">D3XX Drivers</a></li>
+</ul>
+</li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-546"><a href="https://ftdichip.com/technical-support/">Support</a>
+<ul class="sub-menu nav-sidebar-ul children">
+	<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-720"><a href="https://ftdichip.com/technical-support/">Technical Support</a></li>
+	<li class="menu-item menu-item-type-taxonomy menu-item-object-document_type menu-item-3525"><a href="https://ftdichip.com/documents-type/data-sheets/">Documentation</a></li>
+	<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3523"><a href="https://ftdichip.com/technical-support/reference-designs/">Reference Designs</a></li>
+	<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3526"><a href="https://ftdichip.com/software-examples/">Software Examples</a></li>
+	<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3527"><a href="https://ftdichip.com/utilities/">Utilities</a></li>
+	<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-4496"><a href="https://ftdichip.com/firmware/">Firmware</a></li>
+	<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4776"><a href="https://ftdichip.com/related-links/">Related links</a></li>
+</ul>
+</li>
+<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-234"><a href="https://ftdichip.com/corporate-profile/">About Us</a>
+<ul class="sub-menu nav-sidebar-ul children">
+	<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-235"><a href="https://ftdichip.com/corporate-profile/">Corporate Profile</a></li>
+	<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3375"><a href="https://ftdichip.com/sales-network/">Sales Network</a></li>
+	<li class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-238"><a href="https://ftdichip.com/category/news/">News</a></li>
+	<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-236"><a href="https://ftdichip.com/careers/">Careers</a></li>
+	<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3577"><a href="https://ftdichip.com/ftdi-commnunity/">FTDI Community</a></li>
+	<li class="menu-item menu-item-type-post_type menu-item-object-page menu-item-868"><a href="https://ftdichip.com/faqs/">FAQs</a></li>
+</ul>
+</li>
+
+<li class="account-item has-icon menu-item">
+			<a href="https://ftdichip.com/my-account/" class="nav-top-link nav-top-not-logged-in" title="Login" >
+			<span class="header-account-title">
+				Login			</span>
+		</a>
+	
+	</li>
+<li class="html custom html_topbar_right"><a href="https://www.ftdichip.cn" class="button-custom" target="_blank"><i class="icon-flag"></i><span>China</span></a></li>        </ul>
+    </div>
+</div>
+<script type="speculationrules">
+{"prefetch":[{"source":"document","where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/wp-*.php","/wp-admin/*","/wp-content/uploads/*","/wp-content/*","/wp-content/plugins/*","/wp-content/themes/flatsome-child/*","/wp-content/themes/flatsome/*","/*\\?(.+)"]}},{"not":{"selector_matches":"a[rel~=\"nofollow\"]"}},{"not":{"selector_matches":".no-prefetch, .no-prefetch a"}}]},"eagerness":"conservative"}]}
+</script>
+	<!--copyscapeskip-->
+	<aside id="moove_gdpr_cookie_info_bar" class="moove-gdpr-info-bar-hidden moove-gdpr-align-center moove-gdpr-dark-scheme gdpr_infobar_postion_bottom" aria-label="GDPR Cookie Banner" style="display: none;">
+	<div class="moove-gdpr-info-bar-container">
+		<div class="moove-gdpr-info-bar-content">
+		
+<div class="moove-gdpr-cookie-notice">
+  <p>We are using cookies to give you the best experience on our website.</p><p>You can find out more about which cookies we are using or switch them off in <button  aria-haspopup="true" data-href="#moove_gdpr_cookie_modal" class="change-settings-button">settings</button>.</p>				<button class="moove-gdpr-infobar-close-btn gdpr-content-close-btn" aria-label="Close GDPR Cookie Banner">
+					<span class="gdpr-sr-only">Close GDPR Cookie Banner</span>
+					<i class="moovegdpr-arrow-close"></i>
+				</button>
+			</div>
+<!--  .moove-gdpr-cookie-notice -->
+		
+<div class="moove-gdpr-button-holder">
+			<button class="mgbutton moove-gdpr-infobar-allow-all gdpr-fbo-0" aria-label="Accept" >Accept</button>
+						<button class="mgbutton moove-gdpr-infobar-reject-btn gdpr-fbo-1 "  aria-label="Reject">Reject</button>
+							<button class="mgbutton moove-gdpr-infobar-settings-btn change-settings-button gdpr-fbo-2" aria-haspopup="true" data-href="#moove_gdpr_cookie_modal"  aria-label="Settings">Settings</button>
+							<button class="moove-gdpr-infobar-close-btn gdpr-fbo-3" aria-label="Close GDPR Cookie Banner" >
+					<span class="gdpr-sr-only">Close GDPR Cookie Banner</span>
+					<i class="moovegdpr-arrow-close"></i>
+				</button>
+			</div>
+<!--  .button-container -->
+		</div>
+		<!-- moove-gdpr-info-bar-content -->
+	</div>
+	<!-- moove-gdpr-info-bar-container -->
+	</aside>
+	<!-- #moove_gdpr_cookie_info_bar -->
+	<!--/copyscapeskip-->
+	<script type='text/javascript'>
+		(function () {
+			var c = document.body.className;
+			c = c.replace(/woocommerce-no-js/, 'woocommerce-js');
+			document.body.className = c;
+		})();
+	</script>
+	<script type="text/javascript" src="https://ftdichip.com/wp-includes/js/dist/hooks.min.js?ver=dd5603f07f9220ed27f1" id="wp-hooks-js"></script>
+<script type="text/javascript" src="https://ftdichip.com/wp-includes/js/dist/i18n.min.js?ver=c26c3dc7bed366793375" id="wp-i18n-js"></script>
+<script type="text/javascript" id="wp-i18n-js-after">
+/* <![CDATA[ */
+wp.i18n.setLocaleData( { 'text direction\u0004ltr': [ 'ltr' ] } );
+//# sourceURL=wp-i18n-js-after
+/* ]]> */
+</script>
+<script defer type="text/javascript" src="https://ftdichip.com/wp-content/plugins/contact-form-7/includes/swv/js/index.js?ver=6.1.4" id="swv-js"></script>
+<script defer type="text/javascript" id="contact-form-7-js-before">
+/* <![CDATA[ */
+var wpcf7 = {
+    "api": {
+        "root": "https:\/\/ftdichip.com\/wp-json\/",
+        "namespace": "contact-form-7\/v1"
+    }
+};
+//# sourceURL=contact-form-7-js-before
+/* ]]> */
+</script>
+<script defer type="text/javascript" src="https://ftdichip.com/wp-content/plugins/contact-form-7/includes/js/index.js?ver=6.1.4" id="contact-form-7-js"></script>
+<script type="text/javascript" id="woocommerce-js-extra">
+/* <![CDATA[ */
+var woocommerce_params = {"ajax_url":"/wp-admin/admin-ajax.php","wc_ajax_url":"/?wc-ajax=%%endpoint%%","i18n_password_show":"Show password","i18n_password_hide":"Hide password"};
+//# sourceURL=woocommerce-js-extra
+/* ]]> */
+</script>
+<script defer type="text/javascript" src="https://ftdichip.com/wp-content/plugins/woocommerce/assets/js/frontend/woocommerce.min.js?ver=10.3.6" id="woocommerce-js" data-wp-strategy="defer"></script>
+<script defer type="text/javascript" src="https://ftdichip.com/wp-includes/js/hoverIntent.min.js?ver=1.10.2" id="hoverIntent-js"></script>
+<script type="text/javascript" id="flatsome-js-js-extra">
+/* <![CDATA[ */
+var flatsomeVars = {"theme":{"version":"3.19.7"},"ajaxurl":"https://ftdichip.com/wp-admin/admin-ajax.php","rtl":"","sticky_height":"70","stickyHeaderHeight":"0","scrollPaddingTop":"0","assets_url":"https://ftdichip.com/wp-content/themes/flatsome/assets/","lightbox":{"close_markup":"\u003Cbutton title=\"%title%\" type=\"button\" class=\"mfp-close\"\u003E\u003Csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"28\" height=\"28\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"feather feather-x\"\u003E\u003Cline x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"\u003E\u003C/line\u003E\u003Cline x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"\u003E\u003C/line\u003E\u003C/svg\u003E\u003C/button\u003E","close_btn_inside":false},"user":{"can_edit_pages":false},"i18n":{"mainMenu":"Main Menu","toggleButton":"Toggle"},"options":{"cookie_notice_version":"1","swatches_layout":false,"swatches_disable_deselect":false,"swatches_box_select_event":false,"swatches_box_behavior_selected":false,"swatches_box_update_urls":"1","swatches_box_reset":false,"swatches_box_reset_limited":false,"swatches_box_reset_extent":false,"swatches_box_reset_time":300,"search_result_latency":"0"},"is_mini_cart_reveal":"1"};
+//# sourceURL=flatsome-js-js-extra
+/* ]]> */
+</script>
+<script defer type="text/javascript" src="https://ftdichip.com/wp-content/themes/flatsome/assets/js/flatsome.js?ver=8e60d746741250b4dd4e" id="flatsome-js-js"></script>
+<script defer type="text/javascript" src="https://ftdichip.com/wp-content/themes/flatsome/inc/integrations/wc-yith-wishlist/wishlist.js?ver=3.19.7" id="flatsome-woocommerce-wishlist-js"></script>
+<script defer type="text/javascript" src="https://ftdichip.com/wp-content/plugins/woocommerce/assets/js/sourcebuster/sourcebuster.min.js?ver=10.3.6" id="sourcebuster-js-js"></script>
+<script type="text/javascript" id="wc-order-attribution-js-extra">
+/* <![CDATA[ */
+var wc_order_attribution = {"params":{"lifetime":1.0000000000000000818030539140313095458623138256371021270751953125e-5,"session":30,"base64":false,"ajaxurl":"https://ftdichip.com/wp-admin/admin-ajax.php","prefix":"wc_order_attribution_","allowTracking":true},"fields":{"source_type":"current.typ","referrer":"current_add.rf","utm_campaign":"current.cmp","utm_source":"current.src","utm_medium":"current.mdm","utm_content":"current.cnt","utm_id":"current.id","utm_term":"current.trm","utm_source_platform":"current.plt","utm_creative_format":"current.fmt","utm_marketing_tactic":"current.tct","session_entry":"current_add.ep","session_start_time":"current_add.fd","session_pages":"session.pgs","session_count":"udata.vst","user_agent":"udata.uag"}};
+//# sourceURL=wc-order-attribution-js-extra
+/* ]]> */
+</script>
+<script defer type="text/javascript" src="https://ftdichip.com/wp-content/plugins/woocommerce/assets/js/frontend/order-attribution.min.js?ver=10.3.6" id="wc-order-attribution-js"></script>
+<script defer type="text/javascript" src="https://www.google.com/recaptcha/api.js?render=6LfarmYdAAAAAIMZVcR3AEuf3wuED3UXODte1QwF&ver=3.0" id="google-recaptcha-js"></script>
+<script type="text/javascript" src="https://ftdichip.com/wp-includes/js/dist/vendor/wp-polyfill.min.js?ver=3.15.0" id="wp-polyfill-js"></script>
+<script defer type="text/javascript" id="wpcf7-recaptcha-js-before">
+/* <![CDATA[ */
+var wpcf7_recaptcha = {
+    "sitekey": "6LfarmYdAAAAAIMZVcR3AEuf3wuED3UXODte1QwF",
+    "actions": {
+        "homepage": "homepage",
+        "contactform": "contactform"
+    }
+};
+//# sourceURL=wpcf7-recaptcha-js-before
+/* ]]> */
+</script>
+<script defer type="text/javascript" src="https://ftdichip.com/wp-content/plugins/contact-form-7/modules/recaptcha/index.js?ver=6.1.4" id="wpcf7-recaptcha-js"></script>
+<script defer type="text/javascript" src="https://ftdichip.com/wp-content/themes/flatsome/assets/js/woocommerce.js?ver=dd6035ce106022a74757" id="flatsome-theme-woocommerce-js-js"></script>
+<script type="text/javascript" id="moove_gdpr_frontend-js-extra">
+/* <![CDATA[ */
+var moove_frontend_gdpr_scripts = {"ajaxurl":"https://ftdichip.com/wp-admin/admin-ajax.php","post_id":"15054","plugin_dir":"https://ftdichip.com/wp-content/plugins/gdpr-cookie-compliance","show_icons":"all","is_page":"","ajax_cookie_removal":"false","strict_init":"2","enabled_default":{"strict":1,"third_party":0,"advanced":0,"performance":0,"preference":0},"geo_location":"false","force_reload":"false","is_single":"","hide_save_btn":"false","current_user":"0","cookie_expiration":"365","script_delay":"2000","close_btn_action":"1","close_btn_rdr":"","scripts_defined":"{\"cache\":true,\"header\":\"\",\"body\":\"\",\"footer\":\"\",\"thirdparty\":{\"header\":\"\",\"body\":\"\",\"footer\":\"\"},\"strict\":{\"header\":\"\",\"body\":\"\",\"footer\":\"\"},\"advanced\":{\"header\":\"\",\"body\":\"\",\"footer\":\"\"}}","gdpr_scor":"true","wp_lang":"en_US","wp_consent_api":"false","gdpr_nonce":"d9b40ff09a"};
+//# sourceURL=moove_gdpr_frontend-js-extra
+/* ]]> */
+</script>
+<script defer type="text/javascript" src="https://ftdichip.com/wp-content/plugins/gdpr-cookie-compliance/dist/scripts/main.js?ver=5.0.9" id="moove_gdpr_frontend-js"></script>
+<script defer type="text/javascript" id="moove_gdpr_frontend-js-after">
+/* <![CDATA[ */
+var gdpr_consent__strict = "false"
+var gdpr_consent__thirdparty = "false"
+var gdpr_consent__advanced = "false"
+var gdpr_consent__performance = "false"
+var gdpr_consent__preference = "false"
+var gdpr_consent__cookies = ""
+//# sourceURL=moove_gdpr_frontend-js-after
+/* ]]> */
+</script>
+<script type="text/javascript" id="wc-cart-fragments-js-extra">
+/* <![CDATA[ */
+var wc_cart_fragments_params = {"ajax_url":"/wp-admin/admin-ajax.php","wc_ajax_url":"/?wc-ajax=%%endpoint%%","cart_hash_key":"wc_cart_hash_2ea59dabb4ba95994290a5b77f8cbda2","fragment_name":"wc_fragments_2ea59dabb4ba95994290a5b77f8cbda2","request_timeout":"5000"};
+//# sourceURL=wc-cart-fragments-js-extra
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://ftdichip.com/wp-content/plugins/woocommerce/assets/js/frontend/cart-fragments.min.js?ver=10.3.6" id="wc-cart-fragments-js" defer="defer" data-wp-strategy="defer"></script>
+
+    
+	<!--copyscapeskip-->
+	<!-- V1 -->
+	<dialog id="moove_gdpr_cookie_modal" class="gdpr_lightbox-hide" aria-modal="true" aria-label="GDPR Settings Screen">
+	<div class="moove-gdpr-modal-content moove-clearfix logo-position-left moove_gdpr_modal_theme_v1">
+		    
+		<button class="moove-gdpr-modal-close" autofocus aria-label="Close GDPR Cookie Settings">
+			<span class="gdpr-sr-only">Close GDPR Cookie Settings</span>
+			<span class="gdpr-icon moovegdpr-arrow-close"></span>
+		</button>
+				<div class="moove-gdpr-modal-left-content">
+		
+<div class="moove-gdpr-company-logo-holder">
+	<img src="https://ftdichip.com/wp-content/plugins/gdpr-cookie-compliance/dist/images/gdpr-logo.png" alt="FTDI"   width="350"  height="233"  class="img-responsive" />
+</div>
+<!--  .moove-gdpr-company-logo-holder -->
+		<ul id="moove-gdpr-menu">
+			
+<li class="menu-item-on menu-item-privacy_overview menu-item-selected">
+	<button data-href="#privacy_overview" class="moove-gdpr-tab-nav" aria-label="Privacy Overview">
+	<span class="gdpr-nav-tab-title">Privacy Overview</span>
+	</button>
+</li>
+
+	<li class="menu-item-strict-necessary-cookies menu-item-off">
+	<button data-href="#strict-necessary-cookies" class="moove-gdpr-tab-nav" aria-label="Strictly Necessary Cookies">
+		<span class="gdpr-nav-tab-title">Strictly Necessary Cookies</span>
+	</button>
+	</li>
+
+
+
+
+
+		</ul>
+		
+<div class="moove-gdpr-branding-cnt">
+			<a href="https://wordpress.org/plugins/gdpr-cookie-compliance/" rel="noopener noreferrer" target="_blank" class='moove-gdpr-branding'>Powered by&nbsp; <span>GDPR Cookie Compliance</span></a>
+		</div>
+<!--  .moove-gdpr-branding -->
+		</div>
+		<!--  .moove-gdpr-modal-left-content -->
+		<div class="moove-gdpr-modal-right-content">
+		<div class="moove-gdpr-modal-title">
+			 
+		</div>
+		<!-- .moove-gdpr-modal-ritle -->
+		<div class="main-modal-content">
+
+			<div class="moove-gdpr-tab-content">
+			
+<div id="privacy_overview" class="moove-gdpr-tab-main">
+		<span class="tab-title">Privacy Overview</span>
+		<div class="moove-gdpr-tab-main-content">
+	<p>This website uses cookies so that we can provide you with the best user experience possible. Cookie information is stored in your browser and performs functions such as recognising you when you return to our website and helping our team to understand which sections of the website you find most interesting and useful.</p>
+		</div>
+	<!--  .moove-gdpr-tab-main-content -->
+
+</div>
+<!-- #privacy_overview -->
+			
+  <div id="strict-necessary-cookies" class="moove-gdpr-tab-main" style="display:none">
+    <span class="tab-title">Strictly Necessary Cookies</span>
+    <div class="moove-gdpr-tab-main-content">
+      <p>Strictly Necessary Cookie should be enabled at all times so that we can save your preferences for cookie settings.</p>
+      <div class="moove-gdpr-status-bar ">
+        <div class="gdpr-cc-form-wrap">
+          <div class="gdpr-cc-form-fieldset">
+            <label class="cookie-switch" for="moove_gdpr_strict_cookies">    
+              <span class="gdpr-sr-only">Enable or Disable Cookies</span>        
+              <input type="checkbox" aria-label="Strictly Necessary Cookies"  value="check" name="moove_gdpr_strict_cookies" id="moove_gdpr_strict_cookies">
+              <span class="cookie-slider cookie-round gdpr-sr" data-text-enable="Enabled" data-text-disabled="Disabled">
+                <span class="gdpr-sr-label">
+                  <span class="gdpr-sr-enable">Enabled</span>
+                  <span class="gdpr-sr-disable">Disabled</span>
+                </span>
+              </span>
+            </label>
+          </div>
+          <!-- .gdpr-cc-form-fieldset -->
+        </div>
+        <!-- .gdpr-cc-form-wrap -->
+      </div>
+      <!-- .moove-gdpr-status-bar -->
+                                              
+    </div>
+    <!--  .moove-gdpr-tab-main-content -->
+  </div>
+  <!-- #strict-necesarry-cookies -->
+			
+			
+									
+			</div>
+			<!--  .moove-gdpr-tab-content -->
+		</div>
+		<!--  .main-modal-content -->
+		<div class="moove-gdpr-modal-footer-content">
+			<div class="moove-gdpr-button-holder">
+						<button class="mgbutton moove-gdpr-modal-allow-all button-visible" aria-label="Enable All">Enable All</button>
+								<button class="mgbutton moove-gdpr-modal-reject-all button-visible" aria-label="Reject All">Reject All</button>
+								<button class="mgbutton moove-gdpr-modal-save-settings button-visible" aria-label="Save Settings">Save Settings</button>
+				</div>
+<!--  .moove-gdpr-button-holder -->
+		</div>
+		<!--  .moove-gdpr-modal-footer-content -->
+		</div>
+		<!--  .moove-gdpr-modal-right-content -->
+
+		<div class="moove-clearfix"></div>
+
+	</div>
+	<!--  .moove-gdpr-modal-content -->
+	</dialog>
+	<!-- #moove_gdpr_cookie_modal -->
+	<!--/copyscapeskip-->
+
+<nav
+    class="trp-language-switcher trp-floating-switcher trp-ls-dropdown trp-switcher-position-top"
+    style="--bg:#ffffff;--bg-hover:#0000000d;--text:#143852;--text-hover:#1d2327;--border:1px solid #1438521a;--border-radius:0px 0px 8px 8px;--flag-radius:2px;--flag-size:18px;--aspect-ratio:4/3;--font-size:14px;--switcher-width:auto;--switcher-padding:10px 0;--transition-duration:0.2s;--top:0px;--right:10vw"
+    role="navigation"
+    aria-label="Website language selector"
+    data-no-translation
+>
+    
+            <div class="trp-language-switcher-inner">
+            <div class="trp-language-item trp-language-item__current" title="English" role="button" tabindex="0" aria-expanded="false" aria-label="Change language" aria-controls="trp-switcher-dropdown-list" data-no-translation><img src="https://ftdichip.com/wp-content/plugins/translatepress-multilingual/assets/flags/4x3/en_US.svg" class="trp-flag-image" alt="" role="presentation" loading="lazy" decoding="async" width="18" height="14" /><span class="trp-language-item-name">English</span></div>
+            <div
+                class="trp-switcher-dropdown-list"
+                id="trp-switcher-dropdown-list"
+                role="group"
+                aria-label="Available languages"
+                hidden
+                inert
+            >
+                                    <a href="https://ftdichip.com/wp-content/uploads/2022/07/FTDIUSBSerialDriv_v2_4_4.dmg" class="trp-language-item" title="Chinese" data-no-translation><img src="https://ftdichip.com/wp-content/plugins/translatepress-multilingual/assets/flags/4x3/zh_CN.svg" class="trp-flag-image" alt="" role="presentation" loading="lazy" decoding="async" width="18" height="14" /><span class="trp-language-item-name">Chinese</span></a>                            </div>
+        </div>
+
+    </nav>
+
+</body>
+</html>

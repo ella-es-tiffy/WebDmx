@@ -32,27 +32,35 @@ CREATE TABLE IF NOT EXISTS fixtures (
     FOREIGN KEY (fixture_type_id) REFERENCES fixture_types(id)
 );
 
--- Initial Data: 16ch RGB Washer Profile
-INSERT INTO fixture_types (manufacturer, model, mode, channel_count) 
-VALUES ('Generic', 'LED Wash Moving Head', '16ch', 16);
+-- Insert 16ch Zoom Washer Profile
+INSERT INTO fixture_types (model, manufacturer, channel_count, description) VALUES 
+('Zoom Wash 16ch', 'Generic China', 16, 'RGBW Zoom Moving Head');
 
 SET @type_id = LAST_INSERT_ID();
 
--- Mapping based on standard 16ch Chinese Washer layout (verify with user later)
-INSERT INTO fixture_channels (fixture_type_id, channel_index, function_type, function_name, default_value) VALUES
-(@type_id, 1, 'PAN', 'Pan', 128),
-(@type_id, 2, 'TILT', 'Tilt', 128),
-(@type_id, 3, 'PAN_FINE', 'Pan Fine', 0),
-(@type_id, 4, 'TILT_FINE', 'Tilt Fine', 0),
-(@type_id, 5, 'SPEED', 'Pan/Tilt Speed', 0),
-(@type_id, 6, 'DIMMER', 'Master Dimmer', 0),
-(@type_id, 7, 'STROBE', 'Strobe', 0),
-(@type_id, 8, 'COLOR_R', 'Red', 0),
-(@type_id, 9, 'COLOR_G', 'Green', 0),
-(@type_id, 10, 'COLOR_B', 'Blue', 0),
-(@type_id, 11, 'COLOR_W', 'White', 0),
-(@type_id, 12, 'MACRO', 'Color Macros', 0),
-(@type_id, 13, 'MACRO_SPEED', 'Macro Speed', 0),
-(@type_id, 14, 'FOCUS', 'Focus/Zoom', 0), -- Assuming Focus/Zoom channel
-(@type_id, 15, 'CONTROL', 'Control/Reset', 0),
-(@type_id, 16, 'UNDEFINED', 'Spare', 0);
+INSERT INTO fixture_channels (fixture_type_id, channel_index, function_name, function_type, default_value) VALUES 
+(@type_id, 1, 'Pan', 'PAN', 127),
+(@type_id, 2, 'Pan Fine', 'PAN_FINE', 0),
+(@type_id, 3, 'Tilt', 'TILT', 127),
+(@type_id, 4, 'Tilt Fine', 'TILT_FINE', 0),
+(@type_id, 5, 'PT Speed', 'SPEED', 0),
+(@type_id, 6, 'Dimmer', 'DIMMER', 0),
+(@type_id, 7, 'Strobe', 'STROBE', 0), -- 0=Open/Off usually, check manual!
+(@type_id, 8, 'Red', 'COLOR_R', 0),
+(@type_id, 9, 'Green', 'COLOR_G', 0),
+(@type_id, 10, 'Blue', 'COLOR_B', 0),
+(@type_id, 11, 'White', 'COLOR_W', 0),
+(@type_id, 12, 'Zoom', 'ZOOM', 0),
+(@type_id, 13, 'Presets/Prog', 'MACRO', 0), -- 0-9 Off, 10-127 Color, 128+ Progs
+(@type_id, 14, 'Prog Speed', 'MACRO_SPEED', 0),
+(@type_id, 15, 'Auto/Sound', 'CONTROL', 0), -- 0-9 Off, 10-180 Auto, 181-255 Sound
+(@type_id, 16, 'Reset', 'CONTROL', 0); -- 253-255 Reset
+
+-- Reset existing patch
+DELETE FROM fixtures;
+-- Patch 4 Fixtures (Addr 1, 17, 33, 49)
+INSERT INTO fixtures (name, fixture_type_id, start_address, universe) VALUES 
+('Washer 1', @type_id, 1, 1),
+('Washer 2', @type_id, 17, 1),
+('Washer 3', @type_id, 33, 1),
+('Washer 4', @type_id, 49, 1);

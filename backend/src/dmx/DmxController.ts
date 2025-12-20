@@ -6,8 +6,6 @@ import { IDmxController } from '../interfaces/IDmxController';
  */
 const DMX_UNIVERSE_SIZE = 512;
 const DMX_START_CODE = 0x00;
-const DMX_BREAK_TIME = 100; // microseconds
-const DMX_MAB_TIME = 12; // Mark After Break time
 
 /**
  * DmxController Class
@@ -15,7 +13,8 @@ const DMX_MAB_TIME = 12; // Mark After Break time
  */
 export class DmxController implements IDmxController {
     private port: SerialPort | null = null;
-    private dmxData: Buffer;
+    private writeBuffer: Buffer; // Updated by API calls
+    private readBuffer: Buffer;  // Read by DMX transmission (double-buffering)
     private portPath: string;
     private baudRate: number;
     private connected: boolean = false;
@@ -24,8 +23,12 @@ export class DmxController implements IDmxController {
     constructor(portPath: string, baudRate: number = 250000) {
         this.portPath = portPath;
         this.baudRate = baudRate;
-        this.dmxData = Buffer.alloc(DMX_UNIVERSE_SIZE + 1);
-        this.dmxData[0] = DMX_START_CODE;
+
+        // Double buffering to prevent race conditions
+        this.writeBuffer = Buffer.alloc(DMX_UNIVERSE_SIZE + 1);
+        this.readBuffer = Buffer.alloc(DMX_UNIVERSE_SIZE + 1);
+        this.writeBuffer[0] = DMX_START_CODE;
+        this.readBuffer[0] = DMX_START_CODE;
     }
 
     /**
@@ -45,12 +48,12 @@ export class DmxController implements IDmxController {
                     console.warn(`⚠️  SWITCHING TO SIMULATION MODE`);
                     console.warn(`   (Hardware will not receive signals, but UI will work)`);
                     this.connected = true; // Pretend we are connected
-                    
+
                     // Simple simulation loop that just logs periodically to prove it's alive
                     this.updateInterval = setInterval(() => {
                         // In simulation, we do nothing but keep the loop alive
-                    }, 5000); 
-                    
+                    }, 5000);
+
                     resolve();
                     return;
                 }
@@ -58,69 +61,104 @@ export class DmxController implements IDmxController {
                 this.connected = true;
                 console.log(`DMX Controller initialized on ${this.portPath}`);
 
-                // Start continuous update loop (44Hz refresh rate for DMX)
-                this.updateInterval = setInterval(() => {
-                    this.update().catch(err => {
-                        // Suppress specific baud rate errors in development
-                        if (err.message && err.message.includes('IOSSIOSPEED')) {
-                            // Ignore this specific Mac error for now to prevent log spam
-                            return;
-                        }
-                        console.error('DMX Update Error:', err);
-                    });
-                }, 23); // ~44Hz
+                // Send initial blackout to valid signal
+                this.blackout();
+
+                // Start continuous update loop (30Hz refresh rate for stability)
+                console.log('🚀 Starting DMX Transmission Loop (30Hz)...');
+                this.startTransmissionLoop();
 
                 resolve();
             });
 
             this.port?.on('error', (err) => {
-                if (err.message && err.message.includes('IOSSIOSPEED')) return; // Ignore known Mac driver quirk
-                console.error('DMX Serial Port Error:', err.message);
+                // if (err.message && err.message.includes('IOSSIOSPEED')) return; // Don't ignore anymore, we want to know!
+                console.error('⚠️ DMX Serial Port Error:', err.message);
                 this.connected = false;
+                this.reconnect();
+            });
+
+            this.port?.on('close', () => {
+                console.warn('⚠️ DMX Port Closed. Attempting reconnect...');
+                this.connected = false;
+                this.reconnect();
             });
         });
     }
 
-    /**
-     * Send DMX data to serial port
-     */
-    public async update(): Promise<void> {
-        if (!this.port || !this.port.isOpen) {
-            // Simulation mode: just return
-            return;
+    private reconnectTimeout: NodeJS.Timeout | null = null;
+
+    private reconnect() {
+        if (this.reconnectTimeout) return; // Already trying
+
+        // Stop Loop
+        if (this.updateInterval) {
+            clearInterval(this.updateInterval);
+            this.updateInterval = null;
         }
 
-        return new Promise((resolve, reject) => {
-            // Send BREAK signal by setting baudRate to 90000
-            this.port!.update({ baudRate: 90000 }, (err) => {
-                if (err) {
-                    // Start of workaround: If 90k baud fails (common on some drivers), try sending just a 0 byte anyway
-                    // This is less standard-compliant but works with some cheap cables
-                    reject(err);
-                    return;
+        console.log('🔄 Reconnecting in 1s...');
+        this.reconnectTimeout = setTimeout(async () => {
+            this.reconnectTimeout = null;
+            try {
+                // Try to close first just in case
+                if (this.port && this.port.isOpen) {
+                    await new Promise<void>(r => this.port!.close(() => r()));
                 }
 
-                // Send a null byte for BREAK
-                this.port!.write(Buffer.from([0x00]), (err) => {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
+                // Re-Initialize
+                await this.initialize();
+            } catch (e) {
+                console.error('Reconnect failed, retrying...', e);
+                this.reconnect(); // Infinite retry
+            }
+        }, 1000);
+    }
 
-                    // Restore normal baudRate
-                    this.port!.update({ baudRate: this.baudRate }, (err) => {
-                        if (err) {
-                            reject(err);
-                            return;
-                        }
+    private startTransmissionLoop() {
+        if (this.updateInterval) clearInterval(this.updateInterval);
 
-                        // Send DMX data packet
-                        this.port!.write(this.dmxData, (err) => {
-                            if (err) {
-                                reject(err);
-                            } else {
+        this.updateInterval = setInterval(() => {
+            this.update().catch(err => {
+                const msg = err.message || '';
+                // Only log real errors, not the typical "port busy" jitter
+                if (!msg.includes('Interrupted') && !msg.includes('temporarily unavailable')) {
+                    console.error('TX Error:', msg);
+                }
+            });
+        }, 33); // 30Hz - stable refresh rate for DMX
+    }
+
+    /**
+     * Send DMX data to serial port
+     * Based on proven Enttec Open DMX USB implementation
+     * https://github.com/moritzruth/node-enttec-open-dmx-usb
+     * Optimized with setImmediate for stable timing
+     */
+    public async update(): Promise<void> {
+        if (!this.port || !this.port.isOpen) return;
+
+        // Atomic buffer swap BEFORE transmission (non-blocking)
+        this.writeBuffer.copy(this.readBuffer);
+
+        return new Promise((resolve) => {
+            // Step 1: Assert BREAK with RTS low (Enttec method)
+            this.port!.set({ brk: true, rts: false }, () => {
+                // Step 2: Clear BREAK immediately (hardware BREAK is sufficient)
+                setImmediate(() => {
+                    this.port!.set({ brk: false, rts: false }, () => {
+                        // Step 3: Send data immediately (MAB is automatic)
+                        setImmediate(() => {
+                            // Step 4: Transmit readBuffer
+                            this.port!.write(this.readBuffer, () => {
+                                // DEBUG PROBE (reduced frequency to minimize overhead)
+                                if (Math.random() < 0.005) {
+                                    const sample = [];
+                                    for (let i = 1; i <= 16; i++) sample.push(this.readBuffer[i]);
+                                    console.log('📡 DMX TX (Ch 1-16):', sample.join(', '));
+                                }
                                 resolve();
-                            }
+                            });
                         });
                     });
                 });
@@ -139,7 +177,7 @@ export class DmxController implements IDmxController {
             throw new Error(`Value ${value} out of range (0-255)`);
         }
 
-        this.dmxData[channel] = Math.floor(value);
+        this.writeBuffer[channel] = Math.floor(value);
     }
 
     /**
@@ -155,7 +193,7 @@ export class DmxController implements IDmxController {
 
         for (let i = 0; i < values.length; i++) {
             const value = Math.max(0, Math.min(255, Math.floor(values[i])));
-            this.dmxData[startChannel + i] = value;
+            this.writeBuffer[startChannel + i] = value;
         }
     }
 
@@ -166,14 +204,14 @@ export class DmxController implements IDmxController {
         if (channel < 1 || channel > DMX_UNIVERSE_SIZE) {
             throw new Error(`Channel ${channel} out of range (1-512)`);
         }
-        return this.dmxData[channel];
+        return this.writeBuffer[channel];
     }
 
     /**
      * Get all channel values
      */
     public getAllChannels(): number[] {
-        return Array.from(this.dmxData.slice(1));
+        return Array.from(this.writeBuffer.slice(1));
     }
 
     /**
@@ -181,7 +219,7 @@ export class DmxController implements IDmxController {
      */
     public blackout(): void {
         for (let i = 1; i <= DMX_UNIVERSE_SIZE; i++) {
-            this.dmxData[i] = 0;
+            this.writeBuffer[i] = 0;
         }
     }
 

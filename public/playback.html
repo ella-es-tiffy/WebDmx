@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cue & Playback Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #00d4ff;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #00ff88;
+            margin: 20px 0 10px;
+            font-size: 18px;
+        }
+
+        .section {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #0099cc, #0066aa);
+            border: none;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #00bfff, #0099cc);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.danger {
+            background: linear-gradient(135deg, #ff3333, #cc0000);
+        }
+
+        button.danger:hover {
+            background: linear-gradient(135deg, #ff6666, #ff3333);
+            box-shadow: 0 4px 12px rgba(255, 51, 51, 0.4);
+        }
+
+        .status {
+            background: #000;
+            border: 1px solid #00ff88;
+            border-radius: 5px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        .status-line {
+            margin: 5px 0;
+        }
+
+        .cue-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .cue-item {
+            background: #202020;
+            border: 1px solid #333;
+            border-left: 3px solid #00d4ff;
+            padding: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cue-item:hover {
+            background: #2a2a2a;
+            border-left-color: #00ff88;
+        }
+
+        .cue-item.active {
+            background: #0099cc;
+            border-left-color: #00ff88;
+            color: #000;
+            font-weight: 600;
+        }
+
+        .cue-number {
+            font-size: 18px;
+            font-weight: 700;
+            color: #00d4ff;
+        }
+
+        .cue-item.active .cue-number {
+            color: #000;
+        }
+
+        .slider-group {
+            margin: 15px 0;
+        }
+
+        .slider-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #00d4ff;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #333;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #00d4ff;
+            cursor: pointer;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            background: #00ff88;
+        }
+
+        .slider-value {
+            display: inline-block;
+            min-width: 40px;
+            text-align: right;
+            font-weight: 600;
+            color: #00ff88;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🎬 Cue & Playback Control</h1>
+
+    <div class="section">
+        <h2>📊 Playback Status</h2>
+        <div class="status" id="status">
+            <div class="status-line">State: <span id="state">-</span></div>
+            <div class="status-line">Current Cue: <span id="current-cue">-</span></div>
+            <div class="status-line">Loop: <span id="loop">-</span></div>
+            <div class="status-line">Speed: <span id="speed">-</span>x</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🎮 Playback Controls</h2>
+        <div class="controls">
+            <button onclick="loadCueList()">📋 Load CueList 1</button>
+            <button onclick="playbackStart()">▶️ Start</button>
+            <button onclick="playbackStop()" class="danger">⏹️ Stop</button>
+            <button onclick="playbackPause()">⏸️ Pause</button>
+            <button onclick="playbackResume()">▶️ Resume</button>
+            <button onclick="playbackPrevious()">⏮️ Previous</button>
+            <button onclick="playbackNext()">⏭️ Next</button>
+            <button onclick="toggleLoop()">🔄 Toggle Loop</button>
+        </div>
+
+        <div class="slider-group">
+            <label>
+                ⚡ Speed: <span class="slider-value" id="speed-display">1.0x</span>
+            </label>
+            <input type="range" class="slider" id="speed-slider" min="0.1" max="2.0" step="0.1" value="1.0"
+                oninput="setSpeed(this.value)">
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📋 Available Cues</h2>
+        <div class="cue-list" id="cue-list">
+            <!-- Will be populated by JS -->
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🎯 Quick Record</h2>
+        <button onclick="recordCue()">💾 Record Current State as New Cue</button>
+    </div>
+
+    <script>
+        const API = 'http://localhost:3000/api';
+        let currentCues = [];
+
+        // Load cues on page load
+        loadCues();
+        startStatusMonitor();
+
+        async function loadCues() {
+            try {
+                const res = await fetch(`${API}/cues`);
+                const data = await res.json();
+
+                if (data.success) {
+                    currentCues = data.cues;
+                    renderCues();
+                }
+            } catch (e) {
+                console.error('Failed to load cues:', e);
+            }
+        }
+
+        function renderCues() {
+            const list = document.getElementById('cue-list');
+            list.innerHTML = '';
+
+            currentCues.forEach(cue => {
+                const item = document.createElement('div');
+                item.className = 'cue-item';
+                item.innerHTML = `
+                    <div class="cue-number">Cue ${cue.number}</div>
+                    <div>${cue.name}</div>
+                    <div style="font-size: 11px; color: #666; margin-top: 4px;">
+                        Fade In: ${cue.fadeIn}ms | Fade Out: ${cue.fadeOut}ms
+                    </div>
+                `;
+                item.onclick = () => goToCue(cue.number);
+                list.appendChild(item);
+            });
+        }
+
+        async function loadCueList() {
+            try {
+                const res = await fetch(`${API}/playback/load/1`, { method: 'POST' });
+                const data = await res.json();
+
+                if (data.success) {
+                    alert('✅ CueList loaded successfully!');
+                    updateStatus();
+                } else {
+                    alert('❌ Error: ' + data.error);
+                }
+            } catch (e) {
+                alert('❌ Failed to load cuelist: ' + e.message);
+            }
+        }
+
+        async function playbackStart() {
+            try {
+                const res = await fetch(`${API}/playback/start`, { method: 'POST' });
+                const data = await res.json();
+                if (!data.success) alert('Error: ' + data.error);
+                updateStatus();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function playbackStop() {
+            try {
+                const res = await fetch(`${API}/playback/stop`, { method: 'POST' });
+                const data = await res.json();
+                updateStatus();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function playbackPause() {
+            try {
+                const res = await fetch(`${API}/playback/pause`, { method: 'POST' });
+                updateStatus();
+            } catch (e) { }
+        }
+
+        async function playbackResume() {
+            try {
+                const res = await fetch(`${API}/playback/resume`, { method: 'POST' });
+                updateStatus();
+            } catch (e) { }
+        }
+
+        async function playbackNext() {
+            try {
+                const res = await fetch(`${API}/playback/next`, { method: 'POST' });
+                updateStatus();
+            } catch (e) { }
+        }
+
+        async function playbackPrevious() {
+            try {
+                const res = await fetch(`${API}/playback/previous`, { method: 'POST' });
+                updateStatus();
+            } catch (e) { }
+        }
+
+        async function goToCue(cueNumber) {
+            try {
+                const res = await fetch(`${API}/playback/goto/${cueNumber}`, { method: 'POST' });
+                updateStatus();
+            } catch (e) { }
+        }
+
+        async function toggleLoop() {
+            try {
+                const res = await fetch(`${API}/playback/toggleloop`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    alert(`🔄 Loop ${data.loopEnabled ? 'ENABLED' : 'DISABLED'}`);
+                }
+                updateStatus();
+            } catch (e) { }
+        }
+
+        async function setSpeed(value) {
+            const speed = parseFloat(value);
+            document.getElementById('speed-display').textContent = speed.toFixed(1) + 'x';
+
+            try {
+                await fetch(`${API}/playback/speed`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ speed })
+                });
+                updateStatus();
+            } catch (e) { }
+        }
+
+        async function recordCue() {
+            const cueNumber = parseFloat(prompt('Enter cue number (e.g., 4.0):'));
+            const cueName = prompt('Enter cue name:');
+
+            if (!cueNumber || !cueName) return;
+
+            try {
+                const res = await fetch(`${API}/cues/record`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        number: cueNumber,
+                        name: cueName,
+                        fadeIn: 2000
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    alert(`✅ Cue ${cueNumber} recorded!`);
+                    loadCues();
+                } else {
+                    alert('❌ Error: ' + data.error);
+                }
+            } catch (e) {
+                alert('❌ Failed: ' + e.message);
+            }
+        }
+
+        async function updateStatus() {
+            try {
+                const res = await fetch(`${API}/playback/status`);
+                const data = await res.json();
+
+                if (data.success) {
+                    const state = data.state;
+                    document.getElementById('state').textContent = state.state;
+                    document.getElementById('current-cue').textContent =
+                        state.currentCueNumber ? `${state.currentCueNumber} - ${state.currentCueName}` : 'None';
+                    document.getElementById('loop').textContent = state.loopEnabled ? 'ON' : 'OFF';
+                    document.getElementById('speed').textContent = state.speed.toFixed(1);
+
+                    // Highlight active cue
+                    document.querySelectorAll('.cue-item').forEach((el, idx) => {
+                        el.classList.remove('active');
+                        if (currentCues[idx] && currentCues[idx].number === state.currentCueNumber) {
+                            el.classList.add('active');
+                        }
+                    });
+                }
+            } catch (e) { }
+        }
+
+        function startStatusMonitor() {
+            updateStatus();
+            setInterval(updateStatus, 1000);
+        }
+    </script>
+</body>
+
+</html>

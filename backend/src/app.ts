@@ -6,6 +6,8 @@ import { Database } from './config/database';
 import { createDmxRoutes } from './routes/dmxRoutes';
 import { createDeviceRoutes } from './routes/deviceRoutes';
 import { createSystemRoutes } from './routes/systemRoutes';
+import { createCueRoutes } from './routes/cueRoutes';
+import { createFaderRoutes } from './routes/faderRoutes';
 
 dotenv.config();
 
@@ -62,6 +64,8 @@ class App {
         this.app.use('/api/dmx', createDmxRoutes(this.dmxController));
         this.app.use('/api/devices', createDeviceRoutes());
         this.app.use('/api/system', createSystemRoutes());
+        this.app.use('/api', createCueRoutes(this.dmxController)); // Cue & Playback routes
+        this.app.use('/api', createFaderRoutes()); // Fader names
 
         // 404 handler
         this.app.use((req, res) => {

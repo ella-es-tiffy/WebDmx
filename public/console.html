@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebDMX Console - grandMA2 Style</title>
+    <link rel="stylesheet" href="css/console.css">
+</head>
+
+<body>
+    <!-- Top Bar -->
+    <header class="top-bar">
+        <div class="logo">
+            <span class="logo-text">WebDMX</span>
+            <span class="version">v0.1.0</span>
+        </div>
+        <div class="system-status">
+            <div class="status-item">
+                <span class="status-label">Backend</span>
+                <span class="status-indicator" id="backend-status"></span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">DMX Out</span>
+                <span class="status-indicator" id="dmx-status"></span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Universe 1</span>
+                <span class="status-value">512ch</span>
+            </div>
+        </div>
+        <div class="user-info">
+            <span>User: Admin</span>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="console-container">
+        <!-- Left Sidebar - Pool Windows -->
+        <aside class="sidebar-left">
+            <!-- Fixtures Pool -->
+            <div class="pool-window">
+                <div class="pool-header">
+                    <span class="pool-title">Fixtures</span>
+                    <button class="pool-btn">+</button>
+                </div>
+                <div class="pool-grid" id="fixtures-pool">
+                    <!-- Will be populated by JS -->
+                </div>
+            </div>
+
+            <!-- Groups Pool -->
+            <div class="pool-window">
+                <div class="pool-header">
+                    <span class="pool-title">Groups</span>
+                    <button class="pool-btn">+</button>
+                </div>
+                <div class="pool-grid" id="groups-pool">
+                    <!-- Will be populated by JS -->
+                </div>
+            </div>
+
+            <!-- Presets Pool -->
+            <div class="pool-window">
+                <div class="pool-header">
+                    <span class="pool-title">Presets</span>
+                    <button class="pool-btn">+</button>
+                </div>
+                <div class="pool-grid" id="presets-pool">
+                    <!-- Will be populated by JS -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center - Main View Area -->
+        <main class="main-view">
+            <!-- Encoder Section -->
+            <section class="encoder-section">
+                <div class="encoder-group">
+                    <div class="encoder" data-attribute="dimmer">
+                        <div class="encoder-label">Dimmer</div>
+                        <div class="encoder-wheel"></div>
+                        <div class="encoder-value">0%</div>
+                    </div>
+                    <div class="encoder" data-attribute="pan">
+                        <div class="encoder-label">Pan</div>
+                        <div class="encoder-wheel"></div>
+                        <div class="encoder-value">0°</div>
+                    </div>
+                    <div class="encoder" data-attribute="tilt">
+                        <div class="encoder-label">Tilt</div>
+                        <div class="encoder-wheel"></div>
+                        <div class="encoder-value">0°</div>
+                    </div>
+                    <div class="encoder" data-attribute="color">
+                        <div class="encoder-label">Color</div>
+                        <div class="encoder-wheel"></div>
+                        <div class="encoder-value">RGB</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Output Monitor -->
+            <section class="monitor-section">
+                <div class="monitor-header">
+                    <span>DMX Universe 1 - Channel Monitor</span>
+                    <button class="monitor-toggle">Expand</button>
+                </div>
+                <div class="channel-grid" id="channel-monitor">
+                    <!-- Channels 1-512 will be rendered here -->
+                </div>
+            </section>
+
+            <!-- Command Line -->
+            <section class="command-line">
+                <div class="command-display" id="command-display"></div>
+                <input type="text" class="command-input" id="command-input" placeholder="Enter command..."
+                    autocomplete="off">
+            </section>
+
+            <!-- Playback Section -->
+            <section class="playback-section">
+                <div class="playback-header">
+                    <span>Playback Control</span>
+                    <div class="playback-status" id="playback-status">STOPPED</div>
+                </div>
+
+                <!-- Transport Controls -->
+                <div class="transport-controls">
+                    <button class="transport-btn" id="btn-load" title="Load CueList 1">
+                        📋<span>Load</span>
+                    </button>
+                    <button class="transport-btn" id="btn-prev" title="Previous Cue">
+                        ⏮️<span>Prev</span>
+                    </button>
+                    <button class="transport-btn play" id="btn-play" title="Start Playback">
+                        ▶️<span>Play</span>
+                    </button>
+                    <button class="transport-btn" id="btn-pause" title="Pause">
+                        ⏸️<span>Pause</span>
+                    </button>
+                    <button class="transport-btn stop" id="btn-stop" title="Stop">
+                        ⏹️<span>Stop</span>
+                    </button>
+                    <button class="transport-btn" id="btn-next" title="Next Cue">
+                        ⏭️<span>Next</span>
+                    </button>
+                    <button class="transport-btn" id="btn-loop" title="Toggle Loop">
+                        🔄<span>Loop</span>
+                    </button>
+                </div>
+
+                <!-- Speed Control -->
+                <div class="speed-control">
+                    <label>Speed: <span id="speed-value">1.0x</span></label>
+                    <input type="range" id="speed-slider" min="0.1" max="2.0" step="0.1" value="1.0">
+                </div>
+
+                <!-- Cue List -->
+                <div class="cue-list-header">
+                    Cue List
+                    <span class="current-cue-display" id="current-cue-display">-</span>
+                </div>
+                <div class="cue-list" id="cue-list">
+                    <!-- Cues will be listed here -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Right Sidebar - Executor Faders -->
+        <aside class="sidebar-right">
+            <div class="executor-bank">
+                <div class="bank-header">Executor Bank 1</div>
+                <div class="executors">
+                    <!-- 10 Executor Faders -->
+                    <div class="executor" data-exec="1">
+                        <div class="exec-buttons">
+                            <button class="exec-btn">Flash</button>
+                            <button class="exec-btn">Black</button>
+                            <button class="exec-btn">Go</button>
+                        </div>
+                        <div class="exec-fader-container">
+                            <input type="range" class="exec-fader" min="0" max="255" value="0" orient="vertical">
+                            <div class="exec-label">Exec 1</div>
+                        </div>
+                        <div class="exec-value">0%</div>
+                    </div>
+
+                    <div class="executor" data-exec="2">
+                        <div class="exec-buttons">
+                            <button class="exec-btn">Flash</button>
+                            <button class="exec-btn">Black</button>
+                            <button class="exec-btn">Go</button>
+                        </div>
+                        <div class="exec-fader-container">
+                            <input type="range" class="exec-fader" min="0" max="255" value="0" orient="vertical">
+                            <div class="exec-label">Exec 2</div>
+                        </div>
+                        <div class="exec-value">0%</div>
+                    </div>
+
+                    <div class="executor" data-exec="3">
+                        <div class="exec-buttons">
+                            <button class="exec-btn">Flash</button>
+                            <button class="exec-btn">Black</button>
+                            <button class="exec-btn">Go</button>
+                        </div>
+                        <div class="exec-fader-container">
+                            <input type="range" class="exec-fader" min="0" max="255" value="0" orient="vertical">
+                            <div class="exec-label">Exec 3</div>
+                        </div>
+                        <div class="exec-value">0%</div>
+                    </div>
+
+                    <div class="executor" data-exec="4">
+                        <div class="exec-buttons">
+                            <button class="exec-btn">Flash</button>
+                            <button class="exec-btn">Black</button>
+                            <button class="exec-btn">Go</button>
+                        </div>
+                        <div class="exec-fader-container">
+                            <input type="range" class="exec-fader" min="0" max="255" value="0" orient="vertical">
+                            <div class="exec-label">Exec 4</div>
+                        </div>
+                        <div class="exec-value">0%</div>
+                    </div>
+
+                    <div class="executor" data-exec="5">
+                        <div class="exec-buttons">
+                            <button class="exec-btn">Flash</button>
+                            <button class="exec-btn">Black</button>
+                            <button class="exec-btn">Go</button>
+                        </div>
+                        <div class="exec-fader-container">
+                            <input type="range" class="exec-fader" min="0" max="255" value="0" orient="vertical">
+                            <div class="exec-label">Exec 5</div>
+                        </div>
+                        <div class="exec-value">0%</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script src="js/console.js"></script>
+</body>
+
+</html>
