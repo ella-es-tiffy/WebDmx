@@ -364,55 +364,75 @@ class FaderConsole {
     }
 
     /**
-     * Apply encoder to ALL channels with P or T assignment
-     * Does NOT check isSelected!
+     * Apply encoder to ALL selected fixtures with P or T assignment
      */
-    applyEncoderToChannels(type, value) {
-        const assignKey = type === 'pan' ? 'p' : 't';
-        const assignments = this.assignmentCache[this.fixtureId] || {};
+    async applyEncoderToChannels(type, value) {
+        const assignKey = type === 'pan' ? 'P' : 'T';
 
-        // Apply to ALL 32 channels of the fixture
-        for (let relCh = 1; relCh <= 32; relCh++) {
-            const channelAssignments = assignments[relCh] || [];
-            if (!channelAssignments.includes(assignKey.toUpperCase())) continue;
+        // Load all assignments
+        const res = await fetch(`${API}/api/faders/all-assignments`);
+        const data = await res.json();
+        if (!data.success) return;
+        const allAssignments = data.mapping;
 
-            // 1. Send DMX
-            if (!this.globalValueCache[this.fixtureId]) this.globalValueCache[this.fixtureId] = {};
-            const cached = this.globalValueCache[this.fixtureId][relCh] || { value: 0, isOn: true };
+        console.log(`🎯 Applying ${type.toUpperCase()} (${value}) to selected fixtures:`, this.selectedFixtureIds);
 
-            if (cached.isOn) {
-                this.sendToBackend(relCh, value);
-            }
+        // Apply to ALL selected fixtures
+        for (const fixtureId of this.selectedFixtureIds) {
+            const fixture = this.availableFixtures.find(f => f.id === fixtureId);
+            if (!fixture) continue;
 
-            // 2. Update Cache
-            this.globalValueCache[this.fixtureId][relCh] = { value, isOn: cached.isOn };
+            const assignments = allAssignments[fixtureId];
+            if (!assignments) continue;
 
-            // 3. Update UI if fader is visible
-            const state = this.channels.find(c => c.channel === relCh);
-            if (state) {
-                state.fader.value = value;
-                state.currentValue = value;
-                state.valueDisplay.textContent = value;
-                state.ledFill.style.height = `${(value / 255) * 100}%`;
-                if (value > 0) state.element.classList.add('active');
-                else state.element.classList.remove('active');
+            // For each channel with P or T assignment, send DMX
+            Object.keys(assignments).forEach(relCh => {
+                const functions = assignments[relCh];
+                const relChNum = parseInt(relCh);
+
+                if (functions.includes(assignKey)) {
+                    const absAddr = fixture.dmx_address + relChNum - 1;
+                    this.sendAbsoluteDMX(absAddr, value);
+                }
+            });
+        }
+
+        // Update UI if active fixture is in selection
+        if (this.selectedFixtureIds.includes(this.fixtureId)) {
+            const assignments = this.assignmentCache[this.fixtureId] || {};
+
+            for (let relCh = 1; relCh <= 32; relCh++) {
+                const channelAssignments = assignments[relCh] || [];
+                if (!channelAssignments.includes(assignKey)) continue;
+
+                // Update Cache
+                if (!this.globalValueCache[this.fixtureId]) this.globalValueCache[this.fixtureId] = {};
+                const cached = this.globalValueCache[this.fixtureId][relCh] || { value: 0, isOn: true };
+                this.globalValueCache[this.fixtureId][relCh] = { value, isOn: cached.isOn };
+
+                // Update UI if fader is visible
+                const state = this.channels.find(c => c.channel === relCh);
+                if (state) {
+                    state.fader.value = value;
+                    state.currentValue = value;
+                    state.valueDisplay.textContent = value;
+                    state.ledFill.style.height = `${(value / 255) * 100}%`;
+                    if (value > 0) state.element.classList.add('active');
+                    else state.element.classList.remove('active');
+                }
             }
         }
     }
 
     /**
-     * Apply rainbow to ALL channels with R,G,B,W assignments
-     * Updates UI faders so you can see the mix!
+     * Apply rainbow to ALL selected fixtures with R,G,B,W assignments
      */
-    applyRainbowToChannels(rgb) {
+    async applyRainbowToChannels(rgb) {
         const rgbValues = {
             r: Math.round(rgb.r * 255),
             g: Math.round(rgb.g * 255),
             b: Math.round(rgb.b * 255)
         };
-
-        const assignments = this.assignmentCache[this.fixtureId] || {};
-        if (!this.globalValueCache[this.fixtureId]) this.globalValueCache[this.fixtureId] = {};
 
         // Update the preview display in the encoder column
         const preview = document.getElementById('rgbw-value');
@@ -420,34 +440,63 @@ class FaderConsole {
         preview.style.color = (rgb.r + rgb.g + rgb.b > 1.5) ? '#000' : '#fff';
         preview.textContent = `${this.encoders.rgbw.hue}°`;
 
-        for (let relCh = 1; relCh <= 32; relCh++) {
-            const channelAssignments = assignments[relCh] || [];
-            let valueToSet = -1;
+        // Load all assignments
+        const res = await fetch(`${API}/api/faders/all-assignments`);
+        const data = await res.json();
+        if (!data.success) return;
+        const allAssignments = data.mapping;
 
-            if (channelAssignments.includes('R')) valueToSet = rgbValues.r;
-            else if (channelAssignments.includes('G')) valueToSet = rgbValues.g;
-            else if (channelAssignments.includes('B')) valueToSet = rgbValues.b;
+        // Apply to ALL selected fixtures
+        for (const fixtureId of this.selectedFixtureIds) {
+            const fixture = this.availableFixtures.find(f => f.id === fixtureId);
+            if (!fixture) continue;
 
-            if (valueToSet !== -1) {
-                const cached = this.globalValueCache[this.fixtureId][relCh] || { value: 0, isOn: true };
+            const assignments = allAssignments[fixtureId];
+            if (!assignments) continue;
 
-                // 1. Send DMX
-                if (cached.isOn) {
-                    this.sendToBackend(relCh, valueToSet);
-                }
+            // For each channel with R/G/B assignment, send DMX
+            Object.keys(assignments).forEach(relCh => {
+                const functions = assignments[relCh];
+                const relChNum = parseInt(relCh);
+                const absAddr = fixture.dmx_address + relChNum - 1;
 
-                // 2. Update Cache
-                this.globalValueCache[this.fixtureId][relCh] = { value: valueToSet, isOn: cached.isOn };
+                functions.forEach(f => {
+                    if (f === 'R') this.sendAbsoluteDMX(absAddr, rgbValues.r);
+                    if (f === 'G') this.sendAbsoluteDMX(absAddr, rgbValues.g);
+                    if (f === 'B') this.sendAbsoluteDMX(absAddr, rgbValues.b);
+                });
+            });
+        }
 
-                // 3. Update UI if fader is visible
-                const state = this.channels.find(c => c.channel === relCh);
-                if (state) {
-                    state.fader.value = valueToSet;
-                    state.currentValue = valueToSet;
-                    state.valueDisplay.textContent = valueToSet;
-                    state.ledFill.style.height = `${(valueToSet / 255) * 100}%`;
-                    if (valueToSet > 0) state.element.classList.add('active');
-                    else state.element.classList.remove('active');
+        // Update UI if active fixture is in selection
+        if (this.selectedFixtureIds.includes(this.fixtureId)) {
+            const assignments = this.assignmentCache[this.fixtureId] || {};
+            if (!this.globalValueCache[this.fixtureId]) this.globalValueCache[this.fixtureId] = {};
+
+            for (let relCh = 1; relCh <= 32; relCh++) {
+                const channelAssignments = assignments[relCh] || [];
+                let valueToSet = -1;
+
+                if (channelAssignments.includes('R')) valueToSet = rgbValues.r;
+                else if (channelAssignments.includes('G')) valueToSet = rgbValues.g;
+                else if (channelAssignments.includes('B')) valueToSet = rgbValues.b;
+
+                if (valueToSet !== -1) {
+                    const cached = this.globalValueCache[this.fixtureId][relCh] || { value: 0, isOn: true };
+
+                    // Update Cache
+                    this.globalValueCache[this.fixtureId][relCh] = { value: valueToSet, isOn: cached.isOn };
+
+                    // Update UI if fader is visible
+                    const state = this.channels.find(c => c.channel === relCh);
+                    if (state) {
+                        state.fader.value = valueToSet;
+                        state.currentValue = valueToSet;
+                        state.valueDisplay.textContent = valueToSet;
+                        state.ledFill.style.height = `${(valueToSet / 255) * 100}%`;
+                        if (valueToSet > 0) state.element.classList.add('active');
+                        else state.element.classList.remove('active');
+                    }
                 }
             }
         }
@@ -1238,7 +1287,7 @@ class FaderConsole {
         }
     }
 
-    applyMacroColor(hex, shouldSave = true) {
+    async applyMacroColor(hex, shouldSave = true) {
         if (!hex || hex.length < 7) {
             console.error('Invalid Macro Color:', hex);
             return;
@@ -1250,12 +1299,18 @@ class FaderConsole {
 
         console.log(`🎨 Applying color ${hex} to selected fixtures:`, this.selectedFixtureIds);
 
+        // Load all assignments if not cached
+        const res = await fetch(`${API}/api/faders/all-assignments`);
+        const data = await res.json();
+        if (!data.success) return;
+        const allAssignments = data.mapping;
+
         // Apply to ALL selected fixtures
         for (const fixtureId of this.selectedFixtureIds) {
             const fixture = this.availableFixtures.find(f => f.id === fixtureId);
             if (!fixture) continue;
 
-            const assignments = this.assignmentCache[fixtureId];
+            const assignments = allAssignments[fixtureId];
             if (!assignments) {
                 console.warn(`Fixture ${fixtureId} has no assignments yet`);
                 continue;
