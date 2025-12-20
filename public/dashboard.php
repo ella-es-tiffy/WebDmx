@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebDMX Dashboard</title>
     <link rel="stylesheet" href="css/dashboard.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="css/templates.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         /* Embedding some specific icons styles */
@@ -33,6 +34,10 @@
                 <div class="icon-box"><i class="fas fa-list icon-cues"></i></div>
                 <span>Cuelists</span>
             </div>
+            <div class="icon-item" onclick="openTemplates()">
+                <div class="icon-box"><i class="fas fa-file-alt" style="color: #9c27b0;"></i></div>
+                <span>Templates</span>
+            </div>
         </div>
     </div>
 
@@ -57,6 +62,7 @@
     <script src="js/window_manager.js?v=<?php echo time(); ?>"></script>
     <script src="js/visualizer.js?v=<?php echo time(); ?>"></script>
     <script src="js/patch.js?v=<?php echo time(); ?>"></script>
+    <script src="js/templates.js?v=<?php echo time(); ?>"></script>
     <script>
         let visualizer = null;
 
@@ -107,6 +113,20 @@
                 content: '<div id="content-patch">Loading...</div>'
             });
             patchManager.init();
+        }
+
+        function openTemplates() {
+            wm.createWindow('templates', 'Fixture Templates', {
+                width: '900px',
+                height: '650px',
+                top: '80px',
+                left: '250px',
+                content: '<div id="content-templates">Loading...</div>'
+            });
+            if (!window.templateManager) {
+                window.templateManager = new TemplateManager();
+            }
+            templateManager.init();
         }
 
         async function startDashboardStatus() {
