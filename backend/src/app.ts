@@ -5,6 +5,7 @@ import { DmxController } from './dmx/DmxController';
 import { Database } from './config/database';
 import { createDmxRoutes } from './routes/dmxRoutes';
 import { createDeviceRoutes } from './routes/deviceRoutes';
+import { createSystemRoutes } from './routes/systemRoutes';
 
 dotenv.config();
 
@@ -60,6 +61,7 @@ class App {
         // API routes
         this.app.use('/api/dmx', createDmxRoutes(this.dmxController));
         this.app.use('/api/devices', createDeviceRoutes());
+        this.app.use('/api/system', createSystemRoutes());
 
         // 404 handler
         this.app.use((req, res) => {
