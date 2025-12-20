@@ -116,17 +116,29 @@
         }
 
         function openTemplates() {
-            wm.createWindow('templates', 'Fixture Templates', {
+            const win = wm.createWindow('templates', 'Fixture Templates', {
                 width: '900px',
                 height: '650px',
                 top: '80px',
                 left: '250px',
-                content: '<div id="content-templates">Loading...</div>'
+                content: '<div id="content-templates" style="padding:20px; height:100%; overflow:auto; box-sizing:border-box;">Loading...</div>'
             });
-            if (!window.templateManager) {
-                window.templateManager = new TemplateManager();
-            }
-            templateManager.init();
+            
+            // Add "New Template" button to window header
+            const header = win.querySelector('.window-header');
+            const btn = document.createElement('button');
+            btn.className = 'btn-primary';
+            btn.textContent = '+ New Template';
+            btn.style.cssText = 'position:absolute; right:120px; top:8px; padding:6px 12px; font-size:12px; background:#00d4ff; color:#000; border:none; border-radius:4px; cursor:pointer;';
+            btn.onclick = () => window.templateManager.showTemplateModal();
+            header.appendChild(btn);
+            
+            setTimeout(() => {
+                if (!window.templateManager) {
+                    window.templateManager = new TemplateManager();
+                }
+                templateManager.init();
+            }, 100);
         }
 
         async function startDashboardStatus() {

@@ -1,4 +1,4 @@
-const API_URL = `http://${window.location.hostname}:3000/api/templates`;
+const TEMPLATE_API_URL = `http://${window.location.hostname}:3000/api/templates`;
 
 class TemplateManager {
     constructor() {
@@ -7,13 +7,15 @@ class TemplateManager {
     }
 
     async init() {
+        console.log('TemplateManager: Starting init...');
         await this.loadTemplates();
+        console.log('TemplateManager: Templates loaded:', this.templates);
         this.render();
     }
 
     async loadTemplates() {
         try {
-            const res = await fetch(API_URL);
+            const res = await fetch(TEMPLATE_API_URL);
             const data = await res.json();
             if (data.success) {
                 this.templates = data.templates;
@@ -24,9 +26,17 @@ class TemplateManager {
     }
 
     render() {
+        console.log('TemplateManager: Attempting to render...');
         const container = document.getElementById('content-templates');
-        if (!container) return;
+        console.log('TemplateManager: Container found:', container);
 
+        if (!container) {
+            console.warn('TemplateManager: Container not found, retrying in 100ms...');
+            setTimeout(() => this.render(), 100);
+            return;
+        }
+
+        console.log('TemplateManager: Rendering templates...');
         container.innerHTML = `
             <div class="templates-container">
                 <div class="templates-grid">
@@ -35,6 +45,7 @@ class TemplateManager {
                 </div>
             </div>
         `;
+        console.log('TemplateManager: Render complete!');
     }
 
     renderTemplateCard(template) {
@@ -188,7 +199,7 @@ class TemplateManager {
         const data = { name, manufacturer, model, channel_count, channels };
 
         try {
-            const url = id ? `${API_URL}/${id}` : API_URL;
+            const url = id ? `${TEMPLATE_API_URL}/${id}` : TEMPLATE_API_URL;
             const method = id ? 'PUT' : 'POST';
 
             const res = await fetch(url, {
@@ -211,7 +222,7 @@ class TemplateManager {
         if (!confirm('Delete this template? Fixtures using it will not be affected.')) return;
 
         try {
-            const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+            const res = await fetch(`${TEMPLATE_API_URL}/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 await this.init();
             }
