@@ -1,0 +1,182 @@
+:root {
+    --bg-desktop: #0a0a0b;
+    --win-bg: rgba(25, 25, 28, 0.85);
+    --win-border: rgba(255, 255, 255, 0.1);
+    --win-header: rgba(40, 40, 45, 0.9);
+    --accent: #00d4ff;
+    --text: #e0e0e0;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+* {
+    box-sizing: border-box;
+    user-select: none;
+}
+
+body,
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-desktop);
+    color: var(--text);
+}
+
+#desktop {
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a0b 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Icons on Desktop */
+.desktop-icons {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 100px);
+    gap: 20px;
+    z-index: 5;
+}
+
+.icon-item {
+    width: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.icon-item:hover {
+    transform: scale(1.05);
+}
+
+.icon-item .icon-box {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: var(--accent);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.icon-item span {
+    font-size: 11px;
+    font-weight: 500;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Floating Windows */
+.window {
+    position: absolute;
+    min-width: 300px;
+    min-height: 200px;
+    background: var(--win-bg);
+    border: 1px solid var(--win-border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    backdrop-filter: blur(20px);
+    z-index: 10;
+}
+
+.window.active {
+    z-index: 100;
+    border-color: rgba(0, 212, 255, 0.3);
+}
+
+.window-header {
+    height: 38px;
+    background: var(--win-header);
+    border-bottom: 1px solid var(--win-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 15px;
+    cursor: move;
+}
+
+.window-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.5px;
+}
+
+.window-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.win-btn {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.win-close {
+    background: #ff5f57;
+}
+
+.win-min {
+    background: #febc2e;
+}
+
+.win-max {
+    background: #28c840;
+}
+
+.window-content {
+    flex: 1;
+    overflow: auto;
+    position: relative;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* Taskbar */
+#taskbar {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 60px;
+    background: rgba(15, 15, 18, 0.7);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 1000;
+}
+
+.taskbar-item {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.taskbar-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-5px);
+}

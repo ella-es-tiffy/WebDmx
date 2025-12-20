@@ -3,10 +3,11 @@
  */
 import { Router } from 'express';
 import { FaderController } from '../controllers/FaderController';
+import { IDmxController } from '../interfaces/IDmxController';
 
-export function createFaderRoutes(): Router {
+export function createFaderRoutes(dmxController?: IDmxController): Router {
     const router = Router();
-    const controller = new FaderController();
+    const controller = new FaderController(dmxController);
 
     // Fader names
     router.get('/faders', controller.getAllFaders);
@@ -35,7 +36,8 @@ export function createFaderRoutes(): Router {
     router.post('/faders/presets', controller.savePreset);
     router.post('/faders/presets/create', controller.createPreset);
     router.post('/faders/presets/rename', controller.updatePresetName);
-    router.post('/faders/presets/delete', controller.deletePreset);
+    // DMX Monitor
+    router.get('/dmx-output', controller.getDmxOutput);
 
     return router;
 }

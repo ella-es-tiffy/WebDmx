@@ -4,9 +4,13 @@
  */
 import { Request, Response } from 'express';
 import { Database } from '../config/database';
+import { IDmxController } from '../interfaces/IDmxController';
 
 export class FaderController {
-    constructor() {
+    private dmxController?: IDmxController;
+
+    constructor(dmxController?: IDmxController) {
+        this.dmxController = dmxController;
         this.getAllFaders = this.getAllFaders.bind(this);
         this.updateFaderName = this.updateFaderName.bind(this);
         this.getChannelAssignments = this.getChannelAssignments.bind(this);
@@ -24,6 +28,7 @@ export class FaderController {
         this.updatePresetName = this.updatePresetName.bind(this);
         this.createPreset = this.createPreset.bind(this);
         this.deletePreset = this.deletePreset.bind(this);
+        this.getDmxOutput = this.getDmxOutput.bind(this);
     }
 
     async getAllFaders(_req: Request, res: Response): Promise<void> {
@@ -475,6 +480,23 @@ export class FaderController {
             await pool.execute('DELETE FROM preset_macros WHERE id = ?', [id]);
 
             res.json({ success: true, id });
+        } catch (error: any) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
+
+    /**
+     * Get real-time DMX output state for the entire universe
+     */
+    async getDmxOutput(req: Request, res: Response): Promise<void> {
+        try {
+            if (!this.dmxController) {
+                res.status(503).json({ success: false, error: 'DMX Controller not ready' });
+                return;
+            }
+
+            const universe = this.dmxController.getAllChannels();
+            res.json({ success: true, universe });
         } catch (error: any) {
             res.status(500).json({ success: false, error: error.message });
         }
