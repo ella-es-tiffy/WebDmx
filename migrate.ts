@@ -12,6 +12,12 @@ async function migrate() {
             ADD COLUMN IF NOT EXISTS position VARCHAR(50) DEFAULT 'front';
         `);
 
+        // Add fixture_ids to global_palettes
+        await pool.query(`
+            ALTER TABLE global_palettes
+            ADD COLUMN IF NOT EXISTS fixture_ids TEXT DEFAULT NULL;
+        `);
+
         console.log('Migration successful.');
     } catch (error) {
         console.error('Migration failed:', error);

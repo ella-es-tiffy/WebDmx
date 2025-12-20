@@ -112,6 +112,17 @@ class FaderConsole {
                     this.selectFixture(fix);
                 }
             };
+
+            // Drag-to-select: Add to selection when mouse enters while pressed
+            btn.onmouseenter = (e) => {
+                if (e.buttons === 1 && (e.shiftKey || e.ctrlKey || e.metaKey)) {
+                    if (!this.selectedFixtureIds.includes(fix.id)) {
+                        this.selectedFixtureIds.push(fix.id);
+                        this.renderFixtureSelector();
+                    }
+                }
+            };
+
             container.appendChild(btn);
         });
     }
@@ -159,6 +170,7 @@ class FaderConsole {
         await this.refreshFixtureData();
         await this.loadMacros();
         await this.loadPresets();
+        this.renderMacros(); // Refresh sidebar to show global palettes
 
         this.isInitializing = false; // Allow DMX pushes again
     }
@@ -1549,7 +1561,20 @@ class FaderConsole {
     }
 
     async recallGlobalPalette(state) {
-        console.log(`🌍 Recalling Global Palette: ${state.name} for fixtures:`, this.selectedFixtureIds);
+        // Determine which fixtures to apply to:
+        // 1. If fixtures are selected, use those (override)
+        // 2. Otherwise, use the saved fixture_ids from the palette
+        let targetFixtures = this.selectedFixtureIds;
+        if (!targetFixtures || targetFixtures.length === 0) {
+            targetFixtures = state.fixture_ids || [];
+        }
+
+        console.log(`🌍 Recalling Global Palette: ${state.name} for fixtures:`, targetFixtures);
+
+        if (targetFixtures.length === 0) {
+            alert('Keine Lampen ausgewählt und keine Lampen in der Palette gespeichert!');
+            return;
+        }
 
         try {
             // 1. Get current assignments for ALL fixtures
@@ -1565,8 +1590,8 @@ class FaderConsole {
                 paletteMap[v.type.toUpperCase()] = v.value;
             });
 
-            // 3. For each selected fixture, apply palette to assigned channels
-            for (const fixtureId of this.selectedFixtureIds) {
+            // 3. For each target fixture, apply palette to assigned channels
+            for (const fixtureId of targetFixtures) {
                 const fixtureAssignments = assignmentMapping[fixtureId];
                 if (!fixtureAssignments) continue;
 
@@ -1591,7 +1616,7 @@ class FaderConsole {
             }
 
             // Sync UI if the active fixture was modified
-            if (this.selectedFixtureIds.includes(this.fixtureId)) {
+            if (targetFixtures.includes(this.fixtureId)) {
                 setTimeout(() => this.updateValues(), 200);
             }
         } catch (e) {
@@ -1601,7 +1626,7 @@ class FaderConsole {
 
     async sendAbsoluteDMX(address, value) {
         try {
-            await fetch(`${API}/api/dmx/set`, {
+            await fetch(`${API}/api/dmx/channel`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ channel: address, value })
@@ -1662,7 +1687,11 @@ class FaderConsole {
             await fetch(`${API}/api/faders/palettes`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: state.id, values })
+                body: JSON.stringify({
+                    id: state.id,
+                    values,
+                    fixtureIds: this.selectedFixtureIds // Remember which fixtures this palette applies to
+                })
             });
 
             await this.loadGlobalPalettes();

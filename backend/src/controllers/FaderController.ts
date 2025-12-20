@@ -594,6 +594,17 @@ export class FaderController {
                     [p.id]
                 );
                 p.values = values;
+
+                // Parse fixture_ids from JSON
+                if (p.fixture_ids) {
+                    try {
+                        p.fixture_ids = JSON.parse(p.fixture_ids);
+                    } catch (e) {
+                        p.fixture_ids = [];
+                    }
+                } else {
+                    p.fixture_ids = [];
+                }
             }
 
             res.json({ success: true, palettes });
@@ -624,8 +635,16 @@ export class FaderController {
      */
     async saveGlobalPalette(req: Request, res: Response): Promise<void> {
         try {
-            const { id, values } = req.body; // values = [ { type: 'R', value: 255 }, ... ]
+            const { id, values, fixtureIds } = req.body; // values = [ { type: 'R', value: 255 }, ... ], fixtureIds = [5, 7, 9]
             const pool = Database.getPool();
+
+            // Save which fixtures this palette applies to
+            if (fixtureIds && fixtureIds.length > 0) {
+                await pool.execute(
+                    'UPDATE global_palettes SET fixture_ids = ? WHERE id = ?',
+                    [JSON.stringify(fixtureIds), id]
+                );
+            }
 
             await pool.execute('DELETE FROM global_palette_values WHERE palette_id = ?', [id]);
             for (const v of values) {
