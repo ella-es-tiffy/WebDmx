@@ -706,7 +706,7 @@ export class FaderController {
 
                 const [templateChannels]: any = await pool.execute(`
                     SELECT channel_num, function_type 
-                    FROM template_channels 
+                    FROM fixture_template_channels 
                     WHERE template_id = ?
                 `, [fixture.template_id]);
 
