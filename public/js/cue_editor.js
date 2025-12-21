@@ -1,5 +1,5 @@
 /**
- * Cue Editor - DAW Style Timeline (v14)
+ * Cue Editor - DAW Style Timeline (v15)
  * Professional show control with drag & drop, playback, and timeline editing
  */
 
@@ -219,8 +219,6 @@ class CueEditor {
             if (!isCtrl) {
                 const selfDuration = this.dragState.cue.duration;
                 const rawTargetEnd = rawTargetTime + selfDuration;
-
-                // My Center (approximate, based on raw target)
                 const myCenterRaw = rawTargetTime + (selfDuration / 2);
 
                 let candidates = [];
@@ -240,34 +238,16 @@ class CueEditor {
                     const oEnd = other.startTime + other.duration;
                     const oCenter = other.startTime + (other.duration / 2);
 
-                    // Logic: Only snap to the edge that is on the SAME side as I am relative to the other object's center.
-                    // If I am Left of OtherCenter -> Snap to OtherStart
-                    // If I am Right of OtherCenter -> Snap to OtherEnd
-
                     const isLeft = myCenterRaw < oCenter;
 
                     if (isLeft) {
-                        // Target is Left Edge (Start)
-                        // Allow Snap MyStart -> OtherStart
-                        if (Math.abs(oStart - rawTargetTime) < snapThreshold) {
-                            candidates.push({ time: oStart, dist: Math.abs(oStart - rawTargetTime), type: 'obj-start-start' });
-                        }
-                        // Allow Snap MyEnd -> OtherStart
+                        if (Math.abs(oStart - rawTargetTime) < snapThreshold) candidates.push({ time: oStart, dist: Math.abs(oStart - rawTargetTime), type: 'obj-start-start' });
                         const snapPosForEndToStart = oStart - selfDuration;
-                        if (Math.abs(rawTargetEnd - oStart) < snapThreshold) {
-                            candidates.push({ time: snapPosForEndToStart, dist: Math.abs(rawTargetEnd - oStart), type: 'obj-end-start' });
-                        }
+                        if (Math.abs(rawTargetEnd - oStart) < snapThreshold) candidates.push({ time: snapPosForEndToStart, dist: Math.abs(rawTargetEnd - oStart), type: 'obj-end-start' });
                     } else {
-                        // Target is Right Edge (End)
-                        // Allow Snap MyStart -> OtherEnd
-                        if (Math.abs(oEnd - rawTargetTime) < snapThreshold) {
-                            candidates.push({ time: oEnd, dist: Math.abs(oEnd - rawTargetTime), type: 'obj-start-end' });
-                        }
-                        // Allow Snap MyEnd -> OtherEnd
+                        if (Math.abs(oEnd - rawTargetTime) < snapThreshold) candidates.push({ time: oEnd, dist: Math.abs(oEnd - rawTargetTime), type: 'obj-start-end' });
                         const snapPosForEndToEnd = oEnd - selfDuration;
-                        if (Math.abs(rawTargetEnd - oEnd) < snapThreshold) {
-                            candidates.push({ time: snapPosForEndToEnd, dist: Math.abs(rawTargetEnd - oEnd), type: 'obj-end-end' });
-                        }
+                        if (Math.abs(rawTargetEnd - oEnd) < snapThreshold) candidates.push({ time: snapPosForEndToEnd, dist: Math.abs(rawTargetEnd - oEnd), type: 'obj-end-end' });
                     }
                 });
 
@@ -332,8 +312,14 @@ class CueEditor {
             const ghost = this.dragState.ghostElement;
             ghost.remove();
 
+            // Adjusted logic to find track element better
             const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
-            const trackEl = dropTarget ? dropTarget.closest('.track-content') : null;
+            let trackEl = dropTarget ? dropTarget.closest('.track-content') : null;
+            if (!trackEl && dropTarget) {
+                // Maybe we hit the track-label? Or the track div itself?
+                const trackContainer = dropTarget.closest('.track');
+                if (trackContainer) trackEl = trackContainer.querySelector('.track-content');
+            }
 
             if (trackEl && trackEl.parentElement) {
                 const trackId = parseInt(trackEl.parentElement.dataset.trackId);
@@ -397,7 +383,6 @@ class CueEditor {
 
         ruler.innerHTML = '';
         ruler.style.width = `${(this.maxTime * this.pixelsPerSecond) + LEFT_MARGIN}px`;
-
         const oldGrid = tracksContainer.querySelectorAll('.grid-line');
         oldGrid.forEach(el => el.remove());
 
@@ -409,7 +394,6 @@ class CueEditor {
                 marker.style.left = `${pos}px`;
                 marker.textContent = `${Math.round(i)}s`;
                 ruler.appendChild(marker);
-
                 const gridLine = document.createElement('div');
                 gridLine.className = 'grid-line major';
                 gridLine.style.left = `${pos}px`;
@@ -419,7 +403,6 @@ class CueEditor {
                 marker.className = 'time-marker minor';
                 marker.style.left = `${pos}px`;
                 ruler.appendChild(marker);
-
                 const gridLine = document.createElement('div');
                 gridLine.className = 'grid-line minor';
                 gridLine.style.left = `${pos}px`;
@@ -430,8 +413,16 @@ class CueEditor {
 
     addTrack(render = true) {
         const trackId = this.tracks.length + 1;
-        this.tracks.push({ id: trackId, name: `Track ${trackId}`, cues: [] });
+        this.tracks.push({ id: trackId, name: `Track ${trackId}`, cues: [], muted: false });
         if (render) this.renderTracks();
+    }
+
+    toggleMute(trackId) {
+        const track = this.tracks.find(t => t.id === trackId);
+        if (track) {
+            track.muted = !track.muted;
+            this.renderTracks();
+        }
     }
 
     renderTracks() {
@@ -445,13 +436,34 @@ class CueEditor {
             trackEl.className = 'track';
             trackEl.dataset.trackId = track.id;
 
+            // Track Label with Mute Button
             const label = document.createElement('div');
             label.className = 'track-label';
-            label.textContent = track.name;
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = track.name;
+
+            const muteBtn = document.createElement('button');
+            muteBtn.className = `mute-btn ${track.muted ? 'active' : ''}`;
+            muteBtn.textContent = 'M';
+            muteBtn.title = 'Mute/Unmute';
+            muteBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.toggleMute(track.id);
+            };
+
+            label.appendChild(nameSpan);
+            label.appendChild(muteBtn);
 
             const content = document.createElement('div');
             content.className = 'track-content';
             content.ondragover = (e) => e.preventDefault();
+
+            // Visual feedback for Mute
+            if (track.muted) {
+                content.style.opacity = '0.5';
+                content.style.background = 'repeating-linear-gradient(45deg, rgba(0,0,0,0), rgba(0,0,0,0) 10px, rgba(255,0,0,0.05) 10px, rgba(255,0,0,0.05) 20px)';
+            }
 
             trackEl.appendChild(label);
             trackEl.appendChild(content);
@@ -565,7 +577,6 @@ class CueEditor {
     updatePlayhead() {
         const playhead = document.getElementById('playhead');
         if (playhead) playhead.style.left = `${(this.currentTime * this.pixelsPerSecond) + LEFT_MARGIN}px`;
-
         const minutes = Math.floor(this.currentTime / 60);
         const seconds = (this.currentTime % 60).toFixed(1);
         const timeDisplay = document.getElementById('time-display');
@@ -575,9 +586,14 @@ class CueEditor {
     async checkCues() {
         const newActiveCues = new Set();
         for (const cue of this.cues) {
+            const track = this.tracks.find(t => t.id === cue.trackId);
+            const isMuted = track ? track.muted : false;
+
             const cueStart = cue.startTime;
             const cueEnd = cue.startTime + cue.duration;
-            if (this.currentTime >= cueStart && this.currentTime < cueEnd) {
+
+            // Check Mute before Active
+            if (!isMuted && this.currentTime >= cueStart && this.currentTime < cueEnd) {
                 newActiveCues.add(cue.id);
                 if (!this.activeCues.has(cue.id)) { const block = this.cueElements.get(cue.id); if (block) block.classList.add('active'); }
                 if (!cue.triggered) { await this.recallScene(cue.sceneId); cue.triggered = true; }

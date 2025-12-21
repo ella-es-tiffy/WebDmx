@@ -19,9 +19,12 @@ class FaderConsole {
         this.globalValueCache = {}; // Global cache for all 512 channels
         this.backendValues = new Array(512).fill(0);
         this.assignmentCache = {}; // Cache for all 32 assignments per fixture
+        this.groupCache = {}; // Cache for channel groups
         this.selectedFixtureIds = [1]; // For multi-fixture actions
         this.isInitializing = false; // Flag to prevent accidental DMX pushes
         this.globalPaletteStates = [];
+        this.presetStates = [];
+        this.macroStates = [];
 
         // Encoder states
         this.encoders = {
@@ -56,7 +59,10 @@ class FaderConsole {
         this.createFaders();
 
         // Initialize encoders
+        // Initialize encoders
         this.initEncoders();
+
+        this.initMacros();
 
         // Load data for the initial fixture
         await this.refreshFixtureData();
@@ -65,7 +71,6 @@ class FaderConsole {
         this.startBackendMonitor();
         this.startHeartbeat();
 
-        this.initMacros();
         await this.loadMacros();
         await this.loadPresets();
         await this.loadGlobalPalettes();
@@ -76,12 +81,36 @@ class FaderConsole {
         await this.loadFaders(); // This loads names and other channel info
         await this.loadChannelAssignments();
         await this.loadChannelGroups();
+        this.renderMacros(); // Force re-render after assignments loaded to apply colors
     }
 
     async loadFixtures() {
         try {
             const res = await fetch(`${API}/api/devices`);
             this.availableFixtures = await res.json();
+
+            // Validate current fixture ID
+            const currentExists = this.availableFixtures.find(f => f.id === this.fixtureId);
+
+            if (!currentExists && this.availableFixtures.length > 0) {
+                // Switch to first available fixture
+                const first = this.availableFixtures[0];
+                this.fixtureId = first.id;
+                this.fixtureStartAddress = first.dmx_address;
+                this.fixtureChannelCount = first.channel_count;
+                this.selectedFixtureIds = [first.id];
+                console.log(`Auto-switched to Fixture ${first.id}`);
+            } else if (this.availableFixtures.length > 0) {
+                // Filter out invalid IDs from selection
+                this.selectedFixtureIds = this.selectedFixtureIds.filter(id =>
+                    this.availableFixtures.some(f => f.id === id)
+                );
+                // Ensure at least current is selected if selection became empty
+                if (this.selectedFixtureIds.length === 0) {
+                    this.selectedFixtureIds = [this.fixtureId];
+                }
+            }
+
             console.log('Fixtures loaded:', this.availableFixtures);
         } catch (e) {
             console.error('Failed to load fixtures:', e);
@@ -968,53 +997,59 @@ class FaderConsole {
         macrosContainer.appendChild(layerHeader);
 
         // --- COLOR MACROS (4) ---
-        this.macroStates.forEach(state => {
-            const item = document.createElement('div');
-            item.className = 'macro-item';
+        if (this.macroStates) {
+            console.log('🎨 Rendering Macros. States:', JSON.stringify(this.macroStates));
+            this.macroStates.forEach(state => {
+                const item = document.createElement('div');
+                item.className = 'macro-item';
 
-            const box = document.createElement('div');
-            box.className = 'macro-box';
-            box.style.backgroundColor = state.color;
-
-            const pickerContainer = document.createElement('div');
-            pickerContainer.className = 'macro-picker-container';
-
-            const setBtn = document.createElement('div');
-            setBtn.className = 'macro-set-btn';
-            setBtn.textContent = 'COLOR';
-
-            const picker = document.createElement('input');
-            picker.type = 'color';
-            picker.className = 'macro-hidden-picker';
-            picker.value = state.color;
-
-            pickerContainer.appendChild(setBtn);
-            pickerContainer.appendChild(picker);
-
-            item.appendChild(box);
-            item.appendChild(pickerContainer);
-            macrosContainer.appendChild(item);
-
-            // Update state with new DOM elements
-            state.box = box;
-            state.picker = picker;
-
-            // Apply Color 
-            this.bindButton(box, () => this.applyMacroColor(state.color, true));
-
-            // Picker change = Real-time preview (LIVE)
-            picker.oninput = () => {
-                state.color = picker.value;
+                const box = document.createElement('div');
+                box.className = 'macro-box';
                 box.style.backgroundColor = state.color;
-                this.applyMacroColor(state.color, false); // Live apply to lamps (DMX only, no DB save during drag)
-            };
 
-            // Picker close = Final save
-            picker.onchange = () => {
-                this.saveMacro(state.id, state.color);
-                this.applyMacroColor(state.color, true); // Persist fader values to DB
-            };
-        });
+                // Debug Attribute
+                box.setAttribute('data-debug-color', state.color);
+
+                const pickerContainer = document.createElement('div');
+                pickerContainer.className = 'macro-picker-container';
+
+                const setBtn = document.createElement('div');
+                setBtn.className = 'macro-set-btn';
+                setBtn.textContent = 'COLOR';
+
+                const picker = document.createElement('input');
+                picker.type = 'color';
+                picker.className = 'macro-hidden-picker';
+                picker.value = state.color;
+
+                pickerContainer.appendChild(setBtn);
+                pickerContainer.appendChild(picker);
+
+                item.appendChild(box);
+                item.appendChild(pickerContainer);
+                macrosContainer.appendChild(item);
+
+                // Update state with new DOM elements
+                state.box = box;
+                state.picker = picker;
+
+                // Apply Color 
+                this.bindButton(box, () => this.applyMacroColor(state.color, true));
+
+                // Picker change = Real-time preview (LIVE)
+                picker.oninput = () => {
+                    state.color = picker.value;
+                    box.style.backgroundColor = state.color;
+                    this.applyMacroColor(state.color, false); // Live apply to lamps (DMX only, no DB save during drag)
+                };
+
+                // Picker close = Final save
+                picker.onchange = async () => {
+                    this.saveMacro(state.id, state.color);
+                    this.applyMacroColor(state.color, true); // Persist fader values to DB
+                };
+            });
+        }
 
         // --- PRESET MACROS ---
         this.presetStates.forEach(p => this.createPresetElement(p, macrosContainer));
@@ -1090,6 +1125,40 @@ class FaderConsole {
         const box = document.createElement('div');
         box.className = 'macro-box preset-box';
 
+        // Try to determine color from values
+        if (state.values && this.assignmentCache[this.fixtureId]) {
+            let r = 0, g = 0, b = 0, found = false;
+            const assignments = this.assignmentCache[this.fixtureId];
+            state.values.forEach(v => {
+                const funcsRaw = assignments[v.channel] || [];
+                const funcs = funcsRaw.map(f => f.toUpperCase());
+                if (funcs.includes('R')) { r = v.value; found = true; }
+                if (funcs.includes('G')) { g = v.value; found = true; }
+                if (funcs.includes('B')) { b = v.value; found = true; }
+            });
+            if (found) {
+                box.style.background = `rgb(${r},${g},${b})`;
+                box.title = `RGB(${r},${g},${b})`;
+                // Adjust text color for contrast
+                if ((r * 0.299 + g * 0.587 + b * 0.114) > 150) {
+                    box.style.color = '#000';
+                    box.style.textShadow = 'none';
+                } else {
+                    box.style.color = '#fff';
+                }
+            } else {
+                const chs = state.values.map(v => v.channel).join(',');
+                const asgDetails = state.values.map(v => {
+                    const asg = assignments[v.channel] || [];
+                    return `${v.channel}:${asg.join('')}`;
+                }).join(' ');
+                box.title = `No Color. Chs: ${chs}. Asg: ${asgDetails}`;
+                // Fallback style
+                box.style.background = '#333';
+                box.style.color = '#aaa';
+            }
+        }
+
         const nameEl = document.createElement('div');
         nameEl.className = 'preset-name';
         nameEl.textContent = state.name;
@@ -1140,17 +1209,24 @@ class FaderConsole {
 
     async loadMacros() {
         try {
-            const res = await fetch(`${API}/api/faders/macros?fixtureId=${this.fixtureId}`);
+            console.log(`🔍 Loading global macros`);
+            const res = await fetch(`${API}/api/faders/macros`); // Global, no fixtureId
             const data = await res.json();
+            console.log('📦 Macros API Data:', data);
+
             if (data.success && data.macros) {
                 data.macros.forEach(m => {
-                    const state = this.macroStates.find(s => s.id === m.id);
+                    const state = this.macroStates.find(s => s.id == m.id); // Loose equality
                     if (state) {
+                        console.log(`   -> Update State ${state.id}: ${state.color} -> ${m.color}`);
                         state.color = m.color;
                         if (state.box) state.box.style.backgroundColor = m.color;
                         if (state.picker) state.picker.value = m.color;
+                    } else {
+                        console.warn(`   -> Macro State not found for ID ${m.id}`);
                     }
                 });
+                this.renderMacros(); // Ensure UI updates
             }
         } catch (e) {
             console.error('Failed to load macros:', e);
@@ -1162,10 +1238,61 @@ class FaderConsole {
             await fetch(`${API}/api/faders/macros`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, color, fixtureId: this.fixtureId })
+                body: JSON.stringify({ id, color }) // Global macros, no fixtureId
             });
         } catch (e) {
             console.error('Failed to save macro:', e);
+        }
+    }
+
+    async syncMacroToPreset(macroId, hex) {
+        console.log(`Syncing Quick Color ${macroId} to presets...`);
+        const name = `Quick Color ${macroId}`;
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+
+        // 1. Build values based on assignments
+        const assignments = this.assignmentCache[this.fixtureId];
+        if (!assignments) return;
+
+        let values = [];
+        Object.keys(assignments).forEach(chStr => {
+            const funcsRaw = assignments[chStr] || [];
+            const funcs = funcsRaw.map(f => f.toUpperCase());
+            const ch = parseInt(chStr);
+
+            if (funcs.includes('R')) values.push({ channel: ch, value: r, isOn: true });
+            if (funcs.includes('G')) values.push({ channel: ch, value: g, isOn: true });
+            if (funcs.includes('B')) values.push({ channel: ch, value: b, isOn: true });
+        });
+
+        if (values.length === 0) return;
+
+        // 2. Find existing preset by name
+        let preset = this.presetStates.find(p => p.name === name);
+        let presetId;
+
+        if (!preset) {
+            // Create new
+            const res = await fetch(`${API}/api/faders/presets/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fixtureId: this.fixtureId, name })
+            });
+            const data = await res.json();
+            if (data.success) presetId = data.id;
+        } else {
+            presetId = preset.id;
+        }
+
+        if (presetId) {
+            await fetch(`${API}/api/faders/presets`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: presetId, fixtureId: this.fixtureId, values })
+            });
+            await this.loadPresets(); // Refresh list to show colors
         }
     }
 
@@ -1179,8 +1306,10 @@ class FaderConsole {
                     name: p.name,
                     values: p.values
                 }));
-                this.renderMacros();
+            } else {
+                this.presetStates = [];
             }
+            this.renderMacros(); // Always render, even if no presets
         } catch (e) {
             console.error('Failed to load presets:', e);
         }
@@ -1685,7 +1814,29 @@ class FaderConsole {
         const box = document.createElement('div');
         box.className = 'macro-box palette-box';
         box.style.border = '1px solid #444';
-        box.style.background = 'linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)';
+
+        // Check for Color
+        let r = 0, g = 0, b = 0, hasColor = false;
+        if (state.values) {
+            state.values.forEach(v => {
+                if (v.type === 'R') { r = v.value; hasColor = true; }
+                if (v.type === 'G') { g = v.value; hasColor = true; }
+                if (v.type === 'B') { b = v.value; hasColor = true; }
+            });
+        }
+
+        if (hasColor) {
+            box.style.background = `rgb(${r},${g},${b})`;
+            // Contrast check
+            if ((r * 0.299 + g * 0.587 + b * 0.114) > 150) {
+                box.style.color = '#000';
+                box.style.textShadow = 'none';
+            } else {
+                box.style.color = '#fff';
+            }
+        } else {
+            box.style.background = 'linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)';
+        }
 
         const nameEl = document.createElement('div');
         nameEl.className = 'preset-name';

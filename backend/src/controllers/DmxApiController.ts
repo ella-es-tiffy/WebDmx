@@ -102,6 +102,35 @@ export class DmxApiController {
     };
 
     /**
+     * POST /api/dmx/sparse
+     * Set specific channels without affecting others
+     * Body: { channels: { "1": 255, "5": 0 } }
+     */
+    public setSparse = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { channels } = req.body;
+
+            if (!channels || typeof channels !== 'object') {
+                res.status(400).json({ error: 'channels object required' });
+                return;
+            }
+
+            // Iterate manually to support non-contiguous updates
+            Object.keys(channels).forEach(key => {
+                const channel = parseInt(key);
+                const value = channels[key];
+                if (!isNaN(channel) && typeof value === 'number') {
+                    this.dmxController.setChannel(channel, value);
+                }
+            });
+
+            res.json({ success: true, count: Object.keys(channels).length });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    };
+
+    /**
      * POST /api/dmx/batch
      * Set all 512 channels at once (optimized for scene recall)
      * Body: { channels: number[] } - Array of 512 values (0-255)

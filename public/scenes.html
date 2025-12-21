@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Szenen-Manager | WebDMX</title>
-    <link rel="stylesheet" href="css/scenes.css">
+    <link rel="stylesheet" href="css/scenes.css?v=6">
 </head>
 
 <body>
@@ -20,28 +20,41 @@
             </div>
         </div>
 
-        <!-- Main Layout -->
-        <div class="scenes-layout">
+        <!-- Main Layout (Sidebar + Scenes) -->
+        <div class="scenes-layout" style="flex: 1; min-height: 0;">
             <!-- Sidebar: Folders -->
             <div class="folders-sidebar">
                 <h3>Ordner</h3>
                 <div id="folders-list" class="folders-list">
-                    <!-- Folders will be rendered here -->
+                    <!-- Folders loaded via JS -->
                 </div>
             </div>
 
-            <!-- Main: Scenes Grid -->
-            <div class="scenes-main">
+            <!-- Main Column (Toolbar + Grid Only) -->
+            <div class="scenes-main-column">
+
                 <div class="scenes-toolbar">
                     <input type="text" id="search-scenes" placeholder="🔍 Szenen durchsuchen...">
                     <select id="folder-filter">
                         <option value="">Alle Ordner</option>
                     </select>
                 </div>
+
                 <div id="scenes-grid" class="scenes-grid">
-                    <!-- Scenes will be rendered here -->
+                    <!-- Scenes loaded via JS -->
                 </div>
+
             </div>
+        </div>
+
+        <!-- Inspector (Bottom Full Width) -->
+        <div class="scenes-inspector" id="scene-inspector">
+            <div class="inspector-header">
+                <h3 id="inspector-title">Details</h3>
+                <div id="inspector-info"
+                    style="font-family: monospace; font-size: 11px; color: #00bcd4; font-weight: bold;">--</div>
+            </div>
+            <div id="dmx-grid" class="dmx-grid"></div>
         </div>
     </div>
 
@@ -60,6 +73,18 @@
 
                 <label>Farbe (optional):</label>
                 <input type="color" id="scene-color" value="#ff0000">
+
+                <div class="form-group" style="margin-top: 10px;">
+                    <label style="display:flex; justify-content:space-between;">
+                        <span>Fixtures (Auswahl):</span>
+                        <span style="font-size:10px; color:#00bcd4; cursor:pointer;" id="toggle-all-fixtures">Alle /
+                            Keine</span>
+                    </label>
+                    <div id="fixture-select-list"
+                        style="max-height: 120px; overflow-y: auto; background: #111; border: 1px solid #333; padding: 5px; border-radius: 4px;">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
 
                 <div class="modal-actions">
                     <button type="submit" class="btn-primary">💾 Speichern</button>
@@ -88,7 +113,7 @@
         </div>
     </div>
 
-    <script src="js/scenes.js"></script>
+    <script src="js/scenes.js?v=6"></script>
 </body>
 
 </html>

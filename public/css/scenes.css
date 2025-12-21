@@ -1,4 +1,4 @@
-/* Szenen-Manager Styles */
+/* Szenen-Manager Styles v3 (Slim & Grid Inspector) */
 :root {
     --bg-dark: #0a0a0a;
     --bg-medium: #1a1a1a;
@@ -40,6 +40,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    height: 40px;
 }
 
 .scenes-header h1 {
@@ -52,10 +53,10 @@ body {
     gap: 8px;
 }
 
-/* Buttons */
 .btn-primary,
 .btn-secondary,
 .btn-close {
+    /* Same as before */
     padding: 4px 8px;
     border: none;
     border-radius: 4px;
@@ -88,7 +89,6 @@ body {
 .btn-close {
     background: var(--danger);
     color: var(--text);
-    padding: 10px 15px;
 }
 
 .btn-close:hover {
@@ -109,6 +109,8 @@ body {
     border-right: 2px solid var(--border);
     padding: 8px;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .folders-sidebar h3 {
@@ -120,7 +122,7 @@ body {
 .folders-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
 }
 
 .folder-item {
@@ -136,7 +138,6 @@ body {
 
 .folder-item:hover {
     background: var(--bg-dark);
-    transform: translateX(5px);
 }
 
 .folder-item.active {
@@ -159,8 +160,8 @@ body {
     opacity: 0.7;
 }
 
-/* Main Area */
-.scenes-main {
+/* Main Area Column */
+.scenes-main-column {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -173,6 +174,8 @@ body {
     border-bottom: 1px solid var(--border);
     display: flex;
     gap: 8px;
+    height: 40px;
+    align-items: center;
 }
 
 .scenes-toolbar input,
@@ -190,99 +193,160 @@ body {
 }
 
 .scenes-toolbar select {
-    min-width: 200px;
+    min-width: 150px;
 }
 
-/* Scenes Grid */
+/* Scenes Grid (Top Part of Main) */
 .scenes-grid {
     flex: 1;
+    /* Takes remaining space minus inspector */
     padding: 10px;
     overflow-y: auto;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    /* Slim Width */
+    grid-auto-rows: 60px;
+    /* Slim Height */
+    gap: 6px;
     align-content: start;
 }
 
+/* Slim Card Design */
 .scene-card {
-    background: var(--bg-medium);
-    border-radius: 12px;
-    overflow: hidden;
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px;
     cursor: pointer;
-    transition: all 0.3s;
-    border: 2px solid transparent;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    /* Left border color handled via style attribute in JS */
 }
 
 .scene-card:hover {
-    transform: translateY(-5px);
+    background: var(--bg-medium);
     border-color: var(--accent);
-    box-shadow: 0 10px 30px rgba(0, 188, 212, 0.3);
 }
 
-.scene-preview {
-    height: 60px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-}
-
-.scene-info {
-    padding: 6px;
+.scene-card.active {
+    border-color: var(--accent);
+    background: #00bcd422;
 }
 
 .scene-name {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
-    margin-bottom: 3px;
-}
-
-.scene-meta {
-    font-size: 9px;
-    color: var(--text-dim);
-    margin-bottom: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-left: 2px;
 }
 
 .scene-actions {
     display: flex;
-    gap: 8px;
+    gap: 4px;
 }
 
 .scene-btn {
     flex: 1;
-    padding: 4px;
-    background: var(--bg-light);
-    border: 1px solid var(--border);
-    border-radius: 3px;
+    padding: 2px;
+    background: #333;
+    border: 1px solid #444;
+    border-radius: 2px;
     font-size: 9px;
     cursor: pointer;
-    transition: all 0.2s;
+    text-align: center;
+    color: #aaa;
 }
 
 .scene-btn:hover {
-    background: var(--bg-dark);
-}
-
-.scene-btn.recall {
-    background: var(--success);
-    border-color: var(--success);
+    background: #444;
+    color: #fff;
 }
 
 .scene-btn.recall:hover {
-    background: #45a049;
-}
-
-.scene-btn.delete {
-    background: var(--danger);
-    border-color: var(--danger);
+    background: var(--success);
+    color: #fff;
+    border-color: var(--success);
 }
 
 .scene-btn.delete:hover {
-    background: #d32f2f;
+    background: var(--danger);
+    color: #fff;
+    border-color: var(--danger);
 }
 
-/* Modal */
+
+/* Inspector (Bottom Full Width) */
+.scenes-inspector {
+    height: 240px;
+    /* Taller as requested */
+    width: 100%;
+    background: var(--bg-medium);
+    border-top: 2px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.inspector-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.inspector-header h3 {
+    font-size: 11px;
+    color: var(--text-dim);
+}
+
+.dmx-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(32, 1fr);
+    /* 32 cols x 16 rows */
+    gap: 1px;
+    padding: 1px;
+    overflow-y: auto;
+    max-width: 100%;
+}
+
+.dmx-cell {
+    aspect-ratio: 1;
+    background: #222;
+    position: relative;
+    font-size: 8px;
+    display: flex;
+    align-items: flex-end;
+    cursor: crosshair;
+}
+
+.dmx-cell:hover {
+    z-index: 10;
+    border: 1px solid #fff;
+}
+
+/* Highlight borders */
+
+.dmx-fill {
+    width: 100%;
+    background: var(--success);
+    opacity: 0.8;
+}
+
+/* Tooltip removed - using Header Info instead */
+.dmx-cell:hover::after {
+    display: none;
+}
+
+/* Modal Styles - Keep same */
 .modal {
     display: none;
     position: fixed;
@@ -347,7 +411,6 @@ body {
     flex: 1;
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;

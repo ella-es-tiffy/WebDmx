@@ -353,25 +353,71 @@ export class FaderController {
     }
 
     /**
-     * Get all macros
+     * Get all macros (global, shared across all fixtures)
      */
     async getMacros(req: Request, res: Response): Promise<void> {
         try {
-            const { fixtureId = 1 } = req.query;
             const pool = Database.getPool();
-            const [rows] = await pool.execute(
-                'SELECT id, color FROM fader_macros WHERE fixture_id = ? ORDER BY id',
-                [fixtureId]
+
+            // Ensure table has AUTO_INCREMENT
+            await pool.execute(`
+                CREATE TABLE IF NOT EXISTS fader_macros (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    fixture_id INT DEFAULT 0,
+                    color VARCHAR(7) DEFAULT '#333333'
+                )
+            `);
+
+            // Fix existing table that might not have AUTO_INCREMENT
+            try {
+                await pool.execute(`ALTER TABLE fader_macros MODIFY id INT AUTO_INCREMENT`);
+            } catch (e) {
+                // Column might already be AUTO_INCREMENT
+            }
+
+            // Get global macros (fixture_id = 0)
+            let [rows]: any = await pool.execute(
+                'SELECT id, color FROM fader_macros WHERE fixture_id = 0 ORDER BY id'
             );
+
+            // Check if we have exactly IDs 1-4
+            const expectedIds = [1, 2, 3, 4];
+            const actualIds = rows.map((r: any) => r.id);
+            const idsMatch = expectedIds.every(id => actualIds.includes(id)) && actualIds.length === 4;
+
+            if (!idsMatch) {
+                console.log(`⚙️  Resetting global macros to IDs 1-4 (found: ${actualIds.join(', ')})`);
+
+                // Delete all global macros
+                await pool.execute('DELETE FROM fader_macros WHERE fixture_id = 0');
+
+                // Delete any old macros with IDs 1-4 (avoid PRIMARY key conflicts)
+                await pool.execute('DELETE FROM fader_macros WHERE id IN (1, 2, 3, 4)');
+
+                // Create exactly 4 macros with IDs 1-4
+                for (let id = 1; id <= 4; id++) {
+                    await pool.execute(
+                        'REPLACE INTO fader_macros (id, fixture_id, color) VALUES (?, 0, ?)',
+                        [id, '#333333']
+                    );
+                }
+
+                // Re-fetch
+                [rows] = await pool.execute(
+                    'SELECT id, color FROM fader_macros WHERE fixture_id = 0 ORDER BY id'
+                );
+            }
+
             res.json({ success: true, macros: rows });
         } catch (error: any) {
+            console.error('getMacros error:', error);
             res.status(500).json({ success: false, error: error.message });
         }
     }
 
     async updateMacro(req: Request, res: Response): Promise<void> {
         try {
-            const { id, color, fixtureId = 1 } = req.body;
+            const { id, color } = req.body; // fixtureId no longer used - macros are global
             if (id === undefined || !color) {
                 res.status(400).json({ success: false, error: 'Missing required fields' });
                 return;
@@ -379,11 +425,11 @@ export class FaderController {
 
             const pool = Database.getPool();
             await pool.execute(
-                'INSERT INTO fader_macros (id, color, fixture_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE color = VALUES(color)',
-                [id, color, fixtureId]
+                'INSERT INTO fader_macros (id, color, fixture_id) VALUES (?, ?, 0) ON DUPLICATE KEY UPDATE color = VALUES(color)',
+                [id, color]
             );
 
-            res.json({ success: true, id, color, fixtureId });
+            res.json({ success: true, id, color });
         } catch (error: any) {
             res.status(500).json({ success: false, error: error.message });
         }

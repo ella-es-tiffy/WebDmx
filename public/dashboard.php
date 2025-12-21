@@ -161,7 +161,7 @@
                 height: '700px',
                 top: '50px',
                 left: '100px',
-                content: '<iframe src="scenes.html" style="width:100%; height:100%; border:none;"></iframe>'
+                content: `<iframe src="scenes.html?v=${Date.now()}" style="width:100%; height:100%; border:none;"></iframe>`
             });
         }
 
