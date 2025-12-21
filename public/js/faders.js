@@ -716,9 +716,50 @@ class FaderConsole {
      * Attach event listeners
      */
     attachFaderEvents(state) {
-        state.fader.addEventListener('input', (e) => {
+        state.fader.addEventListener('input', async (e) => {
             const value = parseInt(e.target.value);
-            this.updateFaderValue(state, value, true); // Save to DB
+            this.updateFaderValue(state, value, true); // Save to DB for active fixture
+
+            // If multiple fixtures are selected, apply to all
+            if (this.selectedFixtureIds && this.selectedFixtureIds.length > 1) {
+                // Get assignments for this channel
+                const channelAssignments = (this.assignmentCache[this.fixtureId] || {})[state.channel] || [];
+
+                if (channelAssignments.length > 0) {
+                    // Load all assignments
+                    const res = await fetch(`${API}/api/faders/all-assignments`);
+                    const data = await res.json();
+                    if (!data.success) return;
+                    const allAssignments = data.mapping;
+
+                    // Apply to all selected fixtures
+                    for (const fixtureId of this.selectedFixtureIds) {
+                        if (fixtureId === this.fixtureId) continue; // Skip active fixture (already updated)
+
+                        const fixture = this.availableFixtures.find(f => f.id === fixtureId);
+                        if (!fixture) continue;
+
+                        const assignments = allAssignments[fixtureId];
+                        if (!assignments) continue;
+
+                        // Find channels with the same assignments
+                        Object.keys(assignments).forEach(relCh => {
+                            const functions = assignments[relCh];
+                            const relChNum = parseInt(relCh);
+
+                            // Check if this channel has any of the same functions
+                            const hasMatchingFunction = channelAssignments.some(func =>
+                                functions.includes(func.toUpperCase())
+                            );
+
+                            if (hasMatchingFunction) {
+                                const absAddr = fixture.dmx_address + relChNum - 1;
+                                this.sendAbsoluteDMX(absAddr, value);
+                            }
+                        });
+                    }
+                }
+            }
         });
 
         // Double click to manually edit value
