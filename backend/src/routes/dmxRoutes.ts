@@ -14,6 +14,7 @@ export function createDmxRoutes(dmxController: DmxController): Router {
     router.get('/channel/:channel', controller.getChannel);
     router.post('/channel', controller.setChannel);
     router.post('/channels', controller.setChannels);
+    router.post('/batch', controller.setBatch);
     router.post('/blackout', controller.blackout);
 
     return router;

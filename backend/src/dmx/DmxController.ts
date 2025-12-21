@@ -127,22 +127,22 @@ export class DmxController implements IDmxController {
             } catch (err: any) {
                 const msg = err.message || '';
                 if (!msg.includes('Interrupted') && !msg.includes('temporarily unavailable')) {
-                    console.error('TX Error:', msg);
+                    // console.error('TX Error:', msg);
                 }
             }
 
-            // Schedule next frame (30Hz -> ~33ms total cycle time)
-            // Using 25ms delay to target 40Hz, or 30ms for rock-solid 33Hz
+            // Original logic: Fixed 25ms delay AFTER update finishes
+            // This results in slightly lower but rock-stable FPS (approx 20-30Hz)
             this.updateInterval = setTimeout(loop, 25) as any;
         };
 
-        console.log('🚀 Starting Optimized DMX Transmission Loop (40Hz target)...');
+        console.log('🚀 Starting Standard DMX Loop (25ms delay)...');
         loop();
     }
 
     /**
      * Send DMX data to serial port
-     * Optimized Baud-Rate-Break method for high stability on Mac
+     * Reverting to original "Working" implementation
      */
     public async update(): Promise<void> {
         if (!this.port || !this.port.isOpen || this.isUpdating) return;
@@ -152,18 +152,16 @@ export class DmxController implements IDmxController {
 
         return new Promise((resolve) => {
             // STEP 1: Assert BREAK
+            // NOTE: We explicitly set rts: false as it was in the original code
             this.port!.set({ brk: true, rts: false }, (err) => {
                 if (err) { this.isUpdating = false; return resolve(); }
 
-                // The OS latency for the next call is usually enough for the BREAK
                 this.port!.set({ brk: false, rts: false }, (err) => {
                     if (err) { this.isUpdating = false; return resolve(); }
 
-                    // STEP 2: MAB (Mark After Break)
-                    // We give the serial port a tiny moment to "settle"
                     setImmediate(() => {
                         this.port!.write(this.readBuffer, (err) => {
-                            if (err) { /* ignore write errors */ }
+                            if (err) { /* ignore */ }
                             this.isUpdating = false;
                             resolve();
                         });
@@ -202,6 +200,17 @@ export class DmxController implements IDmxController {
             const value = Math.max(0, Math.min(255, Math.floor(values[i])));
             this.writeBuffer[startChannel + i] = value;
         }
+    }
+
+    /**
+     * Direct Buffer Update (High Performance)
+     * Used by WebSocket for realtime control
+     * copies data directly into writeBuffer starting at channel 1
+     */
+    public updateBuffer(data: Buffer): void {
+        const length = Math.min(data.length, DMX_UNIVERSE_SIZE);
+        // Copy directly to writeBuffer+1 (skipping Start Code)
+        data.copy(this.writeBuffer, 1, 0, length);
     }
 
     /**

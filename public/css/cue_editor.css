@@ -157,10 +157,43 @@ body {
     align-items: center;
 }
 
+.time-marker.major {
+    color: var(--text);
+    font-weight: bold;
+    height: 100%;
+}
+
+.time-marker.minor {
+    font-size: 8px;
+    height: 30%;
+    /* Short ticks for minor */
+    top: auto;
+    bottom: 0;
+}
+
+/* Grid Lines */
+.grid-line {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.grid-line.major {
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.grid-line.minor {
+    border-left: 1px dashed rgba(255, 255, 255, 0.05);
+}
+
 /* Tracks */
 .tracks-container {
     min-height: 400px;
     position: relative;
+    /* Performance: Contain layout and paint */
+    contain: layout style;
 }
 
 .track {
@@ -175,7 +208,8 @@ body {
 .track-label {
     position: sticky;
     left: 0;
-    width: 80px;
+    width: 100px;
+    min-width: 100px;
     padding: 0 10px;
     background: var(--bg-medium);
     border-right: 1px solid var(--border);
@@ -202,6 +236,9 @@ body {
     cursor: move;
     transition: all 0.2s;
     overflow: hidden;
+    /* Performance: GPU acceleration */
+    will-change: transform, opacity;
+    transform: translateZ(0);
 }
 
 .cue-block:hover {
@@ -213,6 +250,12 @@ body {
 .cue-block.active {
     border-color: var(--playhead);
     box-shadow: 0 0 15px rgba(255, 68, 68, 0.7);
+}
+
+.cue-block.selected {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 2px var(--accent), 0 0 15px rgba(0, 188, 212, 0.3);
+    z-index: 20;
 }
 
 .cue-block-name {
@@ -252,6 +295,9 @@ body {
     background: var(--playhead);
     z-index: 100;
     pointer-events: none;
+    /* Performance: GPU acceleration for smooth animation */
+    will-change: transform;
+    transform: translateZ(0);
 }
 
 .playhead::before {
@@ -276,6 +322,13 @@ body {
     font-size: 11px;
     margin-bottom: 8px;
     color: var(--text-dim);
+}
+
+#scene-pool {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-content: flex-start;
 }
 
 .pool-grid {
@@ -433,4 +486,53 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--border);
+}
+
+/* Keybind Overlay */
+.keybind-overlay {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 15px;
+    pointer-events: none;
+    z-index: 2000;
+    font-size: 11px;
+    color: var(--text-dim);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.keybind-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 6px;
+}
+
+.keybind-row:last-child {
+    margin-bottom: 0;
+}
+
+.keybind-key {
+    font-weight: bold;
+    color: var(--accent);
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    min-width: 20px;
+    text-align: center;
+}
+/* Version Badge */
+.version-badge {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    font-size: 10px;
+    color: var(--text-dim);
+    opacity: 0.5;
+    pointer-events: none;
 }

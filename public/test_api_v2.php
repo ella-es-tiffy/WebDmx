@@ -258,7 +258,8 @@
         async function sendFullOn() {
             // All channels 255
             const values = Array(512).fill(255);
-            callApi('POST', '/api/dmx/channels', { startChannel: 1, values });
+            // Optimization: Use batch endpoint for full universe updates
+            callApi('POST', '/api/dmx/batch', { channels: values });
         }
 
         async function sendOpenFixture() {

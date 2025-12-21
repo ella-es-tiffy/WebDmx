@@ -59,7 +59,13 @@
     <div id="system-status-global">
         <div class="status-item">
             <span class="status-label">Backend</span>
+            <span class="status-latency" id="backend-latency">-- ms</span>
             <span class="status-indicator" id="backend-status"></span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">RT-Socket</span>
+            <span class="status-latency" id="socket-latency">-- ms</span>
+            <span class="status-indicator" id="socket-status"></span>
         </div>
         <div class="status-item">
             <span class="status-label">DMX</span>
@@ -165,28 +171,87 @@
                 height: '800px',
                 top: '30px',
                 left: '50px',
-                content: '<iframe src="cue_editor.html" style="width:100%; height:100%; border:none;"></iframe>'
+                content: `<iframe src="cue_editor.html?v=${Date.now()}" style="width:100%; height:100%; border:none;"></iframe>`
             });
         }
 
         async function startDashboardStatus() {
-            const checkStatus = async () => {
+            // BACKEND Health & Latency
+            const checkBackend = async () => {
+                const start = performance.now();
                 try {
                     const res = await fetch(`http://${window.location.hostname}:3000/health`);
                     const data = await res.json();
-                    document.getElementById('backend-status').classList.add('online');
-                    if (data.dmx) document.getElementById('dmx-status').classList.add('online');
-                    else document.getElementById('dmx-status').classList.remove('online');
+                    const latency = Math.round(performance.now() - start);
+                    
+                    const el = document.getElementById('backend-status');
+                    const latEl = document.getElementById('backend-latency');
+                    
+                    el.classList.add('online');
+                    latEl.textContent = latency + ' ms';
+                    latEl.style.color = latency < 50 ? '#0f0' : (latency < 150 ? '#fa0' : '#f00');
+
+                    const dmxEl = document.getElementById('dmx-status');
+                    if (data.dmx) dmxEl.classList.add('online');
+                    else dmxEl.classList.remove('online');
                 } catch (e) {
                     document.getElementById('backend-status').classList.remove('online');
                     document.getElementById('dmx-status').classList.remove('online');
+                    document.getElementById('backend-latency').textContent = 'OFF';
+                    document.getElementById('backend-latency').style.color = '#f00';
                 }
             };
-            setInterval(checkStatus, 3000);
-            checkStatus();
+
+            // WEBSOCKET Latency
+            const startWebSocket = () => {
+                const ws = new WebSocket(`ws://${window.location.hostname}:3000`);
+                let pingStart = 0;
+
+                ws.onopen = () => {
+                    document.getElementById('socket-status').classList.add('online');
+                    // Ping loop
+                    setInterval(() => {
+                        if (ws.readyState === WebSocket.OPEN) {
+                            pingStart = performance.now();
+                            ws.send('ping');
+                        }
+                    }, 1000);
+                };
+
+                ws.onmessage = (event) => {
+                    if (event.data === 'pong') {
+                        const latency = Math.round(performance.now() - pingStart);
+                        const latEl = document.getElementById('socket-latency');
+                        latEl.textContent = latency + ' ms';
+                        latEl.style.color = latency < 20 ? '#0f0' : (latency < 50 ? '#fa0' : '#f00');
+                    }
+                };
+
+                ws.onclose = () => {
+                    document.getElementById('socket-status').classList.remove('online');
+                    document.getElementById('socket-latency').textContent = 'OFF';
+                    setTimeout(startWebSocket, 2000); // Reconnect
+                };
+            };
+
+            setInterval(checkBackend, 2000);
+            checkBackend();
+            startWebSocket();
         }
 
         startDashboardStatus();
     </script>
+    
+    <style>
+        .status-latency {
+            font-size: 10px;
+            font-family: monospace;
+            margin-right: 5px;
+            color: #666;
+            min-width: 40px;
+            text-align: right;
+            display: inline-block;
+        }
+    </style>
 </body>
 </html>

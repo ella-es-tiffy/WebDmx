@@ -102,6 +102,28 @@ export class DmxApiController {
     };
 
     /**
+     * POST /api/dmx/batch
+     * Set all 512 channels at once (optimized for scene recall)
+     * Body: { channels: number[] } - Array of 512 values (0-255)
+     */
+    public setBatch = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const { channels } = req.body;
+
+            if (!Array.isArray(channels)) {
+                res.status(400).json({ error: 'channels array required' });
+                return;
+            }
+
+            // Set all channels starting from channel 1
+            this.dmxController.setChannels(1, channels);
+            res.json({ success: true, count: channels.length });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    };
+
+    /**
      * POST /api/dmx/blackout
      * Set all channels to 0
      */
