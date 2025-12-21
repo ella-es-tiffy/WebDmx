@@ -1678,10 +1678,15 @@ class FaderConsole {
 
     async recallGlobalPalette(state) {
         // Determine which fixtures to apply to:
-        // 1. If fixtures are selected, use those (override)
+        // 1. If MULTIPLE fixtures are selected, use those (override)
         // 2. Otherwise, use the saved fixture_ids from the palette
-        let targetFixtures = this.selectedFixtureIds;
-        if (!targetFixtures || targetFixtures.length === 0) {
+        let targetFixtures = [];
+
+        // Only use selectedFixtureIds if more than one is selected
+        // (single selection is just the active fixture, not a multi-select)
+        if (this.selectedFixtureIds && this.selectedFixtureIds.length > 1) {
+            targetFixtures = this.selectedFixtureIds;
+        } else {
             targetFixtures = state.fixture_ids || [];
         }
 
