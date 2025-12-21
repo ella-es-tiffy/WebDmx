@@ -574,7 +574,8 @@ export class FaderController {
                 CREATE TABLE IF NOT EXISTS global_palettes (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
-                    color VARCHAR(50) DEFAULT '#ffffff'
+                    color VARCHAR(50) DEFAULT '#ffffff',
+                    fixture_ids TEXT DEFAULT NULL
                 )
             `);
             await pool.execute(`
@@ -637,6 +638,21 @@ export class FaderController {
         try {
             const { id, values, fixtureIds } = req.body; // values = [ { type: 'R', value: 255 }, ... ], fixtureIds = [5, 7, 9]
             const pool = Database.getPool();
+
+            // Ensure fixture_ids column exists (MySQL doesn't support IF NOT EXISTS for columns)
+            try {
+                const [columns]: any = await pool.execute(`
+                    SHOW COLUMNS FROM global_palettes LIKE 'fixture_ids'
+                `);
+                if (columns.length === 0) {
+                    await pool.execute(`
+                        ALTER TABLE global_palettes 
+                        ADD COLUMN fixture_ids TEXT DEFAULT NULL
+                    `);
+                }
+            } catch (e) {
+                // Ignore errors
+            }
 
             // Save which fixtures this palette applies to
             if (fixtureIds && fixtureIds.length > 0) {

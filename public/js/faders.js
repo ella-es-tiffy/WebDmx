@@ -1234,7 +1234,7 @@ class FaderConsole {
         state.values.forEach(v => {
             const channelAssignments = activeAssignments[v.channel] || [];
             channelAssignments.forEach(func => {
-                functionValues[func] = v.value;
+                functionValues[func.toUpperCase()] = v.value; // Normalize to uppercase
             });
         });
 
@@ -1243,12 +1243,21 @@ class FaderConsole {
         // Apply to ALL selected fixtures
         for (const fixtureId of this.selectedFixtureIds) {
             const fixture = this.availableFixtures.find(f => f.id === fixtureId);
-            if (!fixture) continue;
+            if (!fixture) {
+                console.warn(`Fixture ${fixtureId} not found in availableFixtures`);
+                continue;
+            }
 
             const assignments = allAssignments[fixtureId];
-            if (!assignments) continue;
+            if (!assignments) {
+                console.warn(`Fixture ${fixtureId} has no assignments`);
+                continue;
+            }
+
+            console.log(`Applying preset to Fixture ${fixtureId} (DMX ${fixture.dmx_address}):`, assignments);
 
             // For each channel, check if it has a function that's in our preset
+            let dmxCommands = 0;
             Object.keys(assignments).forEach(relCh => {
                 const functions = assignments[relCh];
                 const relChNum = parseInt(relCh);
@@ -1257,10 +1266,13 @@ class FaderConsole {
                 functions.forEach(f => {
                     const val = functionValues[f];
                     if (val !== undefined) {
+                        console.log(`  → CH${absAddr} (${f}) = ${val}`);
                         this.sendAbsoluteDMX(absAddr, val);
+                        dmxCommands++;
                     }
                 });
             });
+            console.log(`Sent ${dmxCommands} DMX commands for Fixture ${fixtureId}`);
         }
 
         // Update UI if active fixture is in selection
