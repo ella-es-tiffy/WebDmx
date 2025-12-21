@@ -193,13 +193,42 @@ class FaderConsole {
         this.createFaders();
 
         // Immediate sync from backend before allowing pushes
-        if (this.updateValues) await this.updateValues();
+        if (this.updateValues) {
+            await this.updateValues(); // This loads this.backendValues
+        }
 
         // Reload all data for the new fixture
         await this.refreshFixtureData();
         await this.loadMacros();
         await this.loadPresets();
         this.renderMacros(); // Refresh sidebar to show global palettes
+
+        // Force immediate LED fill update for all channels (after backend values loaded)
+        if (this.backendValues) {
+            console.log('🔧 Updating LED fills after fixture switch');
+            this.channels.forEach(state => {
+                const absoluteChannel = this.fixtureStartAddress + state.channel - 1;
+                const backendValue = this.backendValues[absoluteChannel - 1] || 0;
+                const percentage = (backendValue / 255) * 100;
+
+                // Update LED fill height
+                state.ledFill.style.height = `${percentage}%`;
+
+                // Update fader position and value display
+                state.fader.value = backendValue;
+                state.valueDisplay.textContent = backendValue;
+                state.currentValue = backendValue;
+
+                // Update active class
+                if (backendValue > 0) {
+                    state.element.classList.add('active');
+                } else {
+                    state.element.classList.remove('active');
+                }
+
+                console.log(`  Ch ${state.channel} -> Abs ${absoluteChannel} = ${backendValue} (${percentage.toFixed(1)}%)`);
+            });
+        }
 
         this.isInitializing = false; // Allow DMX pushes again
     }
@@ -923,24 +952,22 @@ class FaderConsole {
      * Initialize Macro Section
      */
     initMacros() {
-        this.macroStates = [
-            { id: 1, color: '#333333' },
-            { id: 2, color: '#333333' },
-            { id: 3, color: '#333333' },
-            { id: 4, color: '#333333' }
-        ];
+        this.macroStates = [];
+        for (let i = 1; i <= 28; i++) {
+            this.macroStates.push({ id: i, color: '#333333' });
+        }
         this.presetStates = [];
         this.macrosCollapsed = false;
+        this.presetsCollapsed = false;
 
         this.renderMacros();
     }
 
     renderMacros() {
-        const layout = document.querySelector('.main-layout');
-        const encodersCol = document.querySelector('.encoders-column');
+        const faderBankContainer = document.querySelector('.fader-bank-container');
 
-        if (!layout || !encodersCol) {
-            console.error('Macro insertion points not found');
+        if (!faderBankContainer) {
+            console.error('Fader bank container not found');
             return;
         }
 
@@ -951,50 +978,6 @@ class FaderConsole {
         const macrosContainer = document.createElement('div');
         macrosContainer.className = 'macros-container';
 
-        // --- LAYER HEADER ---
-        const layerHeader = document.createElement('div');
-        layerHeader.className = 'sidebar-layers';
-
-        const layers = [
-            { id: 1, label: '1-16', start: 1 },
-            { id: 2, label: '17-32', start: 17 }
-        ].filter(l => l.start <= this.fixtureChannelCount);
-
-        layers.forEach(l => {
-            const btn = document.createElement('button');
-            btn.className = 'btn-select layer-btn-sidebar';
-
-            const currentLayer = Math.floor((this.startChannel - 1) / 16) + 1;
-            if (currentLayer === l.id) btn.classList.add('active');
-
-            btn.textContent = `CH ${l.label}`;
-
-            btn.onclick = (e) => {
-                this.switchLayer(l.id);
-                this.renderMacros();
-                e.stopPropagation();
-            };
-            layerHeader.appendChild(btn);
-        });
-
-        // FULL ON/OFF Toggle Badge
-        const fullToggle = document.createElement('div');
-        fullToggle.className = 'full-toggle-badge';
-
-        // Count visible faders that are ON
-        const visibleOnCount = this.channels.filter(c => c.isOn).length;
-        const allOn = visibleOnCount > this.channels.length / 2;
-
-        fullToggle.textContent = allOn ? 'FULL OFF' : 'FULL ON';
-        if (allOn) fullToggle.classList.add('all-on');
-
-        fullToggle.onclick = () => {
-            this.toggleFullLayer(!allOn);
-            this.renderMacros(); // Re-render to update the badge state
-        };
-
-        layerHeader.appendChild(fullToggle);
-        macrosContainer.appendChild(layerHeader);
 
         // --- COLOR MACROS (4) ---
         if (this.macroStates) {
@@ -1010,23 +993,20 @@ class FaderConsole {
                 // Debug Attribute
                 box.setAttribute('data-debug-color', state.color);
 
-                const pickerContainer = document.createElement('div');
-                pickerContainer.className = 'macro-picker-container';
-
-                const setBtn = document.createElement('div');
-                setBtn.className = 'macro-set-btn';
-                setBtn.textContent = 'COLOR';
-
+                // Hidden color picker
                 const picker = document.createElement('input');
                 picker.type = 'color';
-                picker.className = 'macro-hidden-picker';
                 picker.value = state.color;
+                picker.style.display = 'none';
 
-                pickerContainer.appendChild(setBtn);
-                pickerContainer.appendChild(picker);
+                // Double-click to open color picker
+                box.addEventListener('dblclick', (e) => {
+                    e.stopPropagation();
+                    picker.click();
+                });
 
                 item.appendChild(box);
-                item.appendChild(pickerContainer);
+                item.appendChild(picker);
                 macrosContainer.appendChild(item);
 
                 // Update state with new DOM elements
@@ -1051,8 +1031,78 @@ class FaderConsole {
             });
         }
 
+        // Insert BEFORE fixture-selector-bar (so macros are between faders and fixtures)
+        const fixtureSelector = document.querySelector('.fixture-selector-bar');
+        if (fixtureSelector) {
+            faderBankContainer.insertBefore(macrosContainer, fixtureSelector);
+        } else {
+            // Fallback if selector not found yet
+            faderBankContainer.appendChild(macrosContainer);
+        }
+
+        // --- PRESETS SIDEBAR (Right Side) ---
+        this.renderPresetsSidebar();
+    }
+
+    renderPresetsSidebar() {
+        const layout = document.querySelector('.main-layout');
+        const encodersCol = document.querySelector('.encoders-column');
+
+        if (!layout || !encodersCol) return;
+
+        // Remove existing sidebar if any
+        const existing = document.querySelector('.presets-sidebar');
+        if (existing) existing.remove();
+
+        const sidebar = document.createElement('div');
+        sidebar.className = 'presets-sidebar';
+
+        // --- LAYER HEADER ---
+        const layerHeader = document.createElement('div');
+        layerHeader.className = 'sidebar-layers';
+
+        const layers = [
+            { id: 1, label: '1-16', start: 1 },
+            { id: 2, label: '17-32', start: 17 }
+        ].filter(l => l.start <= this.fixtureChannelCount);
+
+        layers.forEach(l => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-select layer-btn-sidebar';
+
+            const currentLayer = Math.floor((this.startChannel - 1) / 16) + 1;
+            if (currentLayer === l.id) btn.classList.add('active');
+
+            btn.textContent = `CH ${l.label}`;
+
+            btn.onclick = (e) => {
+                this.switchLayer(l.id);
+                this.renderPresetsSidebar();
+                e.stopPropagation();
+            };
+            layerHeader.appendChild(btn);
+        });
+
+        // FULL ON/OFF Toggle Badge
+        const fullToggle = document.createElement('div');
+        fullToggle.className = 'full-toggle-badge';
+
+        const visibleOnCount = this.channels.filter(c => c.isOn).length;
+        const allOn = visibleOnCount > this.channels.length / 2;
+
+        fullToggle.textContent = allOn ? 'FULL OFF' : 'FULL ON';
+        if (allOn) fullToggle.classList.add('all-on');
+
+        fullToggle.onclick = () => {
+            this.toggleFullLayer(!allOn);
+            this.renderPresetsSidebar();
+        };
+
+        layerHeader.appendChild(fullToggle);
+        sidebar.appendChild(layerHeader);
+
         // --- PRESET MACROS ---
-        this.presetStates.forEach(p => this.createPresetElement(p, macrosContainer));
+        this.presetStates.forEach(p => this.createPresetElement(p, sidebar));
 
         // --- GLOBAL PALETTES ---
         if (this.globalPaletteStates.length > 0) {
@@ -1062,9 +1112,9 @@ class FaderConsole {
             separator.style.gridColumn = '1 / -1';
             separator.style.textAlign = 'center';
             separator.style.padding = '5px 0';
-            macrosContainer.appendChild(separator);
+            sidebar.appendChild(separator);
 
-            this.globalPaletteStates.forEach(p => this.createPaletteElement(p, macrosContainer));
+            this.globalPaletteStates.forEach(p => this.createPaletteElement(p, sidebar));
         }
 
         // --- ADD BUTTONS ---
@@ -1092,19 +1142,30 @@ class FaderConsole {
 
         addItem.appendChild(addLocalBtn);
         addItem.appendChild(addGlobalBtn);
-        macrosContainer.appendChild(addItem);
+        sidebar.appendChild(addItem);
 
         // Insert between faders and encoders
-        layout.insertBefore(macrosContainer, encodersCol);
+        layout.insertBefore(sidebar, encodersCol);
 
         // Sidebar Toggle Button (Move to body to prevent clipping)
-        if (!document.querySelector('.macro-toggle-btn')) {
+        if (!document.querySelector('.preset-toggle-btn')) {
             const toggle = document.createElement('div');
-            toggle.className = 'macro-toggle-btn';
+            toggle.className = 'preset-toggle-btn';
             toggle.innerHTML = '‹';
             document.body.appendChild(toggle);
-            this.bindButton(toggle, () => this.toggleMacros());
+            this.bindButton(toggle, () => this.togglePresetsSidebar());
         }
+    }
+
+    togglePresetsSidebar() {
+        const sidebar = document.querySelector('.presets-sidebar');
+        const btn = document.querySelector('.preset-toggle-btn');
+        if (!sidebar || !btn) return;
+
+        this.presetsCollapsed = !this.presetsCollapsed;
+        sidebar.classList.toggle('collapsed', this.presetsCollapsed);
+        btn.classList.toggle('collapsed', this.presetsCollapsed);
+        btn.innerHTML = this.presetsCollapsed ? '›' : '‹';
     }
 
     toggleMacros() {
@@ -1801,6 +1862,7 @@ class FaderConsole {
             const data = await res.json();
             if (data.success) {
                 this.globalPaletteStates = data.palettes;
+                this.renderPresetsSidebar(); // Re-render sidebar to show palettes
             }
         } catch (e) {
             console.error('Failed to load global palettes:', e);

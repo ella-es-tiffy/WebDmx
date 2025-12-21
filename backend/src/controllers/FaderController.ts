@@ -380,22 +380,22 @@ export class FaderController {
                 'SELECT id, color FROM fader_macros WHERE fixture_id = 0 ORDER BY id'
             );
 
-            // Check if we have exactly IDs 1-4
-            const expectedIds = [1, 2, 3, 4];
+            // Check if we have exactly IDs 1-28
+            const expectedIds = Array.from({ length: 28 }, (_, i) => i + 1);
             const actualIds = rows.map((r: any) => r.id);
-            const idsMatch = expectedIds.every(id => actualIds.includes(id)) && actualIds.length === 4;
+            const idsMatch = expectedIds.every(id => actualIds.includes(id)) && actualIds.length === 28;
 
             if (!idsMatch) {
-                console.log(`⚙️  Resetting global macros to IDs 1-4 (found: ${actualIds.join(', ')})`);
+                console.log(`⚙️  Resetting global macros to IDs 1-28 (found: ${actualIds.join(', ')})`);
 
                 // Delete all global macros
                 await pool.execute('DELETE FROM fader_macros WHERE fixture_id = 0');
 
-                // Delete any old macros with IDs 1-4 (avoid PRIMARY key conflicts)
-                await pool.execute('DELETE FROM fader_macros WHERE id IN (1, 2, 3, 4)');
+                // Delete any old macros with IDs 1-28 (avoid PRIMARY key conflicts)
+                await pool.execute('DELETE FROM fader_macros WHERE id BETWEEN 1 AND 28');
 
-                // Create exactly 4 macros with IDs 1-4
-                for (let id = 1; id <= 4; id++) {
+                // Create exactly 28 macros with IDs 1-28
+                for (let id = 1; id <= 28; id++) {
                     await pool.execute(
                         'REPLACE INTO fader_macros (id, fixture_id, color) VALUES (?, 0, ?)',
                         [id, '#333333']

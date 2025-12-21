@@ -846,29 +846,81 @@ body {
     color: #fff;
 }
 
-/* Macros Section (Grid Column between Faders and Encoders) */
+/* Macros Section (Horizontal 2x14 Grid Below Faders) */
 .macros-container {
+    display: grid;
+    grid-template-columns: repeat(14, 1fr);
+    grid-template-rows: repeat(2, 40px);
+    gap: 6px;
+    padding: 8px 15px;
+    background: #0a0a0a;
+    border-top: 2px solid #333;
+    border-bottom: 2px solid #333;
+    width: 100%;
+    position: relative;
+    z-index: 10;
+}
+
+/* Remove collapsed state for bottom layout */
+.macros-container.collapsed {
+    /* No collapse in bottom layout */
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+    .macros-container {
+        grid-template-rows: repeat(2, 36px);
+        gap: 5px;
+        padding: 6px 12px;
+    }
+}
+
+.macro-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+}
+
+.macro-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #444;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    position: relative;
+}
+
+@media (max-width: 1400px) {
+    .macro-box {
+        width: 36px;
+        height: 36px;
+    }
+}
+
+/* Presets Sidebar (Right Side, Vertical) */
+.presets-sidebar {
     display: grid;
     grid-template-columns: repeat(2, 60px);
     grid-auto-rows: min-content;
     gap: 15px;
     padding: 20px 15px;
-    /* Increased padding slightly */
     background: #111;
     border-left: 1px solid #333;
     border-right: 1px solid #333;
     width: 170px;
-    /* Increased by 15px as requested */
     overflow-y: auto;
     overflow-x: hidden;
     position: relative;
     z-index: 10;
-    /* Below the encoders-column */
     transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
     transform-origin: right center;
 }
 
-.macros-container.collapsed {
+.presets-sidebar.collapsed {
     transform: translateX(120px);
     width: 0;
     padding-left: 0;
@@ -878,32 +930,47 @@ body {
     border: none;
 }
 
-/* Hide iPad override as we now have 2 columns by default */
 @media (max-width: 1024px) {
-    .macros-container {
+    .presets-sidebar {
         width: 155px;
         padding: 20px 10px;
     }
 }
 
-.macro-item {
+/* Sidebar Toggle Button */
+.preset-toggle-btn {
+    position: fixed;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 80px;
+    background: #222;
+    border: 1px solid #444;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 8px;
-    width: 60px;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 20px;
+    color: var(--accent-primary);
+    z-index: 150;
+    transition: all 0.3s;
+    user-select: none;
 }
 
-.macro-box {
-    width: 60px;
-    height: 60px;
-    border-radius: 10px;
-    border: 3px solid #444;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-    position: relative;
+.preset-toggle-btn:hover {
+    background: #333;
+    border-color: var(--accent-primary);
+    box-shadow: -3px 0 10px rgba(0, 212, 255, 0.3);
 }
+
+.preset-toggle-btn.collapsed {
+    right: 0;
+}
+
+
 
 .macro-set-btn {
     width: 100%;
@@ -1121,6 +1188,7 @@ body {
     background: #333 !important;
     color: #fff;
 }
+
 .palette-box {
     border: 1px solid #444 !important;
     background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%) !important;
