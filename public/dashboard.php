@@ -38,6 +38,10 @@
                 <div class="icon-box"><i class="fas fa-file-alt" style="color: #9c27b0;"></i></div>
                 <span>Templates</span>
             </div>
+            <div class="icon-item" onclick="openScenes()">
+                <div class="icon-box"><i class="fas fa-film" style="color: #00bcd4;"></i></div>
+                <span>Szenen</span>
+            </div>
         </div>
     </div>
 
@@ -139,6 +143,16 @@
                 }
                 templateManager.init();
             }, 100);
+        }
+
+        function openScenes() {
+            wm.createWindow('scenes', 'Szenen-Manager', {
+                width: '1200px',
+                height: '700px',
+                top: '50px',
+                left: '100px',
+                content: '<iframe src="scenes.html" style="width:100%; height:100%; border:none;"></iframe>'
+            });
         }
 
         async function startDashboardStatus() {
