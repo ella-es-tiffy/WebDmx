@@ -5,14 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cue Editor | WebDMX</title>
-    <link rel="stylesheet" href="css/cue_editor.css?v=daw_v15">
+    <link rel="stylesheet" href="css/cue_editor.css?v=daw_v16">
 </head>
 
 <body>
     <div class="cue-editor-container">
         <!-- Header with Transport Controls -->
         <div class="editor-header">
-            <div class="version-badge">v1.0.15</div>
+            <div class="version-badge">v1.0.16</div>
             <div class="transport-controls">
                 <button class="transport-btn" id="btn-prev" title="Previous Cue">◀◀</button>
                 <button class="transport-btn play" id="btn-play" title="Play">▶</button>
@@ -24,9 +24,13 @@
                 <div class="time-display" id="time-display">00:00.0</div>
 
                 <div class="speed-control">
-                    <label>In 1s = </label>
+                    <label>Spd: </label>
                     <input type="range" id="speed-slider" min="0.1" max="5.0" step="0.1" value="1.0">
                     <span id="speed-value">1.0x</span>
+                </div>
+                <div class="zoom-control">
+                    <label>Zoom: </label>
+                    <input type="range" id="zoom-slider" min="20" max="300" step="10" value="50">
                 </div>
             </div>
             <div class="editor-actions">
@@ -60,6 +64,8 @@
                 <!-- Scenes will be loaded here -->
             </div>
         </div>
+
+    </div>
     </div>
 
     <!-- Cue Properties Modal -->
@@ -92,6 +98,11 @@
                             <input type="number" id="cue-fade-out" step="0.1" min="0" value="0">
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                            <input type="checkbox" id="cue-reverse" style="width:auto;"> Reverse Playback
+                        </label>
+                    </div>
                     <div class="modal-actions">
                         <button type="button" class="btn-danger" id="delete-cue-btn">Delete</button>
                         <button type="button" class="btn-secondary" id="cancel-cue-btn">Cancel</button>
@@ -102,7 +113,18 @@
         </div>
     </div>
 
-    <script src="js/cue_editor.js?v=daw_v16"></script>
+    <!-- Context Menu -->
+    <div id="context-menu" class="context-menu">
+        <ul>
+            <li id="ctx-edit">✏️ Edit Properties...</li>
+            <li id="ctx-reverse">🔄 Toggle Reverse</li>
+            <li id="ctx-clone">👯 Clone to Right</li>
+            <li class="separator"></li>
+            <li id="ctx-delete" class="danger">🗑️ Delete</li>
+        </ul>
+    </div>
+
+    <script src="js/cue_editor.js?v=daw_v17"></script>
 </body>
 
 </html>

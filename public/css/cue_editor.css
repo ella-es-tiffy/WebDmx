@@ -101,20 +101,28 @@ body {
     text-align: center;
 }
 
-.speed-control {
+.speed-control,
+.zoom-control {
     display: flex;
     align-items: center;
     gap: 5px;
     font-size: 11px;
+    background: #2a2a2a;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #444;
 }
 
-.speed-control input {
-    width: 80px;
+.speed-control input,
+.zoom-control input {
+    width: 60px;
+    cursor: pointer;
 }
 
 .speed-control span {
-    min-width: 35px;
+    min-width: 30px;
     font-weight: 600;
+    text-align: right;
 }
 
 .btn-close {
@@ -136,39 +144,51 @@ body {
     min-height: 300px;
 }
 
+/* Time Ruler Container */
 .timeline-ruler {
-    height: 30px;
-    background: var(--bg-medium);
-    border-bottom: 1px solid var(--border);
+    height: 25px;
+    background: #1e1e1e;
+    border-bottom: 1px solid #333;
     position: sticky;
     top: 0;
-    z-index: 10;
-    display: flex;
+    z-index: 20;
+    /* Higher than tracks */
+    cursor: ew-resize;
+    /* Scrubbing allowed */
 }
 
+/* Markers */
 .time-marker {
     position: absolute;
-    height: 100%;
-    border-left: 1px solid var(--border);
-    padding-left: 5px;
-    font-size: 10px;
-    color: var(--text-dim);
-    display: flex;
-    align-items: center;
+    bottom: 0;
+    width: 1px;
+    background: #444;
+    /* Dark gray */
+    color: #888;
+    font-size: 9px;
+    font-family: monospace;
+    pointer-events: none;
+    transition: none;
 }
 
 .time-marker.major {
-    color: var(--text);
-    font-weight: bold;
     height: 100%;
+    background: #666;
+    /* Slightly lighter */
+    z-index: 2;
+}
+
+.time-marker.major::after {
+    content: attr(data-label);
+    position: absolute;
+    top: 2px;
+    left: 2px;
 }
 
 .time-marker.minor {
-    font-size: 8px;
     height: 30%;
-    /* Short ticks for minor */
-    top: auto;
-    bottom: 0;
+    background: #333;
+    z-index: 1;
 }
 
 /* Grid Lines */
@@ -342,51 +362,142 @@ body {
     font-size: 12px;
 }
 
-/* Scene Pool */
-.scene-pool {
-    background: var(--bg-medium);
-    border-top: 2px solid var(--border);
+/* Scene Pool Styling Refactored - V2 Professional */
+.scene-pool-panel {
+    background: #111;
+    border-top: 2px solid #333;
+    padding: 0;
+    height: 220px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: inset 0 10px 20px -10px rgba(0, 0, 0, 0.5);
+}
+
+.scene-pool-panel h3 {
+    font-size: 10px;
+    padding: 6px 12px;
+    background: #1a1a1a;
+    border-bottom: 1px solid #333;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+}
+
+.scene-list {
+    flex: 1;
     padding: 10px;
-    max-height: 150px;
     overflow-y: auto;
-}
-
-.scene-pool h3 {
-    font-size: 11px;
-    margin-bottom: 8px;
-    color: var(--text-dim);
-}
-
-#scene-pool {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    align-content: flex-start;
-}
-
-.pool-grid {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    /* Wider cards */
+    grid-auto-rows: 50px;
+    /* Slimmer cards */
+    gap: 6px;
 }
 
 .pool-scene {
-    padding: 6px 12px;
-    background: var(--bg-light);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    font-size: 11px;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 3px;
+    padding: 0 10px;
     cursor: grab;
-    transition: all 0.2s;
+    transition: all 0.1s ease;
+    display: flex;
+    flex-direction: row;
+    /* Horizontal Layout */
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    gap: 10px;
 }
 
 .pool-scene:hover {
-    background: var(--bg-dark);
-    border-color: var(--accent);
+    background: #2a2a2a;
+    border-color: #555;
+    transform: translateY(-1px);
 }
 
 .pool-scene:active {
     cursor: grabbing;
+    background: #1f1f1f;
+}
+
+/* Icon / Type Indicator */
+.pool-scene::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Scene Name */
+.pool-scene-name {
+    font-size: 11px;
+    font-weight: 500;
+    color: #ddd;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+}
+
+/* Type Label (Small) */
+.pool-scene-type {
+    font-size: 8px;
+    color: #666;
+    text-transform: uppercase;
+    display: none;
+    /* Hidden in list view to save space, icon is enough */
+}
+
+/* --- Type Specifics --- */
+
+/* Chaser */
+.pool-scene.chaser {
+    border-left: 2px solid #ff9900;
+}
+
+.pool-scene.chaser::before {
+    background: #ff9900;
+    box-shadow: 0 0 5px #ff9900;
+}
+
+.pool-scene.chaser:hover {
+    border-color: #ff9900;
+    background: linear-gradient(90deg, rgba(255, 153, 0, 0.05), transparent);
+}
+
+/* Static Scene */
+.pool-scene.static {
+    border-left: 2px solid #4488ff;
+}
+
+.pool-scene.static::before {
+    background: #4488ff;
+}
+
+.pool-scene.static:hover {
+    border-color: #4488ff;
+    background: linear-gradient(90deg, rgba(68, 136, 255, 0.05), transparent);
+}
+
+/* Chaser Distinction in Timeline */
+.cue-block.chaser {
+    background: rgba(255, 153, 0, 0.6);
+    /* Orange tint */
+    border-color: rgba(255, 200, 100, 0.5);
+}
+
+.cue-block.chaser:hover {
+    border-color: #ffb74d;
+    box-shadow: 0 0 10px rgba(255, 153, 0, 0.5);
+}
+
+.cue-block.chaser.selected {
+    border-color: #fff;
+    box-shadow: 0 0 0 2px #ff9900, 0 0 15px rgba(255, 153, 0, 0.4);
 }
 
 /* Track Controls */
@@ -439,51 +550,64 @@ body {
 }
 
 /* Modal */
-.modal {
+.modal-overlay {
     display: none;
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
-    z-index: 1000;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    /* Slightly darker */
+    backdrop-filter: blur(5px);
+    z-index: 999999;
+    /* Max Z-Index */
     align-items: center;
     justify-content: center;
 }
 
-.modal.active {
-    display: flex;
+.modal-overlay.active {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
-.modal-content {
+.modal {
     background: var(--bg-medium);
     padding: 20px;
     border-radius: 12px;
     width: 90%;
     max-width: 400px;
     border: 2px solid var(--border);
+    display: block;
+    /* Ensure it's visible inside the flex overlay */
 }
 
-.modal-content h2 {
+.modal h2,
+.modal-header {
     margin-bottom: 15px;
     font-size: 16px;
+    color: var(--text);
+    font-weight: bold;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
 }
 
-.modal-content form {
+.modal form {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.modal-content label {
+
+
+.modal label {
     font-size: 11px;
     color: var(--text-dim);
     margin-bottom: 3px;
 }
 
-.modal-content input {
+.modal input {
     padding: 6px;
     background: var(--bg-dark);
     border: 1px solid var(--border);
@@ -496,6 +620,53 @@ body {
     display: flex;
     gap: 8px;
     margin-top: 10px;
+}
+
+/* Context Menu */
+.context-menu {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    width: 180px;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 6px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    padding: 5px 0;
+}
+
+.context-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.context-menu li {
+    padding: 8px 15px;
+    font-size: 12px;
+    color: #eee;
+    cursor: pointer;
+    transition: background 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.context-menu li:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+.context-menu li.separator {
+    height: 1px;
+    background: #333;
+    margin: 4px 0;
+    padding: 0;
+    pointer-events: none;
+}
+
+.context-menu li.danger:hover {
+    background: var(--danger);
 }
 
 .modal-actions button {

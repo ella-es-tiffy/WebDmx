@@ -92,6 +92,18 @@ class CueEditor {
                 <span>Delete</span>
                 <span class="keybind-key">⌫</span>
             </div>
+             <div class="keybind-row">
+                <span>Pan Timeline</span>
+                <span class="keybind-key">M + Drag</span>
+            </div>
+             <div class="keybind-row">
+                <span>Zoom</span>
+                <span class="keybind-key">Z + Scroll</span>
+            </div>
+             <div class="keybind-row">
+                <span>Clone (Chaser)</span>
+                <span class="keybind-key">Right Handle</span>
+            </div>
         `;
         document.querySelector('.cue-editor-container').appendChild(overlay);
     }
@@ -103,6 +115,7 @@ class CueEditor {
 
         const bindBtn = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
         bindBtn('btn-play', () => this.play());
+        // ... (existing binds) ...
         bindBtn('btn-pause', () => this.pause());
         bindBtn('btn-stop', () => this.stop());
         bindBtn('btn-prev', () => this.prevCue());
@@ -123,18 +136,146 @@ class CueEditor {
             };
         }
 
-        const formCue = document.getElementById('cue-form');
-        if (formCue) formCue.onsubmit = (e) => { e.preventDefault(); this.saveCueProperties(); };
+        // Zoom Logic
+        const zoomSlider = document.getElementById('zoom-slider');
+        if (zoomSlider) {
+            zoomSlider.value = this.pixelsPerSecond;
+            zoomSlider.oninput = (e) => this.setZoom(parseFloat(e.target.value));
+        }
 
+        // Z+Scroll Zoom
+        document.addEventListener('wheel', (e) => {
+            if (e.key === 'z' || this.keysPressed['z']) { // Need to track keys or check KeyZ if available in event? 
+                // Standard WheelEvent doesn't show key state directly for 'z'. Only ctrl/shift/alt.
+                // We need to track 'z' state via keydown/keyup.
+            }
+        }, { passive: false });
+
+        // Pan (Scroll) Logic
+        const timelineArea = document.querySelector('.timeline-area');
+        if (timelineArea) {
+            timelineArea.addEventListener('mousedown', (e) => {
+                if ((e.key === 'm' || this.keysPressed['m']) && !this.dragState.active) {
+                    e.preventDefault();
+                    this.dragState = {
+                        active: true,
+                        mode: 'pan',
+                        startX: e.clientX,
+                        scrollStart: timelineArea.scrollLeft
+                    };
+                    timelineArea.style.cursor = 'grabbing';
+                }
+            });
+        }
+
+        // Tracking keys specifically for modifiers like Z and M
+        this.keysPressed = {};
         document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            this.keysPressed[key] = true;
+
+            if (key === 'm' && !this.dragState.active) {
+                const area = document.querySelector('.timeline-area');
+                if (area) area.style.cursor = 'grab';
+            }
+
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            // ... existing keydown ...
             switch (e.code) {
-                case 'Space': e.preventDefault(); this.togglePlay(); break;
-                case 'Delete':
-                case 'Backspace': if (this.selectedCue) { e.preventDefault(); this.deleteSelectedCue(); } break;
-                case 'Escape': this.selectedCue = null; this.hideCueModal(); this.highlightSelectedCue(); break;
+                // ...
             }
         });
+        document.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            this.keysPressed[key] = false;
+
+            if (key === 'm') {
+                const area = document.querySelector('.timeline-area');
+                if (area) {
+                    area.style.cursor = 'default';
+                    if (this.dragState.mode === 'pan') area.style.cursor = 'grabbing';
+                }
+            }
+        });
+
+        // The real wheel handler
+        document.addEventListener('wheel', (e) => {
+            if (this.keysPressed['z']) {
+                e.preventDefault();
+                const delta = Math.sign(e.deltaY) * -10; // Scroll UP = Zoom IN
+                let newZoom = this.pixelsPerSecond + delta;
+                newZoom = Math.max(20, Math.min(300, newZoom));
+                this.setZoom(newZoom);
+            }
+        }, { passive: false });
+
+
+        // Context Menu Global Click to Close
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.context-menu')) this.hideContextMenu();
+        });
+
+        // Bind Context Menu Actions
+        const bindCtx = (id, fn) => {
+            const el = document.getElementById(id);
+            if (el) el.onclick = () => {
+                const activeCue = this.contextCue; // Capture it!
+                this.hideContextMenu();
+                fn(activeCue);
+            };
+        };
+
+        bindCtx('ctx-edit', (cue) => { if (cue) this.editCue(cue); });
+
+        bindCtx('ctx-reverse', (cue) => {
+            if (cue) {
+                cue.reverse = !cue.reverse;
+                this.renderCues();
+            }
+        });
+
+        bindCtx('ctx-clone', (cue) => {
+            if (cue) {
+                const src = cue;
+                const newStart = src.startTime + src.duration;
+                this.createCue(src.trackId, src.sceneId, src.sceneName, newStart, src.duration, true);
+            }
+        });
+
+        bindCtx('ctx-delete', (cue) => {
+            if (cue) {
+                this.selectedCue = cue;
+                this.deleteSelectedCue();
+            }
+        });
+    }
+
+    setZoom(pps) {
+        this.pixelsPerSecond = pps;
+        const slider = document.getElementById('zoom-slider');
+        if (slider) slider.value = pps;
+
+        this.renderTimeline();
+        this.renderCues();
+        this.updatePlayhead();
+    }
+
+    showContextMenu(e, cue) {
+        e.preventDefault();
+        this.contextCue = cue;
+        const menu = document.getElementById('context-menu');
+        if (!menu) return;
+
+        // Simple positioning
+        menu.style.left = `${e.clientX}px`;
+        menu.style.top = `${e.clientY}px`;
+        menu.style.display = 'block';
+    }
+
+    hideContextMenu() {
+        const menu = document.getElementById('context-menu');
+        if (menu) menu.style.display = 'none';
+        this.contextCue = null;
     }
 
     findConnectedGroup(startCue) {
@@ -149,6 +290,23 @@ class CueEditor {
             neighbors.forEach(n => { group.add(n); queue.push(n); });
         }
         return Array.from(group).map(c => ({ cue: c, originalTime: c.startTime }));
+    }
+
+    handleResizeMouseDown(e, cue, element) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        // "Clone Drag" Mode
+        this.dragState = {
+            active: true,
+            mode: 'clone-drag',
+            sourceCue: cue,
+            startX: e.clientX,
+            ghosts: [], // Array of temporary ghost elements
+            cloneCount: 0
+        };
+
+        console.log('👯 Clone Drag Started');
     }
 
     handleCueMouseDown(e, cue, element) {
@@ -196,8 +354,19 @@ class CueEditor {
         ghost.style.position = 'fixed';
         ghost.style.width = `${dur * this.pixelsPerSecond}px`;
         ghost.style.height = '40px';
-        ghost.style.background = '#4488ff';
-        ghost.style.opacity = '0.8';
+        ghost.style.height = '40px';
+
+        // Color based on type
+        let isChaser = scene.type === 'chaser';
+        if (!isChaser && scene.channel_data && !Array.isArray(scene.channel_data)) {
+            if (scene.channel_data.start_color || scene.channel_data.fade_time) isChaser = true;
+        }
+        ghost.style.background = isChaser ? 'rgba(255, 153, 0, 0.8)' : '#4488ff';
+        ghost.style.borderColor = isChaser ? '#ff9900' : '#4488ff';
+        ghost.style.borderWidth = '2px';
+        ghost.style.borderStyle = 'solid';
+
+        ghost.style.opacity = '0.9';
         ghost.style.pointerEvents = 'none';
         ghost.style.zIndex = '9999';
         ghost.style.left = `${e.clientX}px`;
@@ -297,7 +466,75 @@ class CueEditor {
             const ghost = this.dragState.ghostElement;
             ghost.style.left = `${e.clientX}px`;
             ghost.style.top = `${e.clientY - this.dragState.offsetY}px`;
+        } else if (this.dragState.mode === 'clone-drag') {
+            const deltaX = Math.max(0, e.clientX - this.dragState.startX);
+            const deltaSeconds = deltaX / this.pixelsPerSecond;
+            const dur = this.dragState.sourceCue.duration;
+
+            // Calculate how many clones fit - Increased Sensitivity
+            // Trigger next clone at 20% of duration drag
+            const triggerThreshold = 0.2;
+            const newCloneCount = Math.floor((deltaSeconds + (dur * (1 - triggerThreshold))) / dur);
+
+            if (newCloneCount !== this.dragState.cloneCount) {
+                // Sync Ghosts
+                // Add needed
+                while (this.dragState.ghosts.length < newCloneCount) {
+                    const i = this.dragState.ghosts.length;
+                    const ghost = document.createElement('div');
+                    ghost.className = 'cue-block ghost-clone';
+                    ghost.style.position = 'absolute';
+                    ghost.style.height = '50px'; // Match track heighish
+                    ghost.style.top = '5px';
+                    ghost.style.opacity = '0.5';
+                    ghost.style.pointerEvents = 'none';
+                    ghost.style.background = '#4CAF50'; // Green for 'Add'
+                    ghost.style.border = '1px dashed #fff';
+
+                    // Position: Start of source + Duration * (i+1)
+                    const startT = this.dragState.sourceCue.startTime + (dur * (i + 1));
+                    ghost.style.left = `${startT * this.pixelsPerSecond}px`;
+                    ghost.style.width = `${dur * this.pixelsPerSecond}px`;
+
+                    // Find track element to append to
+                    const trackEl = this.cueElements.get(this.dragState.sourceCue.id).parentElement;
+                    trackEl.appendChild(ghost);
+                    this.dragState.ghosts.push(ghost);
+                }
+
+                // Remove excess
+                while (this.dragState.ghosts.length > newCloneCount) {
+                    const ghost = this.dragState.ghosts.pop();
+                    ghost.remove();
+                }
+
+                this.dragState.cloneCount = newCloneCount;
+            }
+
+        } else if (this.dragState.mode === 'pan') {
+            const area = document.querySelector('.timeline-area');
+            if (area) {
+                const deltaX = e.clientX - this.dragState.startX;
+                area.scrollLeft = this.dragState.scrollStart - deltaX;
+            }
+        } else if (this.dragState.mode === 'scrub') {
+            this.scrubTo(e.clientX);
         }
+    }
+
+    scrubTo(clientX) {
+        const container = document.getElementById('lines-container') || document.getElementById('tracks-container');
+        if (!container) return;
+
+        const rect = container.getBoundingClientRect();
+        const relativeX = clientX - rect.left - LEFT_MARGIN;
+        let time = relativeX / this.pixelsPerSecond;
+        time = Math.max(0, Math.min(time, this.maxTime)); // Clamp
+
+        this.currentTime = time;
+        this.updatePlayhead();
+        this.checkCues();
+        this.updateChasers();
     }
 
     handleGlobalMouseUp(e) {
@@ -319,14 +556,13 @@ class CueEditor {
             if (e.shiftKey) this.renderTracks();
 
         } else if (this.dragState.mode === 'create') {
+            // (Existing create logic...)
             const ghost = this.dragState.ghostElement;
             ghost.remove();
 
-            // Adjusted logic to find track element better
             const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
             let trackEl = dropTarget ? dropTarget.closest('.track-content') : null;
             if (!trackEl && dropTarget) {
-                // Maybe we hit the track-label? Or the track div itself?
                 const trackContainer = dropTarget.closest('.track');
                 if (trackContainer) trackEl = trackContainer.querySelector('.track-content');
             }
@@ -341,18 +577,36 @@ class CueEditor {
                 startTime = Math.max(0, startTime);
 
                 const scene = this.dragState.scene;
-                console.log('📦 Dropped Scene Data:', scene);
-
-                // Robust duration calculation
                 let dur = 5;
                 if (scene.duration !== undefined && scene.duration !== null) {
                     dur = parseFloat(scene.duration) / 1000;
                 }
                 if (isNaN(dur) || dur <= 0) dur = 5;
 
-                console.log(`⏱ calculated duration: ${dur}s (from ${scene.duration}ms)`);
                 this.createCue(trackId, scene.id, scene.name, startTime, dur, isCtrl);
             }
+        } else if (this.dragState.mode === 'resize') {
+            const cue = this.dragState.cue;
+            // Resolve collisions if expanded into another cue?
+            // For now, let's just render. Collisions might overlap, which is strictly allowed but maybe not desired.
+            // A simple implementation:
+            this.resolveCollisions(cue);
+            this.renderCues();
+        } else if (this.dragState.mode === 'clone-drag') {
+            const count = this.dragState.cloneCount;
+            const src = this.dragState.sourceCue;
+
+            // Commit clones
+            for (let i = 0; i < count; i++) {
+                const newStart = src.startTime + (src.duration * (i + 1));
+                this.createCue(src.trackId, src.sceneId, src.sceneName, newStart, src.duration, true); // ignoreCollisions=true initially
+            }
+
+            // Cleanup ghosts
+            this.dragState.ghosts.forEach(g => g.remove());
+
+            // Re-render to show real cues
+            this.renderCues();
         }
 
         this.dragState = { active: false };
@@ -375,8 +629,23 @@ class CueEditor {
     async loadScenes() {
         try {
             const res = await fetch(`${API}/api/scenes`);
+            // Backend might return array directly or {success:true, scenes:[]}
+            // Based on previous code snippet, it seemed to handle raw array? No, checking previous view... 
+            // "res.json(rows)" in controller means it returns array directly.
+            // But code I saw earlier had "if (data.success) this.scenes = data.scenes".
+            // Let's support both to be safe.
             const data = await res.json();
-            if (data.success) this.scenes = data.scenes || [];
+            this.scenes = Array.isArray(data) ? data : (data.scenes || []);
+
+            // Parse channel_data globally
+            this.scenes.forEach(s => {
+                if (typeof s.channel_data === 'string') {
+                    try { s.channel_data = JSON.parse(s.channel_data); }
+                    catch (e) { console.error('JSON Parse error for scene', s.name, e); }
+                }
+            });
+
+            console.log(`🎬 Loaded ${this.scenes.length} scenes.`);
         } catch (e) {
             console.error('Failed to load scenes:', e);
         }
@@ -407,7 +676,22 @@ class CueEditor {
         this.scenes.forEach(scene => {
             const item = document.createElement('div');
             item.className = 'pool-scene';
-            item.textContent = scene.name;
+
+            // Determine type for styling
+            let isChaser = scene.type === 'chaser';
+            if (!isChaser && scene.channel_data && !Array.isArray(scene.channel_data)) {
+                if (scene.channel_data.start_color || scene.channel_data.fade_time) isChaser = true;
+            }
+
+            if (isChaser) item.classList.add('chaser');
+            else item.classList.add('static');
+
+            // content
+            item.innerHTML = `
+                <div class="pool-scene-name" title="${scene.name}">${scene.name}</div>
+                <div class="pool-scene-type">${isChaser ? 'CHASER' : 'STATIC'}</div>
+            `;
+
             item.draggable = false;
             item.addEventListener('mousedown', (e) => this.handlePoolMouseDown(e, scene));
             container.appendChild(item);
@@ -415,37 +699,31 @@ class CueEditor {
     }
 
     renderTimeline() {
-        const ruler = document.getElementById('timeline-ruler');
-        const tracksContainer = document.getElementById('tracks-container');
-        if (!ruler || !tracksContainer) return;
+        const ruler = document.getElementById('time-ruler') || document.getElementById('timeline-ruler');
+        const tracksContainer = document.getElementById('lines-container') || document.getElementById('tracks-container');
+        if (!ruler) return;
 
         ruler.innerHTML = '';
-        ruler.style.width = `${(this.maxTime * this.pixelsPerSecond) + LEFT_MARGIN}px`;
-        const oldGrid = tracksContainer.querySelectorAll('.grid-line');
-        oldGrid.forEach(el => el.remove());
+        // Note: Ruler width might be handled by CSS or container.
+        // ruler.style.width = ... 
 
-        for (let i = 0; i <= this.maxTime; i += 0.1) {
+        // Remove old grid lines if any
+        if (tracksContainer) {
+            const oldGrid = tracksContainer.querySelectorAll('.grid-line');
+            oldGrid.forEach(el => el.remove());
+        }
+
+        for (let i = 0; i <= this.maxTime; i += 0.5) {
             const pos = (i * this.pixelsPerSecond) + LEFT_MARGIN;
-            if (Math.abs(i % 1) < 0.001 || Math.abs(i % 1 - 1) < 0.001) {
-                const marker = document.createElement('div');
-                marker.className = 'time-marker major';
-                marker.style.left = `${pos}px`;
-                marker.textContent = `${Math.round(i)}s`;
-                ruler.appendChild(marker);
-                const gridLine = document.createElement('div');
-                gridLine.className = 'grid-line major';
-                gridLine.style.left = `${pos}px`;
-                tracksContainer.appendChild(gridLine);
-            } else if (Math.abs(i % 0.5) < 0.001) {
-                const marker = document.createElement('div');
-                marker.className = 'time-marker minor';
-                marker.style.left = `${pos}px`;
-                ruler.appendChild(marker);
-                const gridLine = document.createElement('div');
-                gridLine.className = 'grid-line minor';
-                gridLine.style.left = `${pos}px`;
-                tracksContainer.appendChild(gridLine);
-            }
+            const isSecond = Math.abs(i % 1) < 0.001;
+
+            const marker = document.createElement('div');
+            marker.className = isSecond ? 'time-marker major' : 'time-marker minor';
+            marker.style.left = `${pos}px`;
+            if (isSecond) marker.dataset.label = `${Math.round(i)}s`;
+            ruler.appendChild(marker);
+
+            // Removed grid lines as requested
         }
     }
 
@@ -511,7 +789,7 @@ class CueEditor {
     }
 
     createCue(trackId, sceneId, sceneName, startTime, duration = 5, ignoreCollisions = false) {
-        const cue = { id: Date.now(), trackId, sceneId, sceneName, startTime, duration, fadeIn: 0, fadeOut: 0 };
+        const cue = { id: Date.now(), trackId, sceneId, sceneName, startTime, duration, fadeIn: 0, fadeOut: 0, reverse: false };
         this.cues.push(cue);
         if (!ignoreCollisions) this.resolveCollisions(cue);
         this.renderCues();
@@ -538,8 +816,17 @@ class CueEditor {
                 block.innerHTML = `<div class="cue-block-name"></div><div class="cue-block-time"></div><div class="cue-resize-handle"></div>`;
                 block.setAttribute('draggable', 'false');
                 block.ondragstart = (e) => { e.preventDefault(); return false; };
+
+                // Mouse Events
                 block.addEventListener('mousedown', (e) => this.handleCueMouseDown(e, cue, block));
                 block.addEventListener('dblclick', () => this.editCue(cue));
+                // Context Menu
+                block.addEventListener('contextmenu', (e) => this.showContextMenu(e, cue));
+
+                // Specific Resize Handler
+                const handle = block.querySelector('.cue-resize-handle');
+                handle.addEventListener('mousedown', (e) => this.handleResizeMouseDown(e, cue, block));
+
                 track.appendChild(block);
                 this.cueElements.set(cue.id, block);
             } else {
@@ -548,25 +835,58 @@ class CueEditor {
 
             const newLeft = `${cue.startTime * this.pixelsPerSecond}px`;
             const newWidth = `${cue.duration * this.pixelsPerSecond}px`;
+            // Only update DOM if changed
             if (block.style.left !== newLeft) block.style.left = newLeft;
             if (block.style.width !== newWidth) block.style.width = newWidth;
-            block.querySelector('.cue-block-name').textContent = cue.sceneName;
+
+            // Text Content (could optimize to check before write, but cheap enough)
+            let displayName = cue.sceneName;
+            if (cue.reverse) displayName += ' ⏪';
+
+            block.querySelector('.cue-block-name').textContent = displayName;
             block.querySelector('.cue-block-time').textContent = `${cue.startTime.toFixed(2)}s`;
+
             if (this.selectedCue && this.selectedCue.id === cue.id) block.classList.add('selected');
             else block.classList.remove('selected');
+
+            // --- Chaser Styling Update (Always Run) ---
+            const scene = this.scenes.find(s => s.id === cue.sceneId);
+            let isChaser = false;
+            if (scene) {
+                isChaser = scene.type === 'chaser';
+                // Robust Check (data is already parsed in loadScenes)
+                if (!isChaser && scene.channel_data && !Array.isArray(scene.channel_data)) {
+                    if (scene.channel_data.start_color || scene.channel_data.fade_time) isChaser = true;
+                }
+            }
+            if (isChaser) block.classList.add('chaser');
+            else block.classList.remove('chaser');
         });
     }
 
     // ... Standard methods ...
     editCue(cue) {
-        this.selectedCue = cue;
-        this.highlightSelectedCue();
-        document.getElementById('cue-name').value = cue.sceneName;
-        document.getElementById('cue-start').value = cue.startTime;
-        document.getElementById('cue-duration').value = cue.duration;
-        document.getElementById('cue-fade-in').value = cue.fadeIn;
-        document.getElementById('cue-fade-out').value = cue.fadeOut;
-        document.getElementById('cue-modal').classList.add('active');
+        try {
+            console.log('✏️ Edit Cue:', cue);
+            this.selectedCue = cue;
+            this.highlightSelectedCue();
+
+            const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+            setVal('cue-name', cue.sceneName);
+            setVal('cue-start', cue.startTime);
+            setVal('cue-duration', cue.duration);
+            setVal('cue-fade-in', cue.fadeIn);
+            setVal('cue-fade-out', cue.fadeOut);
+
+            const revEl = document.getElementById('cue-reverse');
+            if (revEl) revEl.checked = cue.reverse || false;
+
+            const modal = document.getElementById('cue-modal');
+            if (modal) modal.classList.add('active');
+            else console.error('Modal element not found!');
+        } catch (e) {
+            console.error('Error opening cue editor:', e);
+        }
     }
     highlightSelectedCue() { this.renderCues(); }
     hideCueModal() { document.getElementById('cue-modal').classList.remove('active'); this.selectedCue = null; }
@@ -576,6 +896,7 @@ class CueEditor {
         this.selectedCue.duration = parseFloat(document.getElementById('cue-duration').value);
         this.selectedCue.fadeIn = parseFloat(document.getElementById('cue-fade-in').value);
         this.selectedCue.fadeOut = parseFloat(document.getElementById('cue-fade-out').value);
+        this.selectedCue.reverse = document.getElementById('cue-reverse').checked; // NEW
         this.resolveCollisions(this.selectedCue);
         this.renderCues();
         this.hideCueModal();
@@ -597,7 +918,28 @@ class CueEditor {
         this.updatePlayhead();
         this.checkCues();
         this.updateChasers();
-        if (this.currentTime >= this.maxTime) { if (this.loop) this.currentTime = 0; else { this.stop(); return; } }
+
+        // Calculate dynamic end of track
+        let lastCueEnd = 0;
+        if (this.cues.length > 0) {
+            lastCueEnd = Math.max(...this.cues.map(c => c.startTime + c.duration));
+        }
+
+        // Stop or Loop at actual content end (plus small buffer)
+        const stopPoint = Math.max(lastCueEnd + 0.5, this.maxTime); // Fallback to maxTime if timeline shorter
+        // actually user wants to stop at LAST ELEMENT, not maxTime ruler.
+        // "wenn der rote curser das ende also das letzt element erreicht hat"
+        const exactStopPoint = lastCueEnd > 0 ? lastCueEnd : this.maxTime;
+
+        if (this.currentTime >= exactStopPoint) {
+            if (this.loop) {
+                this.currentTime = 0;
+            } else {
+                this.stop();
+                return;
+            }
+        }
+
         this.animationFrameId = requestAnimationFrame(() => this.gameLoop());
     }
     pause() { this.isPlaying = false; this.isPaused = true; if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId); }
@@ -637,8 +979,8 @@ class CueEditor {
                 newActiveCues.add(cue.id);
                 if (!this.activeCues.has(cue.id)) { const block = this.cueElements.get(cue.id); if (block) block.classList.add('active'); }
                 if (!cue.triggered) {
-                    await this.recallScene(cue.sceneId, cue);
                     cue.triggered = true;
+                    await this.recallScene(cue.sceneId, cue, cue.startTime); // Pass startTime
                 }
             } else {
                 if (this.activeCues.has(cue.id)) {
@@ -656,7 +998,8 @@ class CueEditor {
         }
         this.activeCues = newActiveCues;
     }
-    async recallScene(sceneId, cueRef) {
+
+    async recallScene(sceneId, cueRef, cueStartTime = 0) { // Accept startTime
         const scene = this.scenes.find(s => s.id === sceneId);
         if (!scene) return;
 
@@ -679,8 +1022,8 @@ class CueEditor {
             if (isChaser) {
                 // --- CHASER PLAYBACK ---
                 if (!this.runningChasers.find(c => c.id.startsWith(sceneId + '_'))) { // avoid dupes if triggered multiple times
-                    console.log(`🏃‍♂️ Playing Chaser Cue: ${scene.name}`);
-                    this.startChaser(sceneId, channelData, cueRef);
+                    console.log(`🏃‍♂️ Playing Chaser Cue: ${scene.name} @ ${cueStartTime}s`);
+                    this.startChaser(sceneId, channelData, cueRef, cueStartTime);
                 }
             } else {
                 // --- STATIC SCENE PLAYBACK ---
@@ -736,15 +1079,18 @@ class CueEditor {
     }
 
     // --- CHASER ENGINE ---
-    startChaser(id, config, cueRef) {
+    startChaser(id, config, cueRef, cueStartTime) {
         if (!this.runningChasers) this.runningChasers = [];
+
+        // Merge Cue properties into config
+        const activeConfig = { ...config, reverse: cueRef.reverse || false };
 
         const chaserState = {
             id: id + '_' + Date.now(),
-            config: config,
-            startTime: performance.now(),
-            lastTime: performance.now(),
-            phase: 0
+            config: activeConfig,
+            cueStartTime: cueStartTime, // Store timeline start
+            // lastTime: performance.now(), // No longer needed
+            // phase: 0 // Calculated on fly
         };
 
         this.runningChasers.push(chaserState);
@@ -759,29 +1105,39 @@ class CueEditor {
     updateChasers() {
         if (!this.runningChasers || this.runningChasers.length === 0) return;
 
-        const now = performance.now();
+        // Use Timeline Time instead of System Time
+        const currentMs = this.currentTime * 1000;
 
         this.runningChasers.forEach(chaser => {
             const state = chaser.config;
-            const dt = now - chaser.lastTime;
-            chaser.lastTime = now;
+            const elapsed = Math.max(0, currentMs - (chaser.cueStartTime * 1000));
 
             // Fade Logic
             const currentFadeTime = parseInt(state.fade_time) || 1000;
             const cycleDuration = currentFadeTime * 2;
-            const phaseStep = (dt / cycleDuration) * 2;
-            chaser.phase = (chaser.phase + phaseStep) % 2;
+
+            // Deterministic Phase Calculation
+            // Full cycle 0->1->2 (where 2 wraps to 0)
+            const rawPhase = (elapsed / (currentFadeTime)) % 2;
+
+            // rawPhase goes 0 -> 2. 
+            // 0 -> 1 is Fade In (or A->B)
+            // 1 -> 2 is Fade Out (or B->A)
 
             let progress;
             if (state.mode === 'pulse') {
-                progress = (chaser.phase < 1) ? chaser.phase : 0;
-            } else {
-                if (chaser.phase < 1) {
-                    progress = chaser.phase;
-                } else {
-                    progress = 1 - (chaser.phase - 1);
-                }
+                progress = (rawPhase < 1) ? rawPhase : 0;
+            } else if (state.mode === 'strobe') {
+                progress = (rawPhase < 1) ? 1 : 0;
+            } else { // Linear / Default
+                progress = (rawPhase < 1) ? rawPhase : (2 - rawPhase);
             }
+
+            // --- Reverse Logic ---
+            if (state.reverse) {
+                progress = 1.0 - progress;
+            }
+            // ---------------------
 
             // Colors
             // console.log('Chaser State:', state);
