@@ -9,6 +9,7 @@ import { createSystemRoutes } from './routes/systemRoutes';
 import { createCueRoutes } from './routes/cueRoutes';
 import { createFaderRoutes } from './routes/faderRoutes';
 import { createTemplateRoutes } from './routes/templateRoutes';
+import sceneRoutes from './routes/sceneRoutes';
 
 dotenv.config();
 
@@ -68,6 +69,7 @@ class App {
         this.app.use('/api', createCueRoutes(this.dmxController)); // Cue & Playback routes
         this.app.use('/api', createFaderRoutes(this.dmxController)); // Fader names
         this.app.use('/api/templates', createTemplateRoutes());
+        this.app.use('/api', sceneRoutes); // Scene management
 
         // 404 handler
         this.app.get('/', (_req, res) => {

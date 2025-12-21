@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Szenen-Manager | WebDMX</title>
+    <link rel="stylesheet" href="css/scenes.css">
+</head>
+
+<body>
+    <div class="scenes-container">
+        <!-- Header -->
+        <div class="scenes-header">
+            <h1>🎬 Szenen-Manager</h1>
+            <div class="header-actions">
+                <button class="btn-primary" id="new-scene-btn">+ Neue Szene</button>
+                <button class="btn-secondary" id="new-folder-btn">📁 Neuer Ordner</button>
+                <button class="btn-close" id="close-btn">✕</button>
+            </div>
+        </div>
+
+        <!-- Main Layout -->
+        <div class="scenes-layout">
+            <!-- Sidebar: Folders -->
+            <div class="folders-sidebar">
+                <h3>Ordner</h3>
+                <div id="folders-list" class="folders-list">
+                    <!-- Folders will be rendered here -->
+                </div>
+            </div>
+
+            <!-- Main: Scenes Grid -->
+            <div class="scenes-main">
+                <div class="scenes-toolbar">
+                    <input type="text" id="search-scenes" placeholder="🔍 Szenen durchsuchen...">
+                    <select id="folder-filter">
+                        <option value="">Alle Ordner</option>
+                    </select>
+                </div>
+                <div id="scenes-grid" class="scenes-grid">
+                    <!-- Scenes will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: New Scene -->
+    <div id="new-scene-modal" class="modal">
+        <div class="modal-content">
+            <h2>Neue Szene erstellen</h2>
+            <form id="new-scene-form">
+                <label>Name:</label>
+                <input type="text" id="scene-name" placeholder="z.B. Party Red" required>
+
+                <label>Ordner:</label>
+                <select id="scene-folder">
+                    <option value="">Kein Ordner</option>
+                </select>
+
+                <label>Farbe (optional):</label>
+                <input type="color" id="scene-color" value="#ff0000">
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn-primary">💾 Speichern</button>
+                    <button type="button" class="btn-secondary" id="cancel-scene-btn">Abbrechen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: New Folder -->
+    <div id="new-folder-modal" class="modal">
+        <div class="modal-content">
+            <h2>Neuen Ordner erstellen</h2>
+            <form id="new-folder-form">
+                <label>Name:</label>
+                <input type="text" id="folder-name" placeholder="z.B. Party" required>
+
+                <label>Icon (Emoji):</label>
+                <input type="text" id="folder-icon" placeholder="🎉" maxlength="2">
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn-primary">📁 Erstellen</button>
+                    <button type="button" class="btn-secondary" id="cancel-folder-btn">Abbrechen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/scenes.js"></script>
+</body>
+
+</html>
