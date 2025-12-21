@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cue Editor | WebDMX</title>
+    <link rel="stylesheet" href="css/cue_editor.css">
+</head>
+
+<body>
+    <div class="cue-editor-container">
+        <!-- Header with Transport Controls -->
+        <div class="editor-header">
+            <h1>🎬 Cue Editor</h1>
+            <div class="transport-controls">
+                <button class="transport-btn" id="btn-prev" title="Previous Cue">◀◀</button>
+                <button class="transport-btn play" id="btn-play" title="Play">▶</button>
+                <button class="transport-btn" id="btn-pause" title="Pause">⏸</button>
+                <button class="transport-btn" id="btn-stop" title="Stop">⏹</button>
+                <button class="transport-btn" id="btn-next" title="Next Cue">▶▶</button>
+                <div class="time-display" id="time-display">00:00.0</div>
+                <div class="speed-control">
+                    <label>Speed:</label>
+                    <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.1" value="1.0">
+                    <span id="speed-value">1.0x</span>
+                </div>
+                <button class="transport-btn loop" id="btn-loop" title="Loop">🔄</button>
+            </div>
+            <button class="btn-close" id="close-btn">✕</button>
+        </div>
+
+        <!-- Timeline Area -->
+        <div class="timeline-area">
+            <!-- Timeline Ruler -->
+            <div class="timeline-ruler" id="timeline-ruler">
+                <!-- Time markers will be generated here -->
+            </div>
+
+            <!-- Tracks Container -->
+            <div class="tracks-container" id="tracks-container">
+                <!-- Tracks will be rendered here -->
+            </div>
+
+            <!-- Playhead -->
+            <div class="playhead" id="playhead"></div>
+        </div>
+
+        <!-- Scene Pool (Drag & Drop) -->
+        <div class="scene-pool">
+            <h3>Scene Pool (Drag to Timeline)</h3>
+            <div class="pool-grid" id="scene-pool">
+                <!-- Scenes will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Track Controls -->
+        <div class="track-controls">
+            <button class="btn-primary" id="add-track-btn">+ Add Track</button>
+            <button class="btn-secondary" id="clear-timeline-btn">Clear Timeline</button>
+            <button class="btn-primary" id="save-show-btn">💾 Save Show</button>
+        </div>
+    </div>
+
+    <!-- Cue Properties Modal -->
+    <div id="cue-modal" class="modal">
+        <div class="modal-content">
+            <h2>Cue Properties</h2>
+            <form id="cue-form">
+                <label>Name:</label>
+                <input type="text" id="cue-name" readonly>
+
+                <label>Start Time (seconds):</label>
+                <input type="number" id="cue-start" step="0.1" min="0">
+
+                <label>Duration (seconds):</label>
+                <input type="number" id="cue-duration" step="0.1" min="0.1">
+
+                <label>Fade In (seconds):</label>
+                <input type="number" id="cue-fade-in" step="0.1" min="0" value="0">
+
+                <label>Fade Out (seconds):</label>
+                <input type="number" id="cue-fade-out" step="0.1" min="0" value="0">
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn-primary">Save</button>
+                    <button type="button" class="btn-secondary" id="cancel-cue-btn">Cancel</button>
+                    <button type="button" class="btn-danger" id="delete-cue-btn">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/cue_editor.js"></script>
+</body>
+
+</html>

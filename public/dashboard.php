@@ -42,6 +42,10 @@
                 <div class="icon-box"><i class="fas fa-film" style="color: #00bcd4;"></i></div>
                 <span>Szenen</span>
             </div>
+            <div class="icon-item" onclick="openCueEditor()">
+                <div class="icon-box"><i class="fas fa-play-circle" style="color: #febc2e;"></i></div>
+                <span>Cue Editor</span>
+            </div>
         </div>
     </div>
 
@@ -152,6 +156,16 @@
                 top: '50px',
                 left: '100px',
                 content: '<iframe src="scenes.html" style="width:100%; height:100%; border:none;"></iframe>'
+            });
+        }
+
+        function openCueEditor() {
+            wm.createWindow('cue-editor', 'Cue Editor', {
+                width: '1400px',
+                height: '800px',
+                top: '30px',
+                left: '50px',
+                content: '<iframe src="cue_editor.html" style="width:100%; height:100%; border:none;"></iframe>'
             });
         }
 
