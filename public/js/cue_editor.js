@@ -25,6 +25,7 @@ class CueEditor {
 
         this.cueElements = new Map();
         this.activeCues = new Set();
+        this.runningChasers = [];
 
         this.init();
     }
@@ -47,6 +48,7 @@ class CueEditor {
     async initAsync() {
         try {
             await this.loadScenes();
+            await this.loadPatch(); // Load devices and assignments
             this.addTrack(false);
             this.addTrack(false);
             this.addTrack(false);
@@ -183,8 +185,16 @@ class CueEditor {
         const ghost = document.createElement('div');
         ghost.className = 'cue-block dragging-ghost';
         ghost.textContent = scene.name;
+
+        // Calculate width for ghost based on duration
+        let dur = 5;
+        if (scene.duration !== undefined && scene.duration !== null) {
+            dur = parseFloat(scene.duration) / 1000;
+        }
+        if (isNaN(dur) || dur <= 0) dur = 5;
+
         ghost.style.position = 'fixed';
-        ghost.style.width = `${5 * this.pixelsPerSecond}px`;
+        ghost.style.width = `${dur * this.pixelsPerSecond}px`;
         ghost.style.height = '40px';
         ghost.style.background = '#4488ff';
         ghost.style.opacity = '0.8';
@@ -331,7 +341,17 @@ class CueEditor {
                 startTime = Math.max(0, startTime);
 
                 const scene = this.dragState.scene;
-                this.createCue(trackId, scene.id, scene.name, startTime, 5, isCtrl);
+                console.log('📦 Dropped Scene Data:', scene);
+
+                // Robust duration calculation
+                let dur = 5;
+                if (scene.duration !== undefined && scene.duration !== null) {
+                    dur = parseFloat(scene.duration) / 1000;
+                }
+                if (isNaN(dur) || dur <= 0) dur = 5;
+
+                console.log(`⏱ calculated duration: ${dur}s (from ${scene.duration}ms)`);
+                this.createCue(trackId, scene.id, scene.name, startTime, dur, isCtrl);
             }
         }
 
@@ -359,6 +379,24 @@ class CueEditor {
             if (data.success) this.scenes = data.scenes || [];
         } catch (e) {
             console.error('Failed to load scenes:', e);
+        }
+    }
+
+    async loadPatch() {
+        try {
+            // Load Devices
+            const devRes = await fetch(`${API}/api/devices`);
+            this.devices = await devRes.json();
+
+            // Load Assignments
+            const assignRes = await fetch(`${API}/api/faders/all-assignments`);
+            const assignData = await assignRes.json();
+            // Backend returns 'mapping', not 'assignments'
+            this.assignments = assignData.success ? (assignData.mapping || assignData.assignments || {}) : {};
+
+            console.log('🔌 Patch Loaded:', { devices: this.devices.length, assignments: Object.keys(this.assignments).length });
+        } catch (e) {
+            console.error('Failed to load patch:', e);
         }
     }
 
@@ -558,6 +596,7 @@ class CueEditor {
         this.currentTime += (deltaTime * this.speed);
         this.updatePlayhead();
         this.checkCues();
+        this.updateChasers();
         if (this.currentTime >= this.maxTime) { if (this.loop) this.currentTime = 0; else { this.stop(); return; } }
         this.animationFrameId = requestAnimationFrame(() => this.gameLoop());
     }
@@ -570,6 +609,7 @@ class CueEditor {
         this.cues.forEach(c => c.triggered = false);
         this.activeCues.clear();
         document.querySelectorAll('.cue-block.active').forEach(el => el.classList.remove('active'));
+        this.runningChasers = []; // Stop all chasers
         this.updatePlayhead();
     }
     toggleLoop() { this.loop = !this.loop; document.getElementById('btn-loop').classList.toggle('active', this.loop); }
@@ -596,22 +636,250 @@ class CueEditor {
             if (!isMuted && this.currentTime >= cueStart && this.currentTime < cueEnd) {
                 newActiveCues.add(cue.id);
                 if (!this.activeCues.has(cue.id)) { const block = this.cueElements.get(cue.id); if (block) block.classList.add('active'); }
-                if (!cue.triggered) { await this.recallScene(cue.sceneId); cue.triggered = true; }
+                if (!cue.triggered) {
+                    await this.recallScene(cue.sceneId, cue);
+                    cue.triggered = true;
+                }
             } else {
-                if (this.activeCues.has(cue.id)) { const block = this.cueElements.get(cue.id); if (block) block.classList.remove('active'); }
+                if (this.activeCues.has(cue.id)) {
+                    const block = this.cueElements.get(cue.id);
+                    if (block) block.classList.remove('active');
+
+                    // Stop Chaser if it was running
+                    if (cue.activeChaserId) {
+                        this.stopChaser(cue.activeChaserId);
+                        cue.activeChaserId = null;
+                    }
+                }
                 cue.triggered = false;
             }
         }
         this.activeCues = newActiveCues;
     }
-    async recallScene(sceneId) {
+    async recallScene(sceneId, cueRef) {
         const scene = this.scenes.find(s => s.id === sceneId);
         if (!scene) return;
+
         try {
             let channelData = scene.channel_data;
             if (typeof channelData === 'string') channelData = JSON.parse(channelData);
-            await fetch(`${API}/api/dmx/batch`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channels: channelData }) });
+
+            let isChaser = scene.type === 'chaser';
+
+            // STRICT Fallback: Check for Chaser Object format
+            if (!isChaser && !Array.isArray(channelData)) {
+                // If it's an object, it MIGHT be sparse channel data OR a chaser config.
+                // Chaser config usually has 'start_color', 'fade_time' etc.
+                if (channelData.start_color || channelData.fade_time || channelData.mode) {
+                    console.log(`⚠️ Scene ${scene.name} looks like a Chaser. Treating as Chaser.`);
+                    isChaser = true;
+                }
+            }
+
+            if (isChaser) {
+                // --- CHASER PLAYBACK ---
+                if (!this.runningChasers.find(c => c.id.startsWith(sceneId + '_'))) { // avoid dupes if triggered multiple times
+                    console.log(`🏃‍♂️ Playing Chaser Cue: ${scene.name}`);
+                    this.startChaser(sceneId, channelData, cueRef);
+                }
+            } else {
+                // --- STATIC SCENE PLAYBACK ---
+                // Normalize data to a 512-integer array for the batch endpoint
+                let finalChannels = new Array(512).fill(0);
+                let hasData = false;
+
+                if (Array.isArray(channelData)) {
+                    // Case 1: Array of Numbers (Dense)
+                    if (typeof channelData[0] === 'number') {
+                        finalChannels = channelData.slice(0, 512); // Truncate if too long
+                        // Pad if too short? Usually batch replaces 1..N.
+                        // Ideally we send exactly what we have? 
+                        // DmxController.setChannels(1, val) replaces starting at 1.
+                        // If we want a full scene recall (overwrite), we should probably send 512.
+                        // If the saved array is short (e.g. 10 channels), sending just 10 is fine too.
+                        finalChannels = channelData;
+                        hasData = true;
+                    }
+                    // Case 2: Array of Objects [{channel: 1, value: 255}]
+                    else if (typeof channelData[0] === 'object') {
+                        channelData.forEach(item => {
+                            if (item.channel && item.value !== undefined) {
+                                if (item.channel >= 1 && item.channel <= 512) {
+                                    finalChannels[item.channel - 1] = item.value;
+                                    hasData = true;
+                                }
+                            }
+                        });
+                    }
+                } else if (typeof channelData === 'object') {
+                    // Case 3: Sparse Object { "1": 255, "5": 128 }
+                    Object.entries(channelData).forEach(([ch, val]) => {
+                        const chNum = parseInt(ch);
+                        if (chNum >= 1 && chNum <= 512) {
+                            finalChannels[chNum - 1] = parseInt(val);
+                            hasData = true;
+                        }
+                    });
+                }
+
+                if (hasData) {
+                    await fetch(`${API}/api/dmx/batch`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ channels: finalChannels })
+                    });
+                } else {
+                    console.warn(`⚠️ Scene ${scene.name} has no valid DMX data.`);
+                }
+            }
         } catch (e) { console.error('Failed to recall scene:', e); }
+    }
+
+    // --- CHASER ENGINE ---
+    startChaser(id, config, cueRef) {
+        if (!this.runningChasers) this.runningChasers = [];
+
+        const chaserState = {
+            id: id + '_' + Date.now(),
+            config: config,
+            startTime: performance.now(),
+            lastTime: performance.now(),
+            phase: 0
+        };
+
+        this.runningChasers.push(chaserState);
+        cueRef.activeChaserId = chaserState.id;
+    }
+
+    stopChaser(runId) {
+        if (!this.runningChasers) return;
+        this.runningChasers = this.runningChasers.filter(c => c.id !== runId);
+    }
+
+    updateChasers() {
+        if (!this.runningChasers || this.runningChasers.length === 0) return;
+
+        const now = performance.now();
+
+        this.runningChasers.forEach(chaser => {
+            const state = chaser.config;
+            const dt = now - chaser.lastTime;
+            chaser.lastTime = now;
+
+            // Fade Logic
+            const currentFadeTime = parseInt(state.fade_time) || 1000;
+            const cycleDuration = currentFadeTime * 2;
+            const phaseStep = (dt / cycleDuration) * 2;
+            chaser.phase = (chaser.phase + phaseStep) % 2;
+
+            let progress;
+            if (state.mode === 'pulse') {
+                progress = (chaser.phase < 1) ? chaser.phase : 0;
+            } else {
+                if (chaser.phase < 1) {
+                    progress = chaser.phase;
+                } else {
+                    progress = 1 - (chaser.phase - 1);
+                }
+            }
+
+            // Colors
+            // console.log('Chaser State:', state);
+            const startRGB = this.hexToRgb(state.start_color || '#000000');
+            const endRGB = this.hexToRgb(state.end_color || '#000000');
+
+            let r, g, b;
+            if (state.color_fade_enabled) {
+                r = Math.round(startRGB.r + (endRGB.r - startRGB.r) * progress);
+                g = Math.round(startRGB.g + (endRGB.g - startRGB.g) * progress);
+                b = Math.round(startRGB.b + (endRGB.b - startRGB.b) * progress);
+            } else {
+                r = startRGB.r;
+                g = startRGB.g;
+                b = startRGB.b;
+            }
+
+            // console.log(`RGB: ${r}, ${g}, ${b} | Progress: ${progress.toFixed(2)}`);
+
+            // Apply to specific target fixtures
+            const targetIds = state.targetFixtureIds || [];
+            if (targetIds.length === 0) {
+                // console.warn('No target fixtures for chaser!');
+                return;
+            }
+
+            const batch = [];
+
+            targetIds.forEach(fid => {
+                const device = this.devices.find(d => d.id === fid);
+                const devAssignments = this.assignments[fid];
+
+                if (device && devAssignments) {
+                    const startAddr = device.dmx_address;
+
+                    Object.entries(devAssignments).forEach(([relCh, funcs]) => {
+                        const relChNum = parseInt(relCh);
+                        const absCh = startAddr + relChNum - 1;
+                        if (absCh < 1 || absCh > 512) return;
+
+                        const funcList = Array.isArray(funcs) ? funcs.map(f => f.toLowerCase()) : [];
+                        // console.log(`Fixture ${fid} Ch ${relCh}:`, funcList);
+
+                        // Color Logic
+                        let val = -1;
+
+                        // RGB
+                        if (funcList.includes('r')) val = r;
+                        else if (funcList.includes('g')) val = g;
+                        else if (funcList.includes('b')) val = b;
+
+                        // Dimmer
+                        if (funcList.includes('dim')) {
+                            if (state.dimmer_enabled) val = state.dimmer_value !== undefined ? state.dimmer_value : 255;
+                        }
+
+                        // Strobe
+                        if (funcList.includes('strobe')) {
+                            if (state.strobe_enabled) val = state.strobe_value !== undefined ? state.strobe_value : 0;
+                        }
+
+                        // W
+                        if (funcList.includes('w')) {
+                            if (state.w_enabled) val = state.dimmer_value !== undefined ? state.dimmer_value : 255;
+                        }
+
+                        // If value was set, add to batch
+                        if (val !== -1) {
+                            batch.push({ channel: absCh, value: val });
+                        }
+                    });
+                } else {
+                    // console.warn(`⚠️ device or assignments missing for ID ${fid}`, { device, devAssignments });
+                }
+            });
+
+            // Send Batch
+            if (batch.length > 0) {
+                // console.log('Batch:', JSON.stringify(batch));
+                this.sendBatchDMX(batch);
+            } else {
+                // console.warn('⚠️ Chaser running but batch is empty');
+            }
+        });
+    }
+
+    sendBatchDMX(channels) {
+        // Simple throttle could be added here
+        fetch(`${API}/api/dmx/batch`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ channels: channels })
+        }).catch(() => { });
+    }
+
+    hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : { r: 0, g: 0, b: 0 };
     }
     prevCue() {
         const prevCues = this.cues.filter(c => c.startTime < this.currentTime).sort((a, b) => b.startTime - a.startTime);

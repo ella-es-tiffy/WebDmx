@@ -27,13 +27,19 @@ export class SceneController {
                 CREATE TABLE IF NOT EXISTS scenes (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
+                    type VARCHAR(50) DEFAULT 'static',
                     folder_id INT DEFAULT NULL,
                     color VARCHAR(50) DEFAULT '#667eea',
+                    duration INT DEFAULT 5000,
                     channel_data JSON NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                 )
             `);
+
+            // Migration: Add type/duration column if missing
+            try { await pool.execute("ALTER TABLE scenes ADD COLUMN type VARCHAR(50) DEFAULT 'static'"); } catch (e) { }
+            try { await pool.execute("ALTER TABLE scenes ADD COLUMN duration INT DEFAULT 5000"); } catch (e) { }
 
             const [scenes]: any = await pool.execute('SELECT * FROM scenes ORDER BY created_at DESC');
             res.json({ success: true, scenes });
@@ -47,12 +53,16 @@ export class SceneController {
      */
     async createScene(req: Request, res: Response): Promise<void> {
         try {
-            const { name, folder_id, color, channel_data } = req.body;
+            const { name, type, folder_id, color, duration, channel_data } = req.body;
             const pool = Database.getPool();
 
+            // Migration: Add type/duration column if missing (Safety check)
+            try { await pool.execute("ALTER TABLE scenes ADD COLUMN type VARCHAR(50) DEFAULT 'static'"); } catch (e) { }
+            try { await pool.execute("ALTER TABLE scenes ADD COLUMN duration INT DEFAULT 5000"); } catch (e) { }
+
             const [result]: any = await pool.execute(
-                'INSERT INTO scenes (name, folder_id, color, channel_data) VALUES (?, ?, ?, ?)',
-                [name, folder_id || null, color || '#667eea', JSON.stringify(channel_data)]
+                'INSERT INTO scenes (name, type, folder_id, color, duration, channel_data) VALUES (?, ?, ?, ?, ?, ?)',
+                [name, type || 'static', folder_id || null, color || '#667eea', duration || 5000, JSON.stringify(channel_data)]
             );
 
             res.json({ success: true, id: result.insertId });
@@ -67,7 +77,7 @@ export class SceneController {
     async updateScene(req: Request, res: Response): Promise<void> {
         try {
             const { id } = req.params;
-            const { name, folder_id, color, channel_data } = req.body;
+            const { name, type, folder_id, color, duration, channel_data } = req.body;
             const pool = Database.getPool();
 
             const updates: string[] = [];
@@ -77,6 +87,10 @@ export class SceneController {
                 updates.push('name = ?');
                 values.push(name);
             }
+            if (type !== undefined) {
+                updates.push('type = ?');
+                values.push(type);
+            }
             if (folder_id !== undefined) {
                 updates.push('folder_id = ?');
                 values.push(folder_id);
@@ -84,6 +98,10 @@ export class SceneController {
             if (color !== undefined) {
                 updates.push('color = ?');
                 values.push(color);
+            }
+            if (duration !== undefined) {
+                updates.push('duration = ?');
+                values.push(duration);
             }
             if (channel_data !== undefined) {
                 updates.push('channel_data = ?');

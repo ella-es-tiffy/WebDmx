@@ -210,12 +210,12 @@ body {
 }
 
 .fixture-btn.selected {
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
+    border-color: var(--accent-active);
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
 }
 
 .fixture-btn.selected:not(.active) {
-    background: rgba(0, 212, 255, 0.15);
+    background: rgba(0, 255, 136, 0.15);
 }
 
 .fix-btn-id {
@@ -846,6 +846,52 @@ body {
     color: #fff;
 }
 
+/* Mode Toggle (LIVE/PROG) */
+.mode-toggle-container {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    z-index: 100;
+    display: flex;
+    gap: 5px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 5px;
+    border-radius: 8px;
+    border: 1px solid #444;
+}
+
+.mode-btn {
+    padding: 8px 20px;
+    background: #222;
+    border: 1px solid #444;
+    color: #888;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.mode-btn:hover {
+    border-color: #666;
+}
+
+.mode-btn.active.prog-mode {
+    background: #1a4d99;
+    border-color: #4488ff;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(68, 136, 255, 0.4);
+}
+
+.mode-btn.active.live-mode {
+    background: #1a6e3a;
+    border-color: #00ff88;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+}
+
 /* Macros Section (Horizontal 2x14 Grid Below Faders) */
 .macros-container {
     display: grid;
@@ -900,6 +946,35 @@ body {
         height: 36px;
     }
 }
+
+/* Chaser Boxes (Gradient-Effekt) */
+.macro-box.chaser-box {
+    border: 2px solid #555;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+.macro-box.chaser-box.running {
+    animation: pulse-border 1.5s infinite;
+    border-color: #00ff88;
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+}
+
+@keyframes pulse-border {
+
+    0%,
+    100% {
+        border-color: #00ff88;
+        box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+    }
+
+    50% {
+        border-color: #88ffaa;
+        box-shadow: 0 0 20px rgba(0, 255, 136, 0.8);
+    }
+}
+
 
 /* Presets Sidebar (Right Side, Vertical) */
 .presets-sidebar {
@@ -1019,25 +1094,7 @@ body {
     transform: scale(0.92);
 }
 
-.macro-box::after {
-    content: 'APPLY';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(0, 0, 0, 0.6);
-    color: #fff;
-    font-size: 9px;
-    font-weight: 800;
-    text-align: center;
-    padding: 2px 0;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
 
-.macro-box:hover::after {
-    opacity: 1;
-}
 
 .macro-picker {
     width: 60px;

@@ -14,6 +14,7 @@ class FaderConsole {
         this.fixtureId = 1; // Current selected fixture
         this.fixtureStartAddress = 1; // Base DMX address of current fixture
         this.fixtureChannelCount = 16; // How many channels this fixture has
+        this.isMultiSelectMode = false; // Toggle for easier multi-selection
         this.availableFixtures = [];
         this.channels = [];
         this.globalValueCache = {}; // Global cache for all 512 channels
@@ -74,6 +75,7 @@ class FaderConsole {
         await this.loadMacros();
         await this.loadPresets();
         await this.loadGlobalPalettes();
+        await this.loadChasers();
     }
 
     async refreshFixtureData() {
@@ -122,6 +124,21 @@ class FaderConsole {
         if (!container) return;
 
         container.innerHTML = '';
+
+        // Add Multi-Select Toggle
+        const multiToggle = document.createElement('div');
+        multiToggle.className = `fixture-btn multi-toggle ${this.isMultiSelectMode ? 'active' : ''}`;
+        multiToggle.style.background = this.isMultiSelectMode ? '#f0f' : '#333';
+        multiToggle.style.borderColor = this.isMultiSelectMode ? '#f0f' : '#555';
+        multiToggle.innerHTML = `
+            <div class="fix-btn-id" style="font-size: 8px;">MODE</div>
+            <div class="fix-btn-name">MULTI</div>
+        `;
+        multiToggle.onclick = () => {
+            this.isMultiSelectMode = !this.isMultiSelectMode;
+            this.renderFixtureSelector();
+        };
+        container.appendChild(multiToggle);
         this.availableFixtures.forEach(fix => {
             const btn = document.createElement('div');
             const isActive = this.fixtureId === fix.id;
@@ -135,7 +152,7 @@ class FaderConsole {
             `;
 
             btn.onclick = (e) => {
-                if (e.shiftKey || e.ctrlKey || e.metaKey) {
+                if (this.isMultiSelectMode || e.shiftKey || e.ctrlKey || e.metaKey) {
                     this.toggleFixtureSelection(fix.id);
                 } else {
                     this.selectFixture(fix);
@@ -250,13 +267,14 @@ class FaderConsole {
                         const channelNum = parseInt(channelStr);
                         const state = this.channels.find(c => c.channel === channelNum);
                         if (state) {
-                            state.element.classList.remove('has-r', 'has-g', 'has-b', 'has-w', 'has-p', 'has-t');
+                            state.element.classList.remove('has-r', 'has-g', 'has-b', 'has-w', 'has-p', 'has-t', 'has-zoom');
                             Object.keys(state.assignments).forEach(k => state.assignments[k] = false);
 
                             data.assignments[channelNum].forEach(func => {
-                                state.assignments[func] = true;
-                                if (state.assignBtns[func]) state.assignBtns[func].classList.add('active');
-                                state.element.classList.add(`has-${func}`);
+                                const f = func.toLowerCase();
+                                state.assignments[f] = true;
+                                if (state.assignBtns[f]) state.assignBtns[f].classList.add('active');
+                                state.element.classList.add(`has-${f}`);
                             });
                         }
                     });
@@ -353,6 +371,7 @@ class FaderConsole {
             const start = (e) => {
                 e.preventDefault();
                 isDragging = true;
+                this.draggingEncoder = type;
                 startAngle = getAngle(e, wheel);
                 wheel.style.cursor = 'grabbing';
             };
@@ -378,6 +397,7 @@ class FaderConsole {
 
             const end = () => {
                 isDragging = false;
+                this.draggingEncoder = null;
                 wheel.style.cursor = 'grab';
             };
 
@@ -403,8 +423,11 @@ class FaderConsole {
             // Apply change to current value
             this.encoders[type].value = Math.max(0, Math.min(255, this.encoders[type].value + change));
 
-            // Calculate degrees for display (-270 to 270 for a typical 540° fixture)
-            const degrees = Math.round((this.encoders[type].value / 255) * 540 - 270);
+            // Calculate degrees (TODO: Move these factors to fixture profiles later)
+            // Pan: 0 = 0°, 255 = 540° | Tilt: 0 = 0°, 255 = 270°
+            const factor = type === 'pan' ? 540 : 270;
+            const degrees = Math.round((this.encoders[type].value / 255) * factor);
+
             document.getElementById(`${type}-value`).textContent = `${degrees}°`;
 
             // Apply to ALL channels with P or T assignment
@@ -418,6 +441,46 @@ class FaderConsole {
             document.getElementById('rgbw-value').textContent = `${this.encoders.rgbw.hue}°`;
 
             this.applyRainbowToChannels(rgb);
+        }
+    }
+
+    /**
+     * Synchronize global encoders with actual DMX values of the active fixture
+     * Prevents "jumping" when dragging encoders if faders were moved manually
+     */
+    syncEncodersFromActiveFixture() {
+        if (!this.backendValues) return;
+
+        const assignments = this.assignmentCache[this.fixtureId] || {};
+
+        // Sync PAN
+        if (this.draggingEncoder !== 'pan') {
+            const panCh = Object.keys(assignments).find(ch =>
+                assignments[ch].some(a => a.toLowerCase() === 'p')
+            );
+            if (panCh) {
+                const absAddr = this.fixtureStartAddress + parseInt(panCh) - 1;
+                const val = this.backendValues[absAddr - 1] || 0;
+                this.encoders.pan.value = val;
+                const degrees = Math.round((val / 255) * 540);
+                const el = document.getElementById('pan-value');
+                if (el) el.textContent = `${degrees}°`;
+            }
+        }
+
+        // Sync TILT
+        if (this.draggingEncoder !== 'tilt') {
+            const tiltCh = Object.keys(assignments).find(ch =>
+                assignments[ch].some(a => a.toLowerCase() === 't')
+            );
+            if (tiltCh) {
+                const absAddr = this.fixtureStartAddress + parseInt(tiltCh) - 1;
+                const val = this.backendValues[absAddr - 1] || 0;
+                this.encoders.tilt.value = val;
+                const degrees = Math.round((val / 255) * 270);
+                const el = document.getElementById('tilt-value');
+                if (el) el.textContent = `${degrees}°`;
+            }
         }
     }
 
@@ -755,7 +818,7 @@ class FaderConsole {
             isOn: true,
             isSelected: false,
             groups: { a: false, b: false, c: false },
-            assignments: { r: false, g: false, b: false, p: false, t: false, w: false },
+            assignments: { r: false, g: false, b: false, p: false, t: false, w: false, zoom: false },
             hasLoadedOnce: false
         };
 
@@ -775,6 +838,9 @@ class FaderConsole {
      */
     attachFaderEvents(state) {
         state.fader.addEventListener('input', async (e) => {
+            // Stop chasers when manually adjusting faders
+            this.stopAllChasers();
+
             const value = parseInt(e.target.value);
             this.updateFaderValue(state, value, true); // Save to DB for active fixture
 
@@ -952,15 +1018,84 @@ class FaderConsole {
      * Initialize Macro Section
      */
     initMacros() {
-        this.macroStates = [];
+        // 28 Unified Effect Slots (2x14)
+        this.chaserStates = [];
         for (let i = 1; i <= 28; i++) {
-            this.macroStates.push({ id: i, color: '#333333' });
+            this.chaserStates.push({
+                id: i,
+                type: 'chaser',
+                name: `Slot ${i}`,
+                start_color: '#333333',
+                end_color: '#333333',
+                fade_time: 3000,
+                color_fade_enabled: false, // Default to static
+                zoom_enabled: false,
+                zoom_time: 2000,
+                zoom_max: 200,
+                zoom_invert: false,
+                zoom_sawtooth: false,
+                strobe_enabled: false,
+                strobe_value: 128,
+                running: false
+            });
         }
+
         this.presetStates = [];
         this.macrosCollapsed = false;
         this.presetsCollapsed = false;
+        this.liveMode = false; // Start in PROG mode
 
         this.renderMacros();
+        this.renderModeToggle();
+    }
+
+    renderModeToggle() {
+        // Remove existing toggle if any
+        const existing = document.querySelector('.mode-toggle-container');
+        if (existing) existing.remove();
+
+        const container = document.createElement('div');
+        container.className = 'mode-toggle-container';
+
+        const progBtn = document.createElement('button');
+        progBtn.className = 'mode-btn active prog-mode';
+        progBtn.textContent = 'PROG';
+        progBtn.onclick = () => this.setMode('prog');
+
+        const liveBtn = document.createElement('button');
+        liveBtn.className = 'mode-btn';
+        liveBtn.textContent = 'LIVE';
+        liveBtn.onclick = () => this.setMode('live');
+
+        container.appendChild(progBtn);
+        container.appendChild(liveBtn);
+
+        // Insert at top of fader-bank-container
+        const faderBank = document.querySelector('.fader-bank-container');
+        if (faderBank) {
+            faderBank.style.position = 'relative'; // For absolute positioning
+            faderBank.insertBefore(container, faderBank.firstChild);
+        }
+    }
+
+    setMode(mode) {
+        this.liveMode = (mode === 'live');
+
+        // Update button states
+        const progBtn = document.querySelector('.mode-btn.prog-mode');
+        const liveBtn = document.querySelector('.mode-btn.live-mode');
+
+        if (progBtn && liveBtn) {
+            if (this.liveMode) {
+                progBtn.classList.remove('active');
+                liveBtn.classList.add('active', 'live-mode');
+                console.log('🎭 LIVE MODE (No function yet)');
+            } else {
+                liveBtn.classList.remove('active', 'live-mode');
+                progBtn.classList.add('active', 'prog-mode');
+                console.log('💾 PROG MODE (No function yet)');
+            }
+        }
     }
 
     renderMacros() {
@@ -979,55 +1114,79 @@ class FaderConsole {
         macrosContainer.className = 'macros-container';
 
 
-        // --- COLOR MACROS (4) ---
-        if (this.macroStates) {
-            console.log('🎨 Rendering Macros. States:', JSON.stringify(this.macroStates));
-            this.macroStates.forEach(state => {
+        // --- EFFECT SLOTS (28) ---
+        if (this.chaserStates) {
+            this.chaserStates.forEach(state => {
                 const item = document.createElement('div');
                 item.className = 'macro-item';
 
                 const box = document.createElement('div');
-                box.className = 'macro-box';
-                box.style.backgroundColor = state.color;
+                box.className = 'macro-box chaser-box';
 
-                // Debug Attribute
-                box.setAttribute('data-debug-color', state.color);
+                // Box Display Logic: Gradient if Color Fade is ON, else Solid Color
+                const updateBoxDisplay = () => {
+                    if (state.color_fade_enabled !== false) {
+                        box.style.background = `linear-gradient(90deg, ${state.start_color} 0%, ${state.start_color} 50%, ${state.end_color} 50%, ${state.end_color} 100%)`;
+                    } else {
+                        box.style.background = state.start_color;
+                    }
+                };
+                updateBoxDisplay();
 
-                // Hidden color picker
-                const picker = document.createElement('input');
-                picker.type = 'color';
-                picker.value = state.color;
-                picker.style.display = 'none';
+                // Running state
+                if (state.running) {
+                    box.classList.add('running');
+                }
 
-                // Double-click to open color picker
+                // Hidden color pickers
+                const startPicker = document.createElement('input');
+                startPicker.type = 'color';
+                startPicker.value = state.start_color;
+                startPicker.style.display = 'none';
+
+                const endPicker = document.createElement('input');
+                endPicker.type = 'color';
+                endPicker.value = state.end_color;
+                endPicker.style.display = 'none';
+
+                // Double-click to edit colors (detect left/right half)
                 box.addEventListener('dblclick', (e) => {
                     e.stopPropagation();
-                    picker.click();
+                    const rect = box.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    if (clickX < rect.width / 2 || state.color_fade_enabled === false) {
+                        startPicker.click();
+                    } else {
+                        endPicker.click();
+                    }
+                });
+
+                // Start color picker change
+                startPicker.onchange = () => {
+                    state.start_color = startPicker.value;
+                    updateBoxDisplay();
+                    this.saveChaser(state.id, state.start_color, state.end_color, state.fade_time, state.mode, state.zoom_enabled, state.zoom_time, state.zoom_max, state.zoom_invert, state.zoom_sawtooth, state.color_fade_enabled, state.strobe_enabled, state.strobe_value);
+                };
+
+                // End color picker change
+                endPicker.onchange = () => {
+                    state.end_color = endPicker.value;
+                    updateBoxDisplay();
+                    this.saveChaser(state.id, state.start_color, state.end_color, state.fade_time, state.mode, state.zoom_enabled, state.zoom_time, state.zoom_max, state.zoom_invert, state.zoom_sawtooth, state.color_fade_enabled, state.strobe_enabled, state.strobe_value);
+                };
+
+                // Single-click to select chaser
+                this.bindButton(box, () => {
+                    this.selectChaser(state);
                 });
 
                 item.appendChild(box);
-                item.appendChild(picker);
+                item.appendChild(startPicker);
+                item.appendChild(endPicker);
                 macrosContainer.appendChild(item);
 
-                // Update state with new DOM elements
                 state.box = box;
-                state.picker = picker;
-
-                // Apply Color 
-                this.bindButton(box, () => this.applyMacroColor(state.color, true));
-
-                // Picker change = Real-time preview (LIVE)
-                picker.oninput = () => {
-                    state.color = picker.value;
-                    box.style.backgroundColor = state.color;
-                    this.applyMacroColor(state.color, false); // Live apply to lamps (DMX only, no DB save during drag)
-                };
-
-                // Picker close = Final save
-                picker.onchange = async () => {
-                    this.saveMacro(state.id, state.color);
-                    this.applyMacroColor(state.color, true); // Persist fader values to DB
-                };
+                state.updateBoxDisplay = updateBoxDisplay;
             });
         }
 
@@ -1083,7 +1242,7 @@ class FaderConsole {
             layerHeader.appendChild(btn);
         });
 
-        // FULL ON/OFF Toggle Badge
+        // FULL ON/OFF Toggle Badge (right side of layer buttons)
         const fullToggle = document.createElement('div');
         fullToggle.className = 'full-toggle-badge';
 
@@ -1100,6 +1259,237 @@ class FaderConsole {
 
         layerHeader.appendChild(fullToggle);
         sidebar.appendChild(layerHeader);
+
+        // MASTER CONTROLS CONTAINER (Stacked Layout)
+        const masterContainer = document.createElement('div');
+        masterContainer.style.cssText = `
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 12px 10px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 15px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 12px;
+            gap: 15px;
+        `;
+
+        const btnColumn = document.createElement('div');
+        btnColumn.style.cssText = `display: flex; flex-direction: column; gap: 4px; width: 65px;`;
+
+        const encoderColumn = document.createElement('div');
+        encoderColumn.style.cssText = `display: flex; flex-direction: column; gap: 12px; align-items: center;`;
+
+        // helper to save
+        const saveCurrentChaser = () => {
+            if (this.selectedChaser) {
+                this.saveChaser(
+                    this.selectedChaser.id,
+                    this.selectedChaser.start_color,
+                    this.selectedChaser.end_color,
+                    this.selectedChaser.fade_time,
+                    this.selectedChaser.mode,
+                    this.selectedChaser.zoom_enabled,
+                    this.selectedChaser.zoom_time,
+                    this.selectedChaser.zoom_max,
+                    this.selectedChaser.zoom_invert,
+                    this.selectedChaser.zoom_sawtooth,
+                    this.selectedChaser.color_fade_enabled,
+                    this.selectedChaser.strobe_enabled,
+                    this.selectedChaser.strobe_value,
+                    this.selectedChaser.dimmer_enabled,
+                    this.selectedChaser.dimmer_value,
+                    this.selectedChaser.w_enabled
+                );
+            }
+        };
+
+        // --- BUTTONS ---
+        const fadeBtn = document.createElement('button');
+        fadeBtn.textContent = 'FADE';
+        fadeBtn.style.cssText = `font-size: 8px; font-weight: 700; color: #00d4ff; background: #111; border: 1px solid #333; border-radius: 3px; padding: 2px 4px; cursor: pointer; text-transform: uppercase; transition: all 0.2s;`;
+
+        const zoomBtn = document.createElement('button');
+        zoomBtn.textContent = 'ZOOM';
+        zoomBtn.style.cssText = `font-size: 8px; font-weight: 700; color: #ff9900; background: #111; border: 1px solid #333; border-radius: 3px; padding: 2px 4px; cursor: pointer; text-transform: uppercase; transition: all 0.2s;`;
+
+        const invBtn = document.createElement('button');
+        invBtn.textContent = 'INV';
+        invBtn.style.cssText = `font-size: 8px; font-weight: 700; color: #00d4ff; background: #111; border: 1px solid #333; border-radius: 3px; padding: 2px 4px; cursor: pointer; text-transform: uppercase; transition: all 0.2s;`;
+
+        const sawBtn = document.createElement('button');
+        sawBtn.textContent = 'SAW';
+        sawBtn.style.cssText = `font-size: 8px; font-weight: 700; color: #ff00ff; background: #111; border: 1px solid #333; border-radius: 3px; padding: 2px 4px; cursor: pointer; text-transform: uppercase; transition: all 0.2s;`;
+
+        const strobeBtn = document.createElement('button');
+        strobeBtn.textContent = 'STROBE';
+        strobeBtn.style.cssText = `font-size: 8px; font-weight: 700; color: #ff0055; background: #111; border: 1px solid #333; border-radius: 3px; padding: 2px 4px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; margin-top: 4px;`;
+
+        const dimBtn = document.createElement('button');
+        dimBtn.textContent = 'DIM';
+        dimBtn.style.cssText = `font-size: 8px; font-weight: 700; color: #ffffff; background: #111; border: 1px solid #333; border-radius: 3px; padding: 2px 4px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; margin-top: 4px;`;
+
+
+        const wBtn = document.createElement('button');
+        wBtn.textContent = '+W';
+        wBtn.style.cssText = `font-size: 8px; font-weight: 700; color: #eebb99; background: #111; border: 1px solid #333; border-radius: 3px; padding: 2px 4px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; margin-top: 4px;`;
+
+        const saveCueBtn = document.createElement('button');
+        saveCueBtn.textContent = 'SAVE CUE';
+        saveCueBtn.style.cssText = `font-size: 8px; font-weight: 700; color: #aaa; background: #1a1a1a; border: 1px solid #444; border-radius: 3px; padding: 4px 4px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; margin-top: 10px; width: 100%;`;
+        saveCueBtn.onmouseover = () => { saveCueBtn.style.background = '#00ff88'; saveCueBtn.style.color = '#000'; };
+        saveCueBtn.onmouseout = () => { saveCueBtn.style.background = '#1a1a1a'; saveCueBtn.style.color = '#aaa'; };
+
+        // --- SAMMEL DISPLAY ---
+        const sammelDisplay = document.createElement('div');
+        sammelDisplay.style.cssText = `
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 8px 6px;
+            margin-top: 10px;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 10px;
+            color: #eee;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.05);
+        `;
+        const valFade = document.createElement('div');
+        const valZoom = document.createElement('div');
+        const valStrobe = document.createElement('div');
+        const valDim = document.createElement('div');
+        sammelDisplay.appendChild(valFade);
+        sammelDisplay.appendChild(valZoom);
+        sammelDisplay.appendChild(valStrobe);
+        sammelDisplay.appendChild(valDim);
+
+        // --- ENCODERS ---
+        const createEncoder = (color) => {
+            const wheel = document.createElement('div');
+            wheel.style.cssText = `width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #2a2a2a, #111); border: 2px solid #555; position: relative; cursor: grab; box-shadow: inset 0 2px 4px rgba(0,0,0,0.8); touch-action: none;`;
+            const indicator = document.createElement('div');
+            indicator.style.cssText = `position: absolute; top:4px; left:50%; transform:translateX(-50%); transform-origin: center 15px; width:2px; height:10px; background:${color}; box-shadow:0 0 6px ${color}; pointer-events:none;`;
+            wheel.appendChild(indicator);
+            return { wheel, indicator };
+        };
+
+        const eFade = createEncoder('#00d4ff');
+        const eZoom = createEncoder('#ff9900');
+        const eStrobe = createEncoder('#ff0055');
+        const eDim = createEncoder('#ffffff');
+
+        // --- ENCODER LOGIC ---
+        const bindEnc = (enc, prop, sensitivity, min, max) => {
+            let dragging = false, lastY = 0, rotation = 0;
+            const onDown = (e) => {
+                dragging = true; lastY = e.clientY || e.touches?.[0]?.clientY || 0;
+                enc.wheel.style.cursor = 'grabbing';
+                enc.wheel.style.borderColor = '#00d4ff';
+                e.preventDefault();
+            };
+            const onMove = (e) => {
+                if (!dragging || !this.selectedChaser) return;
+                const cy = e.clientY || e.touches?.[0]?.clientY || 0;
+                const dy = lastY - cy; lastY = cy; rotation += dy * 2;
+                enc.indicator.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+                if (prop === 'fade_time') {
+                    const c = (this.selectedChaser.fade_time || 3000) / 1000;
+                    this.selectedChaser.fade_time = Math.max(min, Math.min(max, c + (dy * sensitivity))) * 1000;
+                } else {
+                    const c = this.selectedChaser[prop] || 0;
+                    this.selectedChaser[prop] = Math.max(min, Math.min(max, Math.round(c + dy * sensitivity)));
+                }
+                updateEffectUI(this.selectedChaser);
+                e.preventDefault();
+            };
+            const onUp = () => { if (!dragging) return; dragging = false; enc.wheel.style.cursor = 'grab'; enc.wheel.style.borderColor = '#555'; saveCurrentChaser(); };
+            enc.wheel.onmousedown = onDown; enc.wheel.ontouchstart = onDown;
+            window.addEventListener('mousemove', onMove); window.addEventListener('touchmove', onMove, { passive: false });
+            window.addEventListener('mouseup', onUp); window.addEventListener('touchend', onUp);
+        };
+
+        bindEnc(eFade, 'fade_time', 0.1, 0.1, 10, true);
+        bindEnc(eZoom, 'zoom_max', 2, 0, 255);
+        bindEnc(eStrobe, 'strobe_value', 2, 0, 255);
+        bindEnc(eDim, 'dimmer_value', 2, 0, 255);
+
+        // --- UI UPDATE ---
+        const updateEffectUI = (state) => {
+            if (!state) return;
+            const cfActive = state.color_fade_enabled !== false;
+            fadeBtn.style.background = cfActive ? '#00d4ff' : '#111';
+            fadeBtn.style.color = cfActive ? '#000' : '#00d4ff';
+            fadeBtn.style.borderColor = cfActive ? '#00d4ff' : '#333';
+
+            zoomBtn.style.background = state.zoom_enabled ? '#ff9900' : '#111';
+            zoomBtn.style.color = state.zoom_enabled ? '#000' : '#ff9900';
+            zoomBtn.style.borderColor = state.zoom_enabled ? '#ff9900' : '#333';
+
+            invBtn.style.background = state.zoom_invert ? '#00d4ff' : '#111';
+            invBtn.style.color = state.zoom_invert ? '#000' : '#00d4ff';
+            invBtn.style.borderColor = state.zoom_invert ? '#00d4ff' : '#333';
+
+            sawBtn.style.background = state.zoom_sawtooth ? '#ff00ff' : '#111';
+            sawBtn.style.color = state.zoom_sawtooth ? '#000' : '#ff00ff';
+            sawBtn.style.borderColor = state.zoom_sawtooth ? '#ff00ff' : '#333';
+
+            strobeBtn.style.background = state.strobe_enabled ? '#ff0055' : '#111';
+            strobeBtn.style.color = state.strobe_enabled ? '#000' : '#ff0055';
+            strobeBtn.style.borderColor = state.strobe_enabled ? '#ff0055' : '#333';
+
+            valFade.innerHTML = `<span style="color:#00d4ff">F:</span> ${(state.fade_time / 1000).toFixed(1)}s`;
+            valZoom.innerHTML = `<span style="color:#ff9900">Z:</span> ${state.zoom_max || 0}`;
+            valStrobe.innerHTML = `<span style="color:#ff0055">S:</span> ${state.strobe_value || 0}`;
+            valDim.innerHTML = `<span style="color:#ffffff">D:</span> ${state.dimmer_value || 0}`;
+
+            dimBtn.style.background = state.dimmer_enabled ? '#ffffff' : '#111';
+            dimBtn.style.color = state.dimmer_enabled ? '#000' : '#ffffff';
+            dimBtn.style.borderColor = state.dimmer_enabled ? '#ffffff' : '#333';
+
+            wBtn.style.background = state.w_enabled ? '#eebb99' : '#111';
+            wBtn.style.color = state.w_enabled ? '#000' : '#eebb99';
+            wBtn.style.borderColor = state.w_enabled ? '#eebb99' : '#333';
+        };
+
+        // --- EVENT HANDLERS ---
+        fadeBtn.onclick = () => { if (this.selectedChaser) { this.selectedChaser.color_fade_enabled = !(this.selectedChaser.color_fade_enabled !== false); updateEffectUI(this.selectedChaser); saveCurrentChaser(); } };
+        zoomBtn.onclick = () => { if (this.selectedChaser) { this.selectedChaser.zoom_enabled = !this.selectedChaser.zoom_enabled; updateEffectUI(this.selectedChaser); saveCurrentChaser(); } };
+        invBtn.onclick = () => { if (this.selectedChaser) { this.selectedChaser.zoom_invert = !this.selectedChaser.zoom_invert; updateEffectUI(this.selectedChaser); saveCurrentChaser(); } };
+        sawBtn.onclick = () => { if (this.selectedChaser) { this.selectedChaser.zoom_sawtooth = !this.selectedChaser.zoom_sawtooth; updateEffectUI(this.selectedChaser); saveCurrentChaser(); } };
+        strobeBtn.onclick = () => { if (this.selectedChaser) { this.selectedChaser.strobe_enabled = !this.selectedChaser.strobe_enabled; updateEffectUI(this.selectedChaser); saveCurrentChaser(); } };
+        dimBtn.onclick = () => { if (this.selectedChaser) { this.selectedChaser.dimmer_enabled = !this.selectedChaser.dimmer_enabled; updateEffectUI(this.selectedChaser); saveCurrentChaser(); } };
+        wBtn.onclick = () => { if (this.selectedChaser) { this.selectedChaser.w_enabled = !this.selectedChaser.w_enabled; updateEffectUI(this.selectedChaser); saveCurrentChaser(); } };
+        saveCueBtn.onclick = () => { if (this.selectedChaser) this.saveChaserAsScene(this.selectedChaser); };
+
+        // --- ASSEMBLY ---
+        btnColumn.appendChild(fadeBtn);
+        btnColumn.appendChild(zoomBtn);
+        btnColumn.appendChild(invBtn);
+        btnColumn.appendChild(sawBtn);
+        btnColumn.appendChild(strobeBtn);
+        btnColumn.appendChild(dimBtn);
+        btnColumn.appendChild(wBtn);
+        btnColumn.appendChild(sammelDisplay);
+        btnColumn.appendChild(saveCueBtn);
+
+        encoderColumn.appendChild(eFade.wheel);
+        encoderColumn.appendChild(eZoom.wheel);
+        encoderColumn.appendChild(eStrobe.wheel);
+        encoderColumn.appendChild(eDim.wheel);
+
+        masterContainer.appendChild(btnColumn);
+        masterContainer.appendChild(encoderColumn);
+        sidebar.appendChild(masterContainer);
+
+        this.updateEffectUI = updateEffectUI;
+        this.updateFadeUI = updateEffectUI; // link them for now since it's merged
+
+
 
         // --- PRESET MACROS ---
         this.presetStates.forEach(p => this.createPresetElement(p, sidebar));
@@ -1167,6 +1557,434 @@ class FaderConsole {
         btn.classList.toggle('collapsed', this.presetsCollapsed);
         btn.innerHTML = this.presetsCollapsed ? '›' : '‹';
     }
+
+    // ===== CHASER FUNCTIONS =====
+
+    selectChaser(state) {
+        console.log(`🎯 Selected Chaser ${state.id}: ${state.name}`);
+
+        // Kill any leftovers on target fixtures before starting new one
+        const targets = state.targetFixtureIds || [...this.selectedFixtureIds];
+        targets.forEach(fid => this.resetFixtureEffects(fid));
+
+        // Initialize Zoom parameters if missing
+        if (state.zoom_max === undefined) state.zoom_max = 255;
+        if (state.zoom_invert === undefined) state.zoom_invert = false;
+        if (state.zoom_sawtooth === undefined) state.zoom_sawtooth = false;
+        if (state.color_fade_enabled === undefined) state.color_fade_enabled = true;
+        if (state.strobe_enabled === undefined) state.strobe_enabled = false;
+        if (state.strobe_value === undefined) state.strobe_value = 128;
+        if (state.dimmer_enabled === undefined) state.dimmer_enabled = true;
+        if (state.dimmer_value === undefined) state.dimmer_value = 255;
+        if (state.w_enabled === undefined) state.w_enabled = false;
+        if (!state.zoom_time) state.zoom_time = Math.round(state.fade_time / 2);
+
+        this.selectedChaser = state;
+        this.selectedChaserFadeTime = state.fade_time / 1000; // ms to seconds
+
+        // Update fade time input if it exists
+        if (this.fadeTimeInput) {
+            this.fadeTimeInput.value = this.selectedChaserFadeTime.toFixed(1);
+        }
+
+        // Update zoom controls
+        if (this.updateEffectUI) {
+            this.updateEffectUI(state);
+        }
+
+        // Visual feedback: highlight selected chaser
+
+
+        // Stop other running chasers to ensure clean switch
+        this.chaserStates.forEach(other => {
+            if (other.id !== state.id && other.running) {
+                this.stopChaser(other);
+            }
+        });
+
+        // Also toggle the chaser animation
+        this.toggleChaser(state);
+    }
+
+    toggleChaser(state) {
+        if (state.running) {
+            this.stopChaser(state);
+        } else {
+            this.startChaser(state);
+        }
+    }
+
+    startChaser(state) {
+        console.log(`▶ Starting Chaser ${state.id}:`, state.name);
+        state.running = true;
+
+        // Capture current selection - this chaser will run on THESE fixtures
+        state.targetFixtureIds = [...this.selectedFixtureIds];
+
+        if (state.box) state.box.classList.add('running');
+
+        // Start animation loop
+        this.runChaserAnimation(state);
+    }
+
+    stopChaser(state) {
+        console.log(`⏹ Stopping Chaser ${state.id}:`, state.name);
+        state.running = false;
+        if (state.box) state.box.classList.remove('running');
+
+        // Kill effects on all target fixtures
+        const targets = state.targetFixtureIds || [...this.selectedFixtureIds];
+        targets.forEach(fid => this.resetFixtureEffects(fid));
+
+        // Cancel animation frame if exists
+        if (state.animationFrame) {
+            cancelAnimationFrame(state.animationFrame);
+            state.animationFrame = null;
+        }
+    }
+
+    runChaserAnimation(state) {
+        if (!state.running) return;
+
+        let lastTime = performance.now();
+        let colorPhase = 0; // 0..2 (0->1 Up, 1->2 Down)
+
+        // For Zoom context, we can Keep using absolute time if zoom_time is static, 
+        // or we could apply similar logic. For now, we keep zoom simple but ensure it reads current zoom_time.
+        const startTime = performance.now();
+
+        // Parse hex colors to RGB
+        const startRGB = this.hexToRgb(state.start_color);
+        const endRGB = this.hexToRgb(state.end_color);
+
+        const animate = (currentTime) => {
+            if (!state.running) return;
+
+            // Delta time for smooth speed changes
+            const dt = currentTime - lastTime;
+            lastTime = currentTime;
+
+            // --- COLOR FADE LOGIC ---
+            // Read fade_time dynamically every frame
+            const currentFadeTime = state.fade_time > 100 ? state.fade_time : 100; // Safety floor
+            const cycleDuration = currentFadeTime * 2; // Loop: A→B→A
+
+            // Increment phase
+            const phaseStep = (dt / cycleDuration) * 2;
+            colorPhase = (colorPhase + phaseStep) % 2;
+
+            let progress;
+            if (state.mode === 'pulse') {
+                progress = (colorPhase < 1) ? colorPhase : 0;
+            } else {
+                // Linear / Default (Ping-Pong)
+                if (colorPhase < 1) {
+                    progress = colorPhase;
+                } else {
+                    progress = 1 - (colorPhase - 1);
+                }
+            }
+
+            // Apply Color Fade (if enabled)
+            let r, g, b;
+            if (state.color_fade_enabled) {
+                r = Math.round(startRGB.r + (endRGB.r - startRGB.r) * progress);
+                g = Math.round(startRGB.g + (endRGB.g - startRGB.g) * progress);
+                b = Math.round(startRGB.b + (endRGB.b - startRGB.b) * progress);
+            } else {
+                // Solid Color (Start Color)
+                r = startRGB.r;
+                g = startRGB.g;
+                b = startRGB.b;
+            }
+
+            // Limit DMX output rate (e.g., 30Hz / every 33ms) to save CPU/Network
+            const now = performance.now();
+            const shouldSendDMX = !state.lastDmxSend || (now - state.lastDmxSend > 33);
+            if (shouldSendDMX) state.lastDmxSend = now;
+
+            // Apply to its captured target fixtures
+            const targetIds = state.targetFixtureIds || [this.fixtureId];
+
+            targetIds.forEach(fixtureId => {
+                const fixture = this.availableFixtures.find(f => f.id === fixtureId);
+                if (!fixture) return;
+
+                const fStartAddr = fixture.dmx_address;
+                const fAssignments = this.assignmentCache[fixtureId] || {};
+
+                // Find channels with assignments
+                Object.keys(fAssignments).forEach(relCh => {
+                    const chFunctions = fAssignments[relCh];
+                    const relChNum = parseInt(relCh);
+                    const absAddr = fStartAddr + relChNum - 1;
+
+                    // Color Channels (Apply even if fade is false, using start color)
+                    if (chFunctions.some(a => a.toLowerCase() === 'r')) {
+                        if (shouldSendDMX) this.sendAbsoluteDMX(absAddr, r);
+                    } else if (chFunctions.some(a => a.toLowerCase() === 'g')) {
+                        if (shouldSendDMX) this.sendAbsoluteDMX(absAddr, g);
+                    } else if (chFunctions.some(a => a.toLowerCase() === 'b')) {
+                        if (shouldSendDMX) this.sendAbsoluteDMX(absAddr, b);
+                    }
+
+                    // Zoom Channels
+                    if (chFunctions.some(a => a.toLowerCase() === 'zoom')) {
+                        let zVal = 0;
+                        if (state.zoom_enabled) {
+                            const zoomMax = state.zoom_max !== undefined ? state.zoom_max : 255;
+                            const zEffectiveProgress = state.zoom_sawtooth ?
+                                ((currentTime - startTime) % (fadeTime / 2) / (fadeTime / 2)) :
+                                (() => {
+                                    const zTime = fadeTime / 2;
+                                    const zElapsed = (currentTime - startTime) % (zTime * 2);
+                                    return zElapsed < zTime ? (zElapsed / zTime) : (1 - ((zElapsed - zTime) / zTime));
+                                })();
+
+                            const zFinalProgress = state.zoom_invert ? (1 - zEffectiveProgress) : zEffectiveProgress;
+                            zVal = Math.round(zFinalProgress * zoomMax);
+                        }
+
+                        if (shouldSendDMX) this.sendAbsoluteDMX(absAddr, zVal);
+
+                        // Visual feedback ONLY for the currently active fixture in the fader bank
+                        if (fixtureId === this.fixtureId) {
+                            const chState = this.channels.find(c => c.channel === relChNum);
+                            if (chState) {
+                                chState.fader.value = zVal;
+                                chState.valueDisplay.textContent = zVal;
+                                chState.ledFill.style.height = `${(zVal / 255) * 100}%`;
+                            }
+                        }
+                    }
+
+                    // Strobe Channels
+                    if (chFunctions.some(a => a.toLowerCase() === 'strobe')) {
+                        const sVal = state.strobe_enabled ? (state.strobe_value !== undefined ? state.strobe_value : 128) : 0;
+                        if (shouldSendDMX) this.sendAbsoluteDMX(absAddr, sVal);
+
+                        // Visual feedback ONLY for the currently active fixture
+                        if (fixtureId === this.fixtureId) {
+                            const chState = this.channels.find(c => c.channel === relChNum);
+                            if (chState) {
+                                chState.fader.value = sVal;
+                                chState.valueDisplay.textContent = sVal;
+                                chState.ledFill.style.height = `${(sVal / 255) * 100}%`;
+                            }
+                        }
+                    }
+
+                    // Dimmer Channels (DIM only, not W)
+                    if (chFunctions.some(a => ['dim'].includes(a.toLowerCase()))) {
+                        const dVal = state.dimmer_enabled ? (state.dimmer_value !== undefined ? state.dimmer_value : 255) : 0;
+                        if (shouldSendDMX) this.sendAbsoluteDMX(absAddr, dVal);
+                        // Visual feedback
+                        if (fixtureId === this.fixtureId) {
+                            const chState = this.channels.find(c => c.channel === relChNum);
+                            if (chState) {
+                                chState.fader.value = dVal;
+                                chState.valueDisplay.textContent = dVal;
+                                chState.ledFill.style.height = `${(dVal / 255) * 100}%`;
+                            }
+                        }
+                    }
+
+                    // W Channels (+W logic)
+                    if (chFunctions.some(a => ['w'].includes(a.toLowerCase()))) {
+                        // Use Dimmer Value for W if enabled, otherwise 0
+                        const wVal = state.w_enabled ? (state.dimmer_value !== undefined ? state.dimmer_value : 255) : 0;
+                        if (shouldSendDMX) this.sendAbsoluteDMX(absAddr, wVal);
+                        // Visual feedback
+                        if (fixtureId === this.fixtureId) {
+                            const chState = this.channels.find(c => c.channel === relChNum);
+                            if (chState) {
+                                chState.fader.value = wVal;
+                                chState.valueDisplay.textContent = wVal;
+                                chState.ledFill.style.height = `${(wVal / 255) * 100}%`;
+                            }
+                        }
+                    }
+
+                    // Update visual feedback for color channels on ACTIVE fixture
+                    if (fixtureId === this.fixtureId) {
+                        const chState = this.channels.find(c => c.channel === relChNum);
+                        if (chState) {
+                            const isR = chFunctions.some(a => a.toLowerCase() === 'r');
+                            const isG = chFunctions.some(a => a.toLowerCase() === 'g');
+                            const isB = chFunctions.some(a => a.toLowerCase() === 'b');
+
+                            if (isR || isG || isB) {
+                                const val = isR ? r : (isG ? g : b);
+                                chState.fader.value = val;
+                                chState.valueDisplay.textContent = val;
+                                chState.ledFill.style.height = `${(val / 255) * 100}%`;
+                            }
+                        }
+                    }
+                });
+            });
+            state.animationFrame = requestAnimationFrame(animate);
+        };
+
+        state.animationFrame = requestAnimationFrame(animate);
+    }
+
+    resetFixtureEffects(fixtureId) {
+        console.log(`🧹 Resetting Zoom/Strobe for Fixture ${fixtureId}`);
+        const fixture = this.availableFixtures.find(f => f.id === fixtureId);
+        if (!fixture) return;
+
+        const fStartAddr = fixture.dmx_address;
+        const fAssignments = this.assignmentCache[fixtureId] || {};
+
+        Object.keys(fAssignments).forEach(relCh => {
+            const chFunctions = fAssignments[relCh].map(f => f.toLowerCase());
+            const relChNum = parseInt(relCh);
+            const absAddr = fStartAddr + relChNum - 1;
+
+            if (chFunctions.includes('zoom') || chFunctions.includes('strobe') || chFunctions.includes('dim') || chFunctions.includes('w')) {
+                this.sendAbsoluteDMX(absAddr, 0);
+
+                // Update global cache
+                if (!this.globalValueCache[fixtureId]) this.globalValueCache[fixtureId] = {};
+                this.globalValueCache[fixtureId][relChNum] = {
+                    value: 0,
+                    isOn: this.globalValueCache[fixtureId][relChNum]?.isOn !== false
+                };
+
+                // UI Reset if active
+                if (fixtureId === this.fixtureId) {
+                    const chState = this.channels.find(c => c.channel === relChNum);
+                    if (chState) {
+                        chState.fader.value = 0;
+                        chState.valueDisplay.textContent = 0;
+                        chState.ledFill.style.height = '0%';
+                        chState.currentValue = 0;
+                    }
+                }
+            }
+        });
+    }
+
+    hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : { r: 0, g: 0, b: 0 };
+    }
+
+    stopAllChasers() {
+        this.chaserStates.forEach(s => {
+            if (s.running) {
+                this.stopChaser(s);
+            }
+        });
+    }
+
+    openChaserEditor(state) {
+        console.log(`✏️ Opening Chaser Editor for:`, state);
+        alert(`Chaser Editor coming soon!\nChaser ${state.id}: ${state.name}\nSteps: ${state.steps.length}`);
+        // TODO: Open editor popup
+    }
+
+    // ===== CHASER DATA =====
+
+    async loadChasers() {
+        try {
+            const res = await fetch(`${API}/api/faders/chasers`);
+            const data = await res.json();
+            if (data.success && data.chasers) {
+                console.log(`📦 Loaded ${data.chasers.length} chasers from DB`);
+
+                // Update chaser states with DB data
+                data.chasers.forEach(dbChaser => {
+                    const state = this.chaserStates.find(s => s.id === dbChaser.id);
+                    if (state) {
+                        state.start_color = dbChaser.start_color;
+                        state.end_color = dbChaser.end_color;
+                        state.fade_time = dbChaser.fade_time;
+                        state.mode = dbChaser.mode;
+                        state.zoom_enabled = dbChaser.zoom_enabled || false;
+                        state.zoom_time = dbChaser.zoom_time || 2000;
+                        state.zoom_max = dbChaser.zoom_max !== undefined ? dbChaser.zoom_max : 255;
+                        state.zoom_invert = dbChaser.zoom_invert || false;
+                        state.zoom_sawtooth = dbChaser.zoom_sawtooth || false;
+                        state.color_fade_enabled = dbChaser.color_fade_enabled !== undefined ? (dbChaser.color_fade_enabled === true || dbChaser.color_fade_enabled === 1) : true;
+
+                        // Load EXTENDED properties
+                        state.strobe_enabled = dbChaser.strobe_enabled === 1 || dbChaser.strobe_enabled === true;
+                        state.strobe_value = dbChaser.strobe_value !== undefined ? dbChaser.strobe_value : 128;
+                        state.dimmer_enabled = dbChaser.dimmer_enabled !== undefined ? (dbChaser.dimmer_enabled === 1 || dbChaser.dimmer_enabled === true) : true;
+                        state.dimmer_value = dbChaser.dimmer_value !== undefined ? dbChaser.dimmer_value : 255;
+                        state.w_enabled = dbChaser.w_enabled === 1 || dbChaser.w_enabled === true;
+
+                        // Update UI if box exists
+                        if (state.box) {
+                            if (state.color_fade_enabled) {
+                                state.box.style.background = `linear-gradient(90deg, ${state.start_color} 0%, ${state.start_color} 50%, ${state.end_color} 50%, ${state.end_color} 100%)`;
+                            } else {
+                                state.box.style.background = state.start_color;
+                            }
+                        }
+                    }
+                });
+
+                // Re-render to apply changes
+                this.renderMacros();
+            }
+        } catch (e) {
+            console.error('Failed to load chasers:', e);
+        }
+    }
+
+    async saveChaser(id, start_color, end_color, fade_time, mode = 'linear', zoom_enabled = false, zoom_time = 2000, zoom_max = 255, zoom_invert = false, zoom_sawtooth = false, color_fade_enabled = true, strobe_enabled = false, strobe_value = 128, dimmer_enabled = true, dimmer_value = 255, w_enabled = false) {
+        try {
+            // Ensure boolean conversion for safety
+            const isZoomEnabled = zoom_enabled === true || zoom_enabled === 1 || zoom_enabled === '1';
+            const isInverted = zoom_invert === true || zoom_invert === 1 || zoom_invert === '1';
+            const isSawtooth = zoom_sawtooth === true || zoom_sawtooth === 1 || zoom_sawtooth === '1';
+            const isStrobeEnabled = strobe_enabled === true || strobe_enabled === 1 || strobe_enabled === '1';
+            const isColorFade = color_fade_enabled !== false;
+            const isDimmerEnabled = dimmer_enabled !== false;
+            const isWEnabled = w_enabled === true;
+
+            const body = {
+                id,
+                start_color,
+                end_color,
+                fade_time,
+                mode,
+                zoom_enabled: isZoomEnabled,
+                zoom_time,
+                zoom_max,
+                zoom_invert: isInverted,
+                zoom_sawtooth: isSawtooth,
+                color_fade_enabled: isColorFade,
+                strobe_enabled: isStrobeEnabled,
+                strobe_value,
+                dimmer_enabled: isDimmerEnabled,
+                dimmer_value,
+                w_enabled: isWEnabled
+            };
+
+            console.log('📡 Saving Chaser to API:', body);
+
+            const res = await fetch(`${API}/api/faders/chasers`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            if (data.success) {
+                console.log(`✅ Saved Chaser ${id}: Zoom=${isZoomEnabled ? 'ON' : 'OFF'} | Mode=${isSawtooth ? 'SAW' : 'PULSE'}`);
+            }
+        } catch (e) {
+            console.error('Failed to save chaser:', e);
+        }
+    }
+
 
     toggleMacros() {
         const container = document.querySelector('.macros-container');
@@ -1457,15 +2275,21 @@ class FaderConsole {
         if (!data.success) return;
         const allAssignments = data.mapping;
 
+        // Stop all running chasers to prevent conflicts
+        this.stopAllChasers();
+
         // Convert channel-based preset to function-based values
         // Use the ACTIVE fixture's assignments to determine which functions are stored
         const activeAssignments = this.assignmentCache[this.fixtureId] || {};
         const functionValues = {}; // { 'R': 255, 'G': 128, 'DIM': 200, 'P': 127, 'T': 64, ... }
+        const functionOnStates = {};
 
         state.values.forEach(v => {
             const channelAssignments = activeAssignments[v.channel] || [];
             channelAssignments.forEach(func => {
-                functionValues[func.toUpperCase()] = v.value; // Normalize to uppercase
+                const f = func.toUpperCase();
+                functionValues[f] = v.value;
+                functionOnStates[f] = (v.is_on === 1 || v.is_on === true || v.is_on === undefined || v.is_on === null);
             });
         });
 
@@ -1473,6 +2297,9 @@ class FaderConsole {
 
         // Apply to ALL selected fixtures
         for (const fixtureId of this.selectedFixtureIds) {
+            // KILL any running effects on this fixture
+            this.resetFixtureEffects(fixtureId);
+
             const fixture = this.availableFixtures.find(f => f.id === fixtureId);
             if (!fixture) {
                 console.warn(`Fixture ${fixtureId} not found in availableFixtures`);
@@ -1507,25 +2334,30 @@ class FaderConsole {
         }
 
         // Update UI if active fixture is in selection
+        // Update UI if active fixture is in selection
         if (this.selectedFixtureIds.includes(this.fixtureId)) {
-            state.values.forEach(v => {
-                if (v.channel > this.fixtureChannelCount) return;
+            this.channels.forEach(chState => {
+                const chAssignments = (this.assignmentCache[this.fixtureId]?.[chState.channel] || []).map(f => f.toUpperCase());
 
-                const is_on = (v.is_on === 1 || v.is_on === true || v.is_on === undefined || v.is_on === null);
+                chAssignments.forEach(f => {
+                    const val = functionValues[f];
+                    const isOn = functionOnStates[f];
 
-                // Update global cache
-                if (!this.globalValueCache[this.fixtureId]) this.globalValueCache[this.fixtureId] = {};
-                this.globalValueCache[this.fixtureId][v.channel] = {
-                    value: v.value,
-                    isOn: is_on
-                };
+                    if (val !== undefined) {
+                        // Update global cache
+                        if (!this.globalValueCache[this.fixtureId]) this.globalValueCache[this.fixtureId] = {};
+                        this.globalValueCache[this.fixtureId][chState.channel] = {
+                            value: val,
+                            isOn: isOn !== undefined ? isOn : chState.isOn
+                        };
 
-                // If channel is currently visible, update the UI
-                const chState = this.channels.find(c => c.channel === v.channel);
-                if (chState) {
-                    this.updateFaderValue(chState, v.value, false);
-                    this.toggleOnState(chState, is_on, false);
-                }
+                        // Update Fader UI
+                        this.updateFaderValue(chState, val, false);
+                        if (isOn !== undefined) {
+                            this.toggleOnState(chState, isOn, false);
+                        }
+                    }
+                });
             });
         }
     }
@@ -1568,6 +2400,9 @@ class FaderConsole {
     }
 
     async applyMacroColor(hex, shouldSave = true) {
+        // Stop any running chasers when static color is applied
+        this.stopAllChasers();
+
         if (!hex || hex.length < 7) {
             console.error('Invalid Macro Color:', hex);
             return;
@@ -1704,11 +2539,15 @@ class FaderConsole {
         // channel is relative (1..32)
         const dmxAddress = this.fixtureStartAddress + channel - 1;
         try {
-            await fetch(`${API}/api/dmx/channel`, {
+            const res = await fetch(`${API}/api/dmx/channel`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ channel: dmxAddress, value })
             });
+            if (!res.ok) {
+                const data = await res.json();
+                console.error(`❌ DMX Error (Ch:${dmxAddress}, Val:${value}):`, data.error || res.statusText);
+            }
         } catch (e) {
             // Silent fail
         }
@@ -1758,6 +2597,9 @@ class FaderConsole {
                             state.hasLoadedOnce = true;
                         }
                     });
+
+                    // Sync global encoders with active fixture values
+                    this.syncEncodersFromActiveFixture();
                 }
             } catch (e) {
                 console.error('Failed to fetch backend values:', e);
@@ -2001,11 +2843,15 @@ class FaderConsole {
 
     async sendAbsoluteDMX(address, value) {
         try {
-            await fetch(`${API}/api/dmx/channel`, {
+            const res = await fetch(`${API}/api/dmx/channel`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ channel: address, value })
             });
+            if (!res.ok) {
+                const data = await res.json();
+                console.error(`❌ DMX Error (Ch:${address}, Val:${value}):`, data.error || res.statusText);
+            }
         } catch (e) { }
     }
 
@@ -2082,6 +2928,8 @@ class FaderConsole {
             this.renderMacros();
         } catch (e) { }
     }
+
+
 
     /**
      * Save channel group to database
@@ -2160,6 +3008,66 @@ class FaderConsole {
             });
         } catch (e) {
             console.error('Failed to save channel color:', e);
+        }
+    }
+
+    /**
+     * Save current chaser as a Scene (CUE)
+     */
+    async saveChaserAsScene(chaserState) {
+        const name = prompt('Cue Name:', `${chaserState.name} (Copy)`);
+        if (!name) return;
+
+        try {
+            // Clean up state object to only save necessary data
+            const cleanState = {
+                start_color: chaserState.start_color,
+                end_color: chaserState.end_color,
+                fade_time: chaserState.fade_time,
+                mode: chaserState.mode,
+                zoom_enabled: chaserState.zoom_enabled,
+                zoom_time: chaserState.zoom_time,
+                zoom_max: chaserState.zoom_max,
+                zoom_invert: chaserState.zoom_invert,
+                zoom_sawtooth: chaserState.zoom_sawtooth,
+                color_fade_enabled: chaserState.color_fade_enabled,
+                strobe_value: chaserState.strobe_value,
+                dimmer_enabled: chaserState.dimmer_enabled,
+                dimmer_value: chaserState.dimmer_value,
+                w_enabled: chaserState.w_enabled,
+                w_enabled: chaserState.w_enabled,
+                targetFixtureIds: this.selectedFixtureIds.length > 0 ? [...this.selectedFixtureIds] : (this.fixtureId ? [this.fixtureId] : [])
+            };
+
+            console.log('💾 Saving Chaser Cue with targets:', cleanState.targetFixtureIds);
+
+            // Calculate duration (ensure integer)
+            let duration = 1000;
+            if (chaserState.color_fade_enabled) {
+                duration = parseInt(chaserState.fade_time) || 1000;
+            }
+
+            const res = await fetch(`${API}/api/scenes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: name,
+                    type: 'chaser',
+                    folder_id: null,
+                    color: '#ff9900', // Orange for Chasers
+                    duration: duration,
+                    channel_data: cleanState
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`Chaser saved as Cue: "${name}"`);
+            } else {
+                alert('Error saving cue: ' + data.error);
+            }
+        } catch (e) {
+            console.error('Failed to save chaser as cue:', e);
+            alert('Failed to save cue');
         }
     }
 }

@@ -47,5 +47,9 @@ export function createFaderRoutes(dmxController?: IDmxController): Router {
     router.delete('/faders/palettes/:id', controller.deleteGlobalPalette);
     router.get('/faders/all-assignments', controller.getAllAssignments);
 
+    // Chasers (Gradients)
+    router.get('/faders/chasers', controller.getChasers.bind(controller));
+    router.post('/faders/chasers', controller.updateChaser.bind(controller));
+
     return router;
 }

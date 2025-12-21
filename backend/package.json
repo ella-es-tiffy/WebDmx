@@ -1,6 +1,6 @@
 {
   "name": "webdmx-backend",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "WebDMX Backend - Professional DMX Lighting Control",
   "main": "dist/app.js",
   "scripts": {

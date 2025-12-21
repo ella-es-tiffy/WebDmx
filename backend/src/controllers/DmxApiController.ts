@@ -16,7 +16,7 @@ export class DmxApiController {
      * GET /api/dmx/status
      * Get DMX interface status
      */
-    public getStatus = async (req: Request, res: Response): Promise<void> => {
+    public getStatus = async (_req: Request, res: Response): Promise<void> => {
         try {
             res.json({
                 connected: this.dmxController.isConnected(),
@@ -31,7 +31,7 @@ export class DmxApiController {
      * GET /api/dmx/channels
      * Get all channel values
      */
-    public getAllChannels = async (req: Request, res: Response): Promise<void> => {
+    public getAllChannels = async (_req: Request, res: Response): Promise<void> => {
         try {
             const channels = this.dmxController.getAllChannels();
             res.json({ channels });
@@ -68,14 +68,28 @@ export class DmxApiController {
         try {
             const { channel, value } = req.body;
 
-            if (!channel || value === undefined) {
-                res.status(400).json({ error: 'Channel and value required' });
+            if (channel === undefined || value === undefined) {
+                res.status(400).json({ error: 'Both channel and value are required in request body' });
                 return;
             }
 
-            this.dmxController.setChannel(channel, value);
-            res.json({ success: true, channel, value });
+            const ch = parseInt(channel);
+            const val = parseInt(value);
+
+            if (isNaN(ch) || ch < 1 || ch > 512) {
+                res.status(400).json({ error: `Invalid channel: ${channel}. Must be 1-512.` });
+                return;
+            }
+
+            if (isNaN(val) || val < 0 || val > 255) {
+                res.status(400).json({ error: `Invalid value: ${value}. Must be 0-255.` });
+                return;
+            }
+
+            this.dmxController.setChannel(ch, val);
+            res.json({ success: true, channel: ch, value: val });
         } catch (error: any) {
+            console.error('setChannel error:', error.message);
             res.status(400).json({ error: error.message });
         }
     };
@@ -144,8 +158,17 @@ export class DmxApiController {
                 return;
             }
 
-            // Set all channels starting from channel 1
-            this.dmxController.setChannels(1, channels);
+            // Handle sparse updates (array of {channel, value})
+            if (channels.length > 0 && typeof channels[0] === 'object') {
+                channels.forEach((item: any) => {
+                    if (item.channel && item.value !== undefined) {
+                        this.dmxController.setChannel(item.channel, item.value);
+                    }
+                });
+            } else {
+                // Dense update (array of 0-255 numbers, starting at Ch 1)
+                this.dmxController.setChannels(1, channels);
+            }
             res.json({ success: true, count: channels.length });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -156,7 +179,7 @@ export class DmxApiController {
      * POST /api/dmx/blackout
      * Set all channels to 0
      */
-    public blackout = async (req: Request, res: Response): Promise<void> => {
+    public blackout = async (_req: Request, res: Response): Promise<void> => {
         try {
             this.dmxController.blackout();
             res.json({ success: true, message: 'Blackout activated' });

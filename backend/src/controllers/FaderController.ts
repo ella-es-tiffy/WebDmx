@@ -100,34 +100,10 @@ export class FaderController {
             const fixtureId = parseInt(req.params.fixtureId) || 1;
             const pool = Database.getPool();
 
-            // 1. Get functional assignments
-            let assignmentRows: any = await pool.execute(`
+            // 1. Get functional assignments (explicit)
+            const [assignmentRows]: any = await pool.execute(`
                 SELECT dmx_channel, function_type
                 FROM fixture_channel_assignments
-                WHERE fixture_id = ?
-            `, [fixtureId]);
-            assignmentRows = assignmentRows[0];
-
-            // If no assignments, check if fixture has a template
-            if (assignmentRows.length === 0) {
-                const [fixtureRows]: any = await pool.execute('SELECT template_id FROM devices WHERE id = ?', [fixtureId]);
-                if (fixtureRows.length > 0 && fixtureRows[0].template_id) {
-                    const templateId = fixtureRows[0].template_id;
-                    const [templateChannels]: any = await pool.execute(
-                        'SELECT channel_num, function_type FROM fixture_template_channels WHERE template_id = ?',
-                        [templateId]
-                    );
-                    assignmentRows = templateChannels.map((tc: any) => ({
-                        dmx_channel: tc.channel_num,
-                        function_type: tc.function_type
-                    }));
-                }
-            }
-
-            // 2. Get channel states from new table
-            const [stateRows] = await pool.execute(`
-                SELECT dmx_channel, is_on, is_selected, fader_value, color
-                FROM channel_states
                 WHERE fixture_id = ?
             `, [fixtureId]);
 
@@ -138,6 +114,39 @@ export class FaderController {
                 }
                 assignments[row.dmx_channel].push(row.function_type.toLowerCase());
             });
+
+            // 2. Get Template channels to fill gaps (like ZOOM)
+            const [fixtureRows]: any = await pool.execute('SELECT template_id FROM devices WHERE id = ?', [fixtureId]);
+            if (fixtureRows.length > 0 && fixtureRows[0].template_id) {
+                const templateId = fixtureRows[0].template_id;
+                const [templateChannels]: any = await pool.execute(
+                    'SELECT channel_num, function_type FROM fixture_template_channels WHERE template_id = ?',
+                    [templateId]
+                );
+
+                (templateChannels as any[]).forEach(tc => {
+                    const ch = tc.channel_num;
+                    const func = tc.function_type.toLowerCase();
+
+                    if (!assignments[ch]) {
+                        assignments[ch] = [];
+                    }
+
+                    // Add if not already present from explicit assignments
+                    if (!assignments[ch].includes(func)) {
+                        assignments[ch].push(func);
+                    }
+                });
+            }
+
+            // 2. Get channel states from new table
+            const [stateRows] = await pool.execute(`
+                SELECT dmx_channel, is_on, is_selected, fader_value, color
+                FROM channel_states
+                WHERE fixture_id = ?
+            `, [fixtureId]);
+
+            // (assignments object already built above)
 
             const states: { [key: number]: any } = {};
             (stateRows as any[]).forEach(row => {
@@ -164,7 +173,7 @@ export class FaderController {
                 return;
             }
 
-            const validTypes = ['R', 'G', 'B', 'W', 'P', 'T'];
+            const validTypes = ['R', 'G', 'B', 'W', 'P', 'T', 'ZOOM', 'DIM', 'STROBE'];
             if (!validTypes.includes(functionType.toUpperCase())) {
                 res.status(400).json({ success: false, error: 'Invalid function type' });
                 return;
@@ -355,7 +364,7 @@ export class FaderController {
     /**
      * Get all macros (global, shared across all fixtures)
      */
-    async getMacros(req: Request, res: Response): Promise<void> {
+    async getMacros(_req: Request, res: Response): Promise<void> {
         try {
             const pool = Database.getPool();
 
@@ -431,6 +440,134 @@ export class FaderController {
 
             res.json({ success: true, id, color });
         } catch (error: any) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
+
+    // ===== CHASER FUNCTIONS =====
+
+    async getChasers(_req: Request, res: Response): Promise<void> {
+        try {
+            const pool = Database.getPool();
+
+            // Create table if not exists
+            await pool.execute(`
+                CREATE TABLE IF NOT EXISTS fader_chasers (
+                    id INT PRIMARY KEY,
+                    start_color VARCHAR(7) DEFAULT '#333333',
+                    end_color VARCHAR(7) DEFAULT '#666666',
+                    fade_time INT DEFAULT 3000,
+                    mode VARCHAR(20) DEFAULT 'linear',
+                    zoom_enabled BOOLEAN DEFAULT FALSE,
+                    zoom_time INT DEFAULT 2000,
+                    zoom_max INT DEFAULT 255,
+                    zoom_invert BOOLEAN DEFAULT FALSE,
+                    zoom_sawtooth BOOLEAN DEFAULT FALSE,
+                    color_fade_enabled BOOLEAN DEFAULT TRUE,
+                    strobe_enabled BOOLEAN DEFAULT FALSE,
+                    strobe_value INT DEFAULT 128,
+                    dimmer_enabled BOOLEAN DEFAULT TRUE,
+                    dimmer_value INT DEFAULT 255
+                )
+            `);
+
+            // Migration: Add zoom, color toggle, strobe, and dimmer columns if they don't exist
+            try { await pool.execute('ALTER TABLE fader_chasers ADD COLUMN zoom_enabled BOOLEAN DEFAULT FALSE'); } catch (e) { }
+            try { await pool.execute('ALTER TABLE fader_chasers ADD COLUMN zoom_time INT DEFAULT 2000'); } catch (e) { }
+            try { await pool.execute('ALTER TABLE fader_chasers ADD COLUMN zoom_max INT DEFAULT 255'); } catch (e) { }
+            try { await pool.execute('ALTER TABLE fader_chasers ADD COLUMN zoom_invert BOOLEAN DEFAULT FALSE'); } catch (e) { }
+            try { await pool.execute('ALTER TABLE fader_chasers ADD COLUMN zoom_sawtooth BOOLEAN DEFAULT FALSE'); } catch (e) { }
+            try { await pool.execute('ALTER TABLE fader_chasers ADD COLUMN color_fade_enabled BOOLEAN DEFAULT TRUE'); } catch (e) { }
+            try { await pool.execute('ALTER TABLE fader_chasers ADD COLUMN strobe_enabled BOOLEAN DEFAULT FALSE'); } catch (e) { }
+            try { await pool.execute('ALTER TABLE fader_chasers ADD COLUMN strobe_value INT DEFAULT 128'); } catch (e) { }
+            try { await pool.execute('ALTER TABLE fader_chasers ADD COLUMN dimmer_enabled BOOLEAN DEFAULT TRUE'); } catch (e) { }
+            try { await pool.execute('ALTER TABLE fader_chasers ADD COLUMN dimmer_value INT DEFAULT 255'); } catch (e) { }
+            try { await pool.execute('ALTER TABLE fader_chasers ADD COLUMN w_enabled BOOLEAN DEFAULT FALSE'); } catch (e) { }
+
+            // Get all chasers
+            let [rows]: any = await pool.execute(
+                'SELECT id, start_color, end_color, fade_time, mode, zoom_enabled, zoom_time, zoom_max, zoom_invert, zoom_sawtooth, color_fade_enabled, strobe_enabled, strobe_value, dimmer_enabled, dimmer_value, w_enabled FROM fader_chasers ORDER BY id'
+            );
+
+            // Check if we have exactly IDs 1-28
+            const expectedCount = 28;
+            const actualCount = rows.length;
+            const idsMatch = actualCount === expectedCount;
+
+            if (!idsMatch) {
+                console.log(`⚙️  Initializing 28 effect slots (found: ${actualCount})`);
+
+                // Create exactly 28 slots (using IGNORE to avoid duplicate entry errors)
+                for (let id = 1; id <= 28; id++) {
+                    await pool.execute(
+                        'INSERT IGNORE INTO fader_chasers (id, start_color, end_color, fade_time, mode, zoom_enabled, zoom_time, zoom_max, zoom_invert, zoom_sawtooth, color_fade_enabled, strobe_enabled, strobe_value, dimmer_enabled, dimmer_value, w_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        [id, '#333333', '#333333', 3000, 'linear', false, 2000, 255, false, false, false, false, 128, true, 255, false]
+                    );
+                }
+
+                [rows] = await pool.execute(
+                    'SELECT id, start_color, end_color, fade_time, mode, zoom_enabled, zoom_time, zoom_max, zoom_invert, zoom_sawtooth, color_fade_enabled, strobe_enabled, strobe_value, dimmer_enabled, dimmer_value, w_enabled FROM fader_chasers ORDER BY id'
+                );
+            }
+
+            res.json({ success: true, chasers: rows });
+        } catch (error: any) {
+            console.error('getChasers error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
+
+    async updateChaser(req: Request, res: Response): Promise<void> {
+        try {
+            const { id, start_color, end_color, fade_time, mode, zoom_enabled, zoom_time, zoom_max, zoom_invert, zoom_sawtooth, color_fade_enabled, strobe_enabled, strobe_value, dimmer_enabled, dimmer_value, w_enabled } = req.body;
+            if (id === undefined) {
+                res.status(400).json({ success: false, error: 'Missing required field: id' });
+                return;
+            }
+
+            const pool = Database.getPool();
+            await pool.execute(
+                `INSERT INTO fader_chasers (id, start_color, end_color, fade_time, mode, zoom_enabled, zoom_time, zoom_max, zoom_invert, zoom_sawtooth, color_fade_enabled, strobe_enabled, strobe_value, dimmer_enabled, dimmer_value, w_enabled) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+                 ON DUPLICATE KEY UPDATE 
+                 start_color = VALUES(start_color), 
+                 end_color = VALUES(end_color), 
+                 fade_time = VALUES(fade_time),
+                 mode = VALUES(mode),
+                 zoom_enabled = VALUES(zoom_enabled),
+                 zoom_time = VALUES(zoom_time),
+                 zoom_max = VALUES(zoom_max),
+                 zoom_invert = VALUES(zoom_invert),
+                 zoom_sawtooth = VALUES(zoom_sawtooth),
+                 color_fade_enabled = VALUES(color_fade_enabled),
+                 strobe_enabled = VALUES(strobe_enabled),
+                 strobe_value = VALUES(strobe_value),
+                 dimmer_enabled = VALUES(dimmer_enabled),
+                 dimmer_value = VALUES(dimmer_value),
+                 w_enabled = VALUES(w_enabled)`,
+                [
+                    id,
+                    start_color,
+                    end_color,
+                    fade_time,
+                    mode || 'linear',
+                    zoom_enabled ? 1 : 0,
+                    zoom_time || 2000,
+                    zoom_max !== undefined ? zoom_max : 255,
+                    zoom_invert ? 1 : 0,
+                    zoom_sawtooth ? 1 : 0,
+                    color_fade_enabled !== undefined ? (color_fade_enabled ? 1 : 0) : 1,
+                    strobe_enabled ? 1 : 0,
+                    strobe_value !== undefined ? strobe_value : 128,
+                    dimmer_enabled !== undefined ? (dimmer_enabled ? 1 : 0) : 1,
+                    dimmer_value !== undefined ? dimmer_value : 255,
+                    w_enabled ? 1 : 0
+                ]
+            );
+
+            res.json({ success: true });
+        } catch (error: any) {
+            console.error('updateChaser error:', error);
             res.status(500).json({ success: false, error: error.message });
         }
     }
