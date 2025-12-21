@@ -35,7 +35,7 @@ body {
 /* Header */
 .scenes-header {
     background: var(--bg-medium);
-    padding: 20px 30px;
+    padding: 12px 20px;
     border-bottom: 2px solid var(--border);
     display: flex;
     justify-content: space-between;
@@ -43,23 +43,23 @@ body {
 }
 
 .scenes-header h1 {
-    font-size: 24px;
+    font-size: 18px;
     font-weight: 600;
 }
 
 .header-actions {
     display: flex;
-    gap: 10px;
+    gap: 8px;
 }
 
 /* Buttons */
 .btn-primary,
 .btn-secondary,
 .btn-close {
-    padding: 10px 20px;
+    padding: 6px 12px;
     border: none;
-    border-radius: 8px;
-    font-size: 14px;
+    border-radius: 6px;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
@@ -104,16 +104,16 @@ body {
 
 /* Sidebar */
 .folders-sidebar {
-    width: 250px;
+    width: 180px;
     background: var(--bg-medium);
     border-right: 2px solid var(--border);
-    padding: 20px;
+    padding: 12px;
     overflow-y: auto;
 }
 
 .folders-sidebar h3 {
-    font-size: 16px;
-    margin-bottom: 15px;
+    font-size: 13px;
+    margin-bottom: 10px;
     color: var(--text-dim);
 }
 
@@ -124,14 +124,14 @@ body {
 }
 
 .folder-item {
-    padding: 12px 15px;
+    padding: 8px 10px;
     background: var(--bg-light);
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 .folder-item:hover {
@@ -145,7 +145,7 @@ body {
 }
 
 .folder-icon {
-    font-size: 20px;
+    font-size: 16px;
 }
 
 .folder-name {
@@ -167,21 +167,21 @@ body {
 }
 
 .scenes-toolbar {
-    padding: 20px 30px;
+    padding: 10px 15px;
     background: var(--bg-medium);
     border-bottom: 1px solid var(--border);
     display: flex;
-    gap: 15px;
+    gap: 10px;
 }
 
 .scenes-toolbar input,
 .scenes-toolbar select {
-    padding: 10px 15px;
+    padding: 6px 10px;
     background: var(--bg-dark);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 6px;
     color: var(--text);
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .scenes-toolbar input {
@@ -195,11 +195,11 @@ body {
 /* Scenes Grid */
 .scenes-grid {
     flex: 1;
-    padding: 30px;
+    padding: 15px;
     overflow-y: auto;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
     align-content: start;
 }
 
@@ -219,28 +219,28 @@ body {
 }
 
 .scene-preview {
-    height: 120px;
+    height: 80px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 48px;
+    font-size: 32px;
 }
 
 .scene-info {
-    padding: 15px;
+    padding: 10px;
 }
 
 .scene-name {
-    font-size: 16px;
+    font-size: 13px;
     font-weight: 600;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
 }
 
 .scene-meta {
-    font-size: 12px;
+    font-size: 10px;
     color: var(--text-dim);
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
 .scene-actions {
@@ -250,11 +250,11 @@ body {
 
 .scene-btn {
     flex: 1;
-    padding: 8px;
+    padding: 5px;
     background: var(--bg-light);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 12px;
+    border-radius: 4px;
+    font-size: 10px;
     cursor: pointer;
     transition: all 0.2s;
 }

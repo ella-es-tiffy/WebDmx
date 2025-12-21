@@ -294,17 +294,21 @@ class SceneManager {
                 channelData = JSON.parse(channelData);
             }
 
-            // Send all 512 channels to backend
+            // Send all 512 channels to backend (including zeros for blackout)
+            const promises = [];
             for (let i = 0; i < 512; i++) {
                 const value = channelData[i] || 0;
-                if (value > 0) { // Only send non-zero values for efficiency
-                    await fetch(`${API}/api/dmx/channel`, {
+                promises.push(
+                    fetch(`${API}/api/dmx/channel`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ channel: i + 1, value })
-                    });
-                }
+                    })
+                );
             }
+
+            // Send all in parallel for speed
+            await Promise.all(promises);
 
             console.log(`✅ Scene "${scene.name}" recalled`);
         } catch (e) {
