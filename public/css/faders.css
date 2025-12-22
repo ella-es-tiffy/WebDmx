@@ -302,6 +302,15 @@ body {
     cursor: grabbing;
 }
 
+.encoder-wheel-small {
+    transition: all 0.2s ease;
+}
+
+.encoder-wheel-small:hover {
+    border-color: #00d4ff !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 212, 255, 0.4) !important;
+}
+
 .encoder-label-large {
     font-size: 12px;
     font-weight: 700;

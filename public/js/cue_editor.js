@@ -26,6 +26,13 @@ class CueEditor {
         this.cueElements = new Map();
         this.activeCues = new Set();
         this.runningChasers = [];
+        this.runningFX = []; // NEW: FX Engine
+        this.dmxBuffer = new Uint8ClampedArray(512);
+        this.lastSentBuffer = new Uint8ClampedArray(512);
+        this.lastDmxSendTime = 0;
+        this.isSendingDmx = false; // LOCK for network stability
+        this.trackingMode = true; // DEFAULT: Lights stay on
+        this.channelMap = new Array(512).fill(null).map(() => ({ isIntensity: false }));
 
         this.init();
     }
@@ -145,9 +152,12 @@ class CueEditor {
 
         // Z+Scroll Zoom
         document.addEventListener('wheel', (e) => {
-            if (e.key === 'z' || this.keysPressed['z']) { // Need to track keys or check KeyZ if available in event? 
-                // Standard WheelEvent doesn't show key state directly for 'z'. Only ctrl/shift/alt.
-                // We need to track 'z' state via keydown/keyup.
+            if (this.keysPressed['z']) {
+                e.preventDefault();
+                const delta = Math.sign(e.deltaY) * -10;
+                let newZoom = this.pixelsPerSecond + delta;
+                newZoom = Math.max(20, Math.min(300, newZoom));
+                this.setZoom(newZoom);
             }
         }, { passive: false });
 
@@ -168,8 +178,31 @@ class CueEditor {
             });
         }
 
-        // Tracking keys specifically for modifiers like Z and M
+        // Time Ruler Scrubbing
+        const ruler = document.getElementById('timeline-ruler');
+        if (ruler) {
+            ruler.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                this.pause();
+                this.dragState = { active: true, mode: 'scrub' };
+                this.scrubTo(e.clientX);
+            });
+        }
+
+        // Tracking keys
         this.keysPressed = {};
+        const panicBtn = document.getElementById('panic-btn');
+        if (panicBtn) panicBtn.onclick = () => this.panic();
+
+        const trackToggle = document.getElementById('tracking-toggle');
+        if (trackToggle) {
+            trackToggle.checked = this.trackingMode;
+            trackToggle.onchange = (e) => {
+                this.trackingMode = e.target.checked;
+                console.log('🔄 Tracking Mode:', this.trackingMode);
+            };
+        }
+
         document.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
             this.keysPressed[key] = true;
@@ -180,11 +213,17 @@ class CueEditor {
             }
 
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-            // ... existing keydown ...
-            switch (e.code) {
-                // ...
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (this.isPlaying) this.pause();
+                else this.play();
+            }
+            if (e.code === 'Delete' || e.code === 'Backspace') {
+                if (this.selectedCue) this.deleteSelectedCue();
             }
         });
+
         document.addEventListener('keyup', (e) => {
             const key = e.key.toLowerCase();
             this.keysPressed[key] = false;
@@ -198,18 +237,6 @@ class CueEditor {
             }
         });
 
-        // The real wheel handler
-        document.addEventListener('wheel', (e) => {
-            if (this.keysPressed['z']) {
-                e.preventDefault();
-                const delta = Math.sign(e.deltaY) * -10; // Scroll UP = Zoom IN
-                let newZoom = this.pixelsPerSecond + delta;
-                newZoom = Math.max(20, Math.min(300, newZoom));
-                this.setZoom(newZoom);
-            }
-        }, { passive: false });
-
-
         // Context Menu Global Click to Close
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.context-menu')) this.hideContextMenu();
@@ -219,21 +246,19 @@ class CueEditor {
         const bindCtx = (id, fn) => {
             const el = document.getElementById(id);
             if (el) el.onclick = () => {
-                const activeCue = this.contextCue; // Capture it!
+                const activeCue = this.contextCue;
                 this.hideContextMenu();
                 fn(activeCue);
             };
         };
 
         bindCtx('ctx-edit', (cue) => { if (cue) this.editCue(cue); });
-
         bindCtx('ctx-reverse', (cue) => {
             if (cue) {
                 cue.reverse = !cue.reverse;
                 this.renderCues();
             }
         });
-
         bindCtx('ctx-clone', (cue) => {
             if (cue) {
                 const src = cue;
@@ -241,13 +266,23 @@ class CueEditor {
                 this.createCue(src.trackId, src.sceneId, src.sceneName, newStart, src.duration, true);
             }
         });
-
         bindCtx('ctx-delete', (cue) => {
             if (cue) {
                 this.selectedCue = cue;
                 this.deleteSelectedCue();
             }
         });
+
+        // Timeline Context Menu Actions
+        const bindTimeCtx = (id, fn) => {
+            const el = document.getElementById(id);
+            if (el) el.onclick = () => {
+                const event = this.contextEvent;
+                this.hideContextMenu();
+                fn(event);
+            };
+        };
+        bindTimeCtx('ctx-add-fx', (e) => this.showFXBuilder(e));
     }
 
     setZoom(pps) {
@@ -260,13 +295,44 @@ class CueEditor {
         this.updatePlayhead();
     }
 
+    showTimelineContextMenu(e) {
+        e.preventDefault();
+        this.contextEvent = e;
+        const menu = document.getElementById('context-menu');
+        if (!menu) return;
+
+        // Hide Cue-specific items, show Timeline items
+        menu.querySelectorAll('li').forEach(li => li.style.display = 'none');
+
+        let addItem = document.getElementById('ctx-add-fx');
+        if (!addItem) {
+            addItem = document.createElement('li');
+            addItem.id = 'ctx-add-fx';
+            addItem.innerHTML = '🪄 Create FX...';
+            menu.querySelector('ul').appendChild(addItem);
+            addItem.onclick = () => {
+                this.hideContextMenu();
+                this.showFXBuilder(this.contextEvent);
+            };
+        }
+        addItem.style.display = 'block';
+
+        menu.style.left = `${e.clientX}px`;
+        menu.style.top = `${e.clientY}px`;
+        menu.style.display = 'block';
+    }
+
     showContextMenu(e, cue) {
         e.preventDefault();
         this.contextCue = cue;
         const menu = document.getElementById('context-menu');
         if (!menu) return;
 
-        // Simple positioning
+        // Show Cue-specific items, hide Timeline items
+        menu.querySelectorAll('li').forEach(li => li.style.display = 'block');
+        const addItem = document.getElementById('ctx-add-fx');
+        if (addItem) addItem.style.display = 'none';
+
         menu.style.left = `${e.clientX}px`;
         menu.style.top = `${e.clientY}px`;
         menu.style.display = 'block';
@@ -511,6 +577,20 @@ class CueEditor {
                 this.dragState.cloneCount = newCloneCount;
             }
 
+        } else if (this.dragState.mode === 'automation') {
+            const cue = this.dragState.cue;
+            const pt = this.dragState.point;
+            const block = this.cueElements.get(cue.id);
+            if (block) {
+                const rect = block.querySelector('.automation-layer svg').getBoundingClientRect();
+                let x = (e.clientX - rect.left) / rect.width;
+                let y = 1.0 - ((e.clientY - rect.top) / rect.height);
+
+                pt.x = Math.max(0, Math.min(1, x));
+                pt.y = Math.max(0, Math.min(0.5, y)); // WALL: 0.5 is 255 DMX
+
+                this.renderAutomation(cue, block);
+            }
         } else if (this.dragState.mode === 'pan') {
             const area = document.querySelector('.timeline-area');
             if (area) {
@@ -534,7 +614,10 @@ class CueEditor {
         this.currentTime = time;
         this.updatePlayhead();
         this.checkCues();
+        this.processDmxFrame();
         this.updateChasers();
+        this.updateFX(); // FIX: FX must also update during scrubbing!
+        this.sendDmxFrame();
     }
 
     handleGlobalMouseUp(e) {
@@ -607,8 +690,12 @@ class CueEditor {
 
             // Re-render to show real cues
             this.renderCues();
+        } else if (this.dragState.mode === 'automation') {
+            this.renderCues();
         }
 
+        const area = document.querySelector('.timeline-area');
+        if (area) area.style.cursor = 'default';
         this.dragState = { active: false };
     }
 
@@ -664,9 +751,65 @@ class CueEditor {
             this.assignments = assignData.success ? (assignData.mapping || assignData.assignments || {}) : {};
 
             console.log('🔌 Patch Loaded:', { devices: this.devices.length, assignments: Object.keys(this.assignments).length });
+            this.buildChannelMap();
         } catch (e) {
             console.error('Failed to load patch:', e);
         }
+    }
+
+    buildChannelMap() {
+        this.channelMap = new Array(512).fill(null).map(() => ({ isIntensity: false }));
+
+        this.devices.forEach(dev => {
+            const start = dev.dmx_address;
+            const assign = this.assignments[dev.id];
+            if (!start || !assign) return;
+
+            Object.entries(assign).forEach(([rel, funcs]) => {
+                const relNum = parseInt(rel);
+                const absIdx = start + relNum - 2; // 0-indexed
+                if (absIdx < 0 || absIdx >= 512) return;
+
+                const funcList = Array.isArray(funcs) ? funcs.map(f => f.toLowerCase()) : [];
+
+                // Determine channel type:
+                // Dimmer/Intensity -> HTP (Must go to 0 when inactive)
+                // Color, Pan, Tilt, etc -> LTP (Should HOLD last value)
+                const isDimmer = funcList.some(f => f === 'dim' || f === 'dimmer' || f === 'intensity' || f === 'brightness');
+                const isColor = funcList.some(f => f === 'red' || f === 'r' || f === 'green' || f === 'g' || f === 'blue' || f === 'b' || f === 'white' || f === 'w' || f === 'color');
+
+                this.channelMap[absIdx].isDimmer = isDimmer;
+                this.channelMap[absIdx].isColor = isColor;
+                this.channelMap[absIdx].isIntensity = isDimmer || (isColor && !this.hasSeparateDimmer(assign));
+            });
+        });
+        console.log('🛰️ Channel Efficiency Map built.');
+    }
+
+    hasSeparateDimmer(assignments) {
+        return Object.values(assignments).some(funcs => {
+            const list = Array.isArray(funcs) ? funcs.map(f => f.toLowerCase()) : [];
+            return list.some(f => f === 'dim' || f === 'dimmer' || f === 'intensity');
+        });
+    }
+
+    isAttributeMatch(func, target) {
+        if (!func || !target) return false;
+        const f = func.toLowerCase();
+        const t = target.toLowerCase();
+        if (f === t) return true;
+
+        // Dimmer group
+        const dimAliases = ['dim', 'dimmer', 'intensity', 'brightness', 'master'];
+        if (dimAliases.includes(t)) return dimAliases.includes(f);
+
+        // Color groups
+        if (t === 'r' || t === 'red') return f === 'r' || f === 'red';
+        if (t === 'g' || t === 'green') return f === 'g' || f === 'green';
+        if (t === 'b' || t === 'blue') return f === 'b' || f === 'blue';
+        if (t === 'w' || t === 'white') return f === 'w' || f === 'white';
+
+        return false;
     }
 
     renderScenePool() {
@@ -783,13 +926,32 @@ class CueEditor {
 
             trackEl.appendChild(label);
             trackEl.appendChild(content);
+
+            // Timeline Context Menu (Right Click on empty space)
+            trackEl.addEventListener('contextmenu', (e) => {
+                if (e.target.closest('.cue-block')) return; // Let cue handle it
+                this.showTimelineContextMenu(e);
+            });
+
             container.appendChild(trackEl);
         });
         this.renderCues();
     }
 
     createCue(trackId, sceneId, sceneName, startTime, duration = 5, ignoreCollisions = false) {
-        const cue = { id: Date.now(), trackId, sceneId, sceneName, startTime, duration, fadeIn: 0, fadeOut: 0, reverse: false };
+        const cue = {
+            id: Date.now(),
+            trackId,
+            sceneId,
+            sceneName,
+            startTime,
+            duration,
+            fadeIn: 0,
+            fadeOut: 0,
+            reverse: false,
+            // Default: Middle = 255 DMX
+            automationPoints: [{ x: 0, y: 0.5 }, { x: 1, y: 0.5 }]
+        };
         this.cues.push(cue);
         if (!ignoreCollisions) this.resolveCollisions(cue);
         this.renderCues();
@@ -813,14 +975,22 @@ class CueEditor {
                 block = document.createElement('div');
                 block.className = 'cue-block';
                 block.dataset.cueId = cue.id;
-                block.innerHTML = `<div class="cue-block-name"></div><div class="cue-block-time"></div><div class="cue-resize-handle"></div>`;
+                block.innerHTML = `
+                    <div class="cue-block-name"></div>
+                    <div class="cue-block-time"></div>
+                    <div class="cue-resize-handle"></div>
+                    <div class="automation-layer">
+                        <svg preserveAspectRatio="none" viewBox="0 0 100 100">
+                            <path class="automation-line"></path>
+                        </svg>
+                    </div>
+                `;
                 block.setAttribute('draggable', 'false');
                 block.ondragstart = (e) => { e.preventDefault(); return false; };
 
                 // Mouse Events
                 block.addEventListener('mousedown', (e) => this.handleCueMouseDown(e, cue, block));
                 block.addEventListener('dblclick', () => this.editCue(cue));
-                // Context Menu
                 block.addEventListener('contextmenu', (e) => this.showContextMenu(e, cue));
 
                 // Specific Resize Handler
@@ -835,26 +1005,26 @@ class CueEditor {
 
             const newLeft = `${cue.startTime * this.pixelsPerSecond}px`;
             const newWidth = `${cue.duration * this.pixelsPerSecond}px`;
-            // Only update DOM if changed
             if (block.style.left !== newLeft) block.style.left = newLeft;
             if (block.style.width !== newWidth) block.style.width = newWidth;
 
-            // Text Content (could optimize to check before write, but cheap enough)
             let displayName = cue.sceneName;
             if (cue.reverse) displayName += ' ⏪';
 
             block.querySelector('.cue-block-name').textContent = displayName;
             block.querySelector('.cue-block-time').textContent = `${cue.startTime.toFixed(2)}s`;
 
+            // --- RENDER AUTOMATION ---
+            this.renderAutomation(cue, block);
+
             if (this.selectedCue && this.selectedCue.id === cue.id) block.classList.add('selected');
             else block.classList.remove('selected');
 
-            // --- Chaser Styling Update (Always Run) ---
+            // --- Chaser Styling ---
             const scene = this.scenes.find(s => s.id === cue.sceneId);
             let isChaser = false;
             if (scene) {
                 isChaser = scene.type === 'chaser';
-                // Robust Check (data is already parsed in loadScenes)
                 if (!isChaser && scene.channel_data && !Array.isArray(scene.channel_data)) {
                     if (scene.channel_data.start_color || scene.channel_data.fade_time) isChaser = true;
                 }
@@ -862,6 +1032,101 @@ class CueEditor {
             if (isChaser) block.classList.add('chaser');
             else block.classList.remove('chaser');
         });
+    }
+
+    renderAutomation(cue, block) {
+        const layer = block.querySelector('.automation-layer');
+        const svg = layer.querySelector('svg');
+        const path = svg.querySelector('.automation-line');
+        if (!cue.automationPoints) cue.automationPoints = [{ x: 0, y: 0.5 }, { x: 1, y: 0.5 }];
+
+        const pts = [...cue.automationPoints].sort((a, b) => a.x - b.x);
+
+        // y is normalized such that 0.5 = 100% (Top of Path visually). 
+        // We Use the SVG viewBox 0-100 logic.
+        // SVG y=100 is bottom, y=0 is top.
+        // We want y_norm=0 (bottom) to be SVG y=100.
+        // We want y_norm=0.5 (middle) to be SVG y=50.
+        const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x * 100} ${100 - (p.y * 100)}`).join(' ');
+        path.setAttribute('d', d);
+
+        // Sync Node DIVs (to avoid SVG stretching/ellipses)
+        let nodesContainer = layer.querySelector('.automation-nodes');
+        if (!nodesContainer) {
+            nodesContainer = document.createElement('div');
+            nodesContainer.className = 'automation-nodes';
+            layer.appendChild(nodesContainer);
+        }
+
+        const existingNodes = nodesContainer.querySelectorAll('.automation-node-div');
+        if (existingNodes.length !== pts.length) {
+            nodesContainer.innerHTML = '';
+            pts.forEach((p, idx) => {
+                const node = document.createElement('div');
+                node.className = 'automation-node-div';
+                node.addEventListener('mousedown', (e) => this.handleAutomationNodeMouseDown(e, cue, p));
+                nodesContainer.appendChild(node);
+            });
+        }
+
+        nodesContainer.querySelectorAll('.automation-node-div').forEach((node, idx) => {
+            const p = pts[idx];
+            node.style.left = `${p.x * 100}%`;
+            node.style.top = `${(1.0 - p.y) * 100}%`;
+        });
+
+        path.onmousedown = (e) => {
+            e.stopPropagation();
+            const rect = svg.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width;
+            const y = 1.0 - ((e.clientY - rect.top) / rect.height);
+            cue.automationPoints.push({
+                x: Math.max(0, Math.min(1, x)),
+                y: Math.max(0, Math.min(0.5, y)) // WALL at 0.5
+            });
+            this.renderCues();
+        };
+    }
+
+    handleAutomationNodeMouseDown(e, cue, point) {
+        e.stopPropagation();
+        e.preventDefault();
+        this.dragState = {
+            active: true,
+            mode: 'automation',
+            cue: cue,
+            point: point,
+            startX: e.clientX,
+            startY: e.clientY
+        };
+    }
+
+    getAutomationValue(cue, relativeTime) {
+        if (!cue.automationPoints || cue.automationPoints.length < 2) return 1.0;
+        const pts = [...cue.automationPoints].sort((a, b) => a.x - b.x);
+        const t = Math.max(0, Math.min(1, relativeTime / cue.duration));
+
+        let yNorm = 0.5;
+        if (t <= pts[0].x) {
+            yNorm = pts[0].y;
+        } else if (t >= pts[pts.length - 1].x) {
+            yNorm = pts[pts.length - 1].y;
+        } else {
+            for (let i = 0; i < pts.length - 1; i++) {
+                const p1 = pts[i];
+                const p2 = pts[i + 1];
+                if (t >= p1.x && t <= p2.x) {
+                    const range = p2.x - p1.x;
+                    const factor = (t - p1.x) / (range || 0.001);
+                    yNorm = p1.y + factor * (p2.y - p1.y);
+                    break;
+                }
+            }
+        }
+
+        // Mapping: yNorm=0.5 -> Intensity=1.0. yNorm=0 -> Intensity=0.0.
+        // We divide by 0.5 to make middle the peak.
+        return Math.min(1.0, yNorm / 0.5);
     }
 
     // ... Standard methods ...
@@ -907,7 +1172,23 @@ class CueEditor {
         this.renderCues();
         this.hideCueModal();
     }
-    clearTimeline() { if (!confirm('Clear entire timeline?')) return; this.cues = []; this.renderCues(); }
+    clearTimeline() {
+        if (!confirm('Clear entire timeline?')) return;
+        this.cues = [];
+        this.activeCues.clear();
+        this.runningChasers = [];
+        this.panic(); // Clear output too
+        this.renderCues();
+    }
+
+    panic() {
+        console.log('🚨 PANIC: Resetting DMX Output');
+        this.dmxBuffer.fill(0);
+        this.lastSentBuffer.fill(1); // Force change
+        this.runningChasers = [];
+        this.runningFX = [];
+        this.sendDmxFrame();
+    }
     play() { if (this.isPlaying && !this.isPaused) return; this.isPlaying = true; this.isPaused = false; this.lastFrameTime = performance.now(); this.gameLoop(); }
     gameLoop() {
         if (!this.isPlaying) return;
@@ -917,7 +1198,10 @@ class CueEditor {
         this.currentTime += (deltaTime * this.speed);
         this.updatePlayhead();
         this.checkCues();
+        this.processDmxFrame();
         this.updateChasers();
+        this.updateFX(); // ACTIVATE FX ENGINE
+        this.sendDmxFrame();
 
         // Calculate dynamic end of track
         let lastCueEnd = 0;
@@ -965,6 +1249,132 @@ class CueEditor {
         if (timeDisplay) timeDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(4, '0')}`;
     }
 
+    processDmxFrame() {
+        if (this.tracks.length === 0) return;
+
+        // 1. Intended values for THIS specific frame
+        const frameBuffer = new Uint16Array(512).fill(0); // Use 16-bit to avoid overflow before Math.min
+        const addressedThisFrame = new Set();
+
+        // --- ADDED: Mark channels addressed by FX ---
+        if (this.runningFX) {
+            this.runningFX.forEach(fx => {
+                const targetIds = fx.config.targetFixtureIds || [];
+                const targetAttr = (fx.config.attribute || 'dimmer').toLowerCase();
+
+                targetIds.forEach(fId => {
+                    const idNum = Number(fId);
+                    const dev = this.devices.find(d => d.id === idNum);
+                    const assign = this.assignments[idNum] || this.assignments[String(idNum)];
+                    if (!dev || !assign) return;
+
+                    const start = dev.dmx_address;
+                    Object.entries(assign).forEach(([rel, funcs]) => {
+                        const relNum = parseInt(rel);
+                        const absIdx = start + relNum - 2;
+                        if (absIdx < 0 || absIdx >= 512) return;
+
+                        const funcList = Array.isArray(funcs) ? funcs : [funcs];
+                        const isMatch = funcList.some(f => this.isAttributeMatch(f, targetAttr));
+                        if (isMatch) {
+                            addressedThisFrame.add(absIdx);
+                            if (window.debugFX) console.log(`[FX SYNC] Channel ${absIdx + 1} reserved for FX (${targetAttr})`);
+                        }
+                    });
+                });
+            });
+        }
+
+        for (const cueId of this.activeCues) {
+            const cue = this.cues.find(c => c.id === cueId);
+            if (!cue) continue;
+
+            const scene = this.scenes.find(s => s.id === cue.sceneId);
+            if (!scene || scene.type === 'chaser') continue;
+
+            const factor = this.getAutomationValue(cue, this.currentTime - cue.startTime);
+            let data = scene.channel_data;
+            if (typeof data === 'string') {
+                try { data = JSON.parse(data); } catch (e) { data = []; }
+            }
+
+            if (Array.isArray(data)) {
+                data.forEach((val, idx) => {
+                    if (idx >= 512) return;
+                    addressedThisFrame.add(idx);
+                    const isInt = this.channelMap[idx].isIntensity;
+                    const v = (typeof val === 'number') ? val : (val.value || 0);
+                    const finalVal = isInt ? (v * factor) : v;
+                    frameBuffer[idx] = Math.max(frameBuffer[idx], Math.round(finalVal));
+                });
+            } else if (typeof data === 'object' && data !== null) {
+                Object.entries(data).forEach(([ch, val]) => {
+                    const idx = parseInt(ch) - 1;
+                    if (idx < 0 || idx >= 512) return;
+                    addressedThisFrame.add(idx);
+                    const isInt = this.channelMap[idx].isIntensity;
+                    const finalVal = isInt ? (parseInt(val) * factor) : parseInt(val);
+                    frameBuffer[idx] = Math.max(frameBuffer[idx], Math.round(finalVal));
+                });
+            }
+        }
+
+        // 2. Final Output Resolution (Applying Tracking/Release)
+        for (let i = 0; i < 512; i++) {
+            if (addressedThisFrame.has(i)) {
+                // Active cue is driving this channel -> Update buffer
+                this.dmxBuffer[i] = Math.min(255, frameBuffer[i]);
+            } else {
+                // No active cue for this channel
+                const isInt = this.channelMap[i].isIntensity;
+                // If intensity and tracking is OFF -> Auto-release to 0
+                if (isInt && !this.trackingMode) {
+                    this.dmxBuffer[i] = 0;
+                }
+                // Else: HOLD (LTP Tracking) - keep previous dmxBuffer[i]
+            }
+        }
+    }
+
+    async sendDmxFrame() {
+        if (this.isSendingDmx) return; // Wait for previous frame to finish
+
+        const hasContent = this.activeCues.size > 0 || this.runningChasers.length > 0 || (this.runningFX && this.runningFX.length > 0);
+
+        let changed = false;
+        for (let i = 0; i < 512; i++) {
+            if (this.dmxBuffer[i] !== this.lastSentBuffer[i]) {
+                changed = true;
+                break;
+            }
+        }
+
+        const now = performance.now();
+        // Stability: Allow max ~40 FPS for HTTP DMX
+        const minInterval = 25;
+
+        const shouldSend = (changed && (now - this.lastDmxSendTime > minInterval)) ||
+            (hasContent && (now - this.lastDmxSendTime > 100));
+
+        if (shouldSend) {
+            this.isSendingDmx = true;
+            this.lastSentBuffer.set(this.dmxBuffer);
+            this.lastDmxSendTime = now;
+
+            try {
+                await fetch(`${API}/api/dmx/batch`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ channels: Array.from(this.dmxBuffer) })
+                });
+            } catch (e) {
+                console.error('DMX Frame Send Error:', e);
+            } finally {
+                this.isSendingDmx = false;
+            }
+        }
+    }
+
     async checkCues() {
         const newActiveCues = new Set();
         for (const cue of this.cues) {
@@ -974,23 +1384,44 @@ class CueEditor {
             const cueStart = cue.startTime;
             const cueEnd = cue.startTime + cue.duration;
 
-            // Check Mute before Active
             if (!isMuted && this.currentTime >= cueStart && this.currentTime < cueEnd) {
                 newActiveCues.add(cue.id);
-                if (!this.activeCues.has(cue.id)) { const block = this.cueElements.get(cue.id); if (block) block.classList.add('active'); }
+                if (!this.activeCues.has(cue.id)) {
+                    const block = this.cueElements.get(cue.id);
+                    if (block) block.classList.add('active');
+                }
+
+                // For Chasers and FX, we still need to 'trigger' them once to start the engine entry
                 if (!cue.triggered) {
                     cue.triggered = true;
-                    await this.recallScene(cue.sceneId, cue, cue.startTime); // Pass startTime
+
+                    // Priority 1: Data directly on the cue (for generated FX)
+                    if (cue.type === 'fx') {
+                        this.startFX(cue.id, cue.channel_data, cue, cue.startTime);
+                    }
+                    // Priority 2: Data from scene pool (for chasers/scenes from pool)
+                    else {
+                        const scene = this.scenes.find(s => s.id === cue.sceneId);
+                        if (scene) {
+                            if (scene.type === 'chaser') {
+                                this.startChaser(scene.id, scene.channel_data, cue, cue.startTime);
+                            } else if (scene.type === 'fx') {
+                                this.startFX(scene.id, scene.channel_data, cue, cue.startTime);
+                            }
+                        }
+                    }
                 }
             } else {
                 if (this.activeCues.has(cue.id)) {
                     const block = this.cueElements.get(cue.id);
                     if (block) block.classList.remove('active');
-
-                    // Stop Chaser if it was running
                     if (cue.activeChaserId) {
                         this.stopChaser(cue.activeChaserId);
                         cue.activeChaserId = null;
+                    }
+                    if (cue.activeFXId) {
+                        this.stopFX(cue.activeFXId);
+                        cue.activeFXId = null;
                     }
                 }
                 cue.triggered = false;
@@ -1088,9 +1519,8 @@ class CueEditor {
         const chaserState = {
             id: id + '_' + Date.now(),
             config: activeConfig,
-            cueStartTime: cueStartTime, // Store timeline start
-            // lastTime: performance.now(), // No longer needed
-            // phase: 0 // Calculated on fly
+            cueStartTime: cueStartTime,
+            cueRef: cueRef // CRITICAL: Store for automation Factor
         };
 
         this.runningChasers.push(chaserState);
@@ -1157,80 +1587,382 @@ class CueEditor {
 
             // console.log(`RGB: ${r}, ${g}, ${b} | Progress: ${progress.toFixed(2)}`);
 
+            // --- Automation ---
+            const cueRef = chaser.cueRef;
+            const factor = cueRef ? this.getAutomationValue(cueRef, this.currentTime - cueRef.startTime) : 1.0;
+            r = Math.round(r * factor);
+            g = Math.round(g * factor);
+            b = Math.round(b * factor);
+
             // Apply to specific target fixtures
             const targetIds = state.targetFixtureIds || [];
-            if (targetIds.length === 0) {
-                // console.warn('No target fixtures for chaser!');
-                return;
-            }
-
-            const batch = [];
-
-            targetIds.forEach(fid => {
-                const device = this.devices.find(d => d.id === fid);
-                const devAssignments = this.assignments[fid];
-
+            targetIds.forEach(fId => {
+                const device = this.devices.find(d => d.id === fId);
+                // We need to know which channels of this device are R, G, B
+                const devAssignments = this.assignments[fId];
                 if (device && devAssignments) {
                     const startAddr = device.dmx_address;
-
                     Object.entries(devAssignments).forEach(([relCh, funcs]) => {
                         const relChNum = parseInt(relCh);
                         const absCh = startAddr + relChNum - 1;
                         if (absCh < 1 || absCh > 512) return;
 
                         const funcList = Array.isArray(funcs) ? funcs.map(f => f.toLowerCase()) : [];
-                        // console.log(`Fixture ${fid} Ch ${relCh}:`, funcList);
-
-                        // Color Logic
                         let val = -1;
-
-                        // RGB
                         if (funcList.includes('r')) val = r;
                         else if (funcList.includes('g')) val = g;
                         else if (funcList.includes('b')) val = b;
 
-                        // Dimmer
-                        if (funcList.includes('dim')) {
-                            if (state.dimmer_enabled) val = state.dimmer_value !== undefined ? state.dimmer_value : 255;
-                        }
-
-                        // Strobe
-                        if (funcList.includes('strobe')) {
-                            if (state.strobe_enabled) val = state.strobe_value !== undefined ? state.strobe_value : 0;
-                        }
-
-                        // W
-                        if (funcList.includes('w')) {
-                            if (state.w_enabled) val = state.dimmer_value !== undefined ? state.dimmer_value : 255;
-                        }
-
-                        // If value was set, add to batch
                         if (val !== -1) {
-                            batch.push({ channel: absCh, value: val });
+                            this.dmxBuffer[absCh - 1] = Math.max(this.dmxBuffer[absCh - 1], val);
                         }
                     });
-                } else {
-                    // console.warn(`⚠️ device or assignments missing for ID ${fid}`, { device, devAssignments });
                 }
             });
-
-            // Send Batch
-            if (batch.length > 0) {
-                // console.log('Batch:', JSON.stringify(batch));
-                this.sendBatchDMX(batch);
-            } else {
-                // console.warn('⚠️ Chaser running but batch is empty');
-            }
         });
     }
 
-    sendBatchDMX(channels) {
-        // Simple throttle could be added here
-        fetch(`${API}/api/dmx/batch`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ channels: channels })
-        }).catch(() => { });
+
+
+    // --- FX ENGINE ---
+    startFX(id, config, cueRef, cueStartTime) {
+        if (!this.runningFX) this.runningFX = [];
+        console.log(`🚀 Starting FX: ${id}`, config);
+
+        if (!config.targetFixtureIds || config.targetFixtureIds.length === 0) {
+            console.warn(`⚠️ FX ${id} has no target fixtures!`);
+        }
+
+        const fxState = {
+            id: id + '_' + Date.now(),
+            config: config,
+            cueStartTime: cueStartTime,
+            cueRef: cueRef,
+            lastLogTick: -1 // Force first frame log
+        };
+        this.runningFX.push(fxState);
+        cueRef.activeFXId = fxState.id;
+    }
+
+    stopFX(runId) {
+        console.log(`🛑 Stopping FX: ${runId}`);
+        this.runningFX = this.runningFX.filter(f => f.id !== runId);
+    }
+
+    updateFX() {
+        if (!this.runningFX || this.runningFX.length === 0) return;
+
+        this.runningFX.forEach(fx => {
+            const cfg = fx.config;
+            const targetIds = cfg.targetFixtureIds || [];
+            if (targetIds.length === 0) return;
+
+            // 1. Collect all individual control points (channels) for distribution
+            const controlPoints = [];
+            targetIds.forEach(fId => {
+                const idNum = Number(fId);
+                const dev = this.devices.find(d => d.id === idNum);
+                const assign = this.assignments[idNum] || this.assignments[String(idNum)];
+                if (!dev || !assign) return;
+
+                const start = dev.dmx_address;
+                const targetAttr = (cfg.attribute || 'dimmer').toLowerCase();
+
+                Object.entries(assign).forEach(([rel, funcs]) => {
+                    const funcList = Array.isArray(funcs) ? funcs : [funcs];
+                    if (funcList.some(f => this.isAttributeMatch(f, targetAttr))) {
+                        controlPoints.push({
+                            absIdx: start + parseInt(rel) - 2,
+                            fixtureName: dev.name
+                        });
+                    }
+                });
+            });
+
+            const total = controlPoints.length;
+            if (total === 0) return;
+
+            const elapsedS = this.currentTime - fx.cueStartTime;
+            const automationFactor = fx.cueRef ? this.getAutomationValue(fx.cueRef, elapsedS) : 1.0;
+
+            const speed = cfg.speed || 1.0;
+            const amplitude = cfg.size !== undefined ? cfg.size : 255;
+            const baseLevel = cfg.offset || 0;
+            const spread = cfg.spread !== undefined ? cfg.spread : 360;
+            const wings = cfg.wings || 1;
+            const wf = cfg.waveform || 'sine';
+
+            // 2. Process each control point with its own phase
+            controlPoints.forEach((cp, index) => {
+                let effectiveIndex = index;
+                if (wings > 1) {
+                    const sectionSize = Math.ceil(total / wings);
+                    effectiveIndex = index % sectionSize;
+                }
+
+                const fixturePhase = (effectiveIndex / (total / wings)) * spread;
+                const timePhase = (elapsedS * speed * 360);
+                const totalPhaseDeg = (timePhase + fixturePhase) % 360;
+                const rad = (totalPhaseDeg * Math.PI) / 180;
+
+                let val = 0;
+                if (wf === 'sine') val = baseLevel + ((Math.sin(rad) + 1) / 2) * amplitude;
+                else if (wf === 'square') val = (totalPhaseDeg < 180) ? (baseLevel + amplitude) : baseLevel;
+                else if (wf === 'saw') val = baseLevel + (1.0 - (totalPhaseDeg / 360)) * amplitude;
+                else if (wf === 'ramp') val = baseLevel + (totalPhaseDeg / 360) * amplitude;
+                else if (wf === 'strobe') val = (totalPhaseDeg < 36) ? (baseLevel + amplitude) : baseLevel;
+
+                val = Math.max(0, Math.min(255, val * automationFactor));
+
+                if (window.debugFX && Math.floor(elapsedS * 10) !== fx.lastLogTick && index === 0) {
+                    console.log(`[FX RUN] ${cp.fixtureName} Ch ${cp.absIdx + 1} -> ${Math.round(val)}`);
+                }
+
+                // Apply to buffer
+                this.dmxBuffer[cp.absIdx] = Math.round(val);
+            });
+
+            if (window.debugFX) fx.lastLogTick = Math.floor(elapsedS * 10);
+        });
+    }
+
+    // --- FX BUILDER UI ---
+    showFXBuilder(e) {
+        // Create or get the FX Modal
+        let modal = document.getElementById('fx-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'fx-modal';
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal" style="width: 500px; max-width: 90vw;">
+                    <div class="modal-header">FX Builder (Mathematical Engine)</div>
+                    <div class="modal-body">
+                        <div style="display: flex; gap: 20px;">
+                            <div style="flex: 1;">
+                                <div class="fx-preview-container" style="position: relative;">
+                                    <canvas id="fx-preview-canvas" width="300" height="120" style="cursor: crosshair;"></canvas>
+                                    <div class="fx-canvas-guides" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; display:flex; font-size:9px; color:rgba(255,255,255,0.1);">
+                                        <div style="flex:1; border-right: 1px dashed rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center;">BASE LEVEL</div>
+                                        <div style="flex:1; display:flex; align-items:center; justify-content:center;">AMPLITUDE</div>
+                                    </div>
+                                    <div class="fx-preview-hint">Drag: X=Speed | Left Y=Base | Right Y=Amp</div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Attribute</label>
+                                    <select id="fx-attribute">
+                                        <option value="dimmer">Dimmer / Intensity</option>
+                                        <option value="r">Red</option>
+                                        <option value="g">Green</option>
+                                        <option value="b">Blue</option>
+                                        <option value="w">White</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Waveform</label>
+                                    <select id="fx-waveform">
+                                        <option value="sine">Sine (Smooth)</option>
+                                        <option value="square">Square (Hard On/Off)</option>
+                                        <option value="saw">Saw (Fade Out)</option>
+                                        <option value="ramp">Ramp (Fade In)</option>
+                                        <option value="strobe">Strobe (Pulse)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group-row">
+                                    <div class="form-group">
+                                        <label>Speed</label>
+                                        <input type="number" id="fx-speed" value="1.0" step="0.1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Spread (Deg)</label>
+                                        <input type="number" id="fx-spread" value="360" step="10">
+                                    </div>
+                                </div>
+                                <div class="form-group-row">
+                                    <div class="form-group">
+                                        <label>Amplitude (Size)</label>
+                                        <input type="number" id="fx-size" value="255">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Base Level (Offset)</label>
+                                        <input type="number" id="fx-offset" value="0">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Wings (Symmetry)</label>
+                                    <input type="number" id="fx-wings" value="1" min="1">
+                                </div>
+                            </div>
+                            <div style="flex: 1; display: flex; flex-direction: column;">
+                                <label>Target Fixtures</label>
+                                <div id="fx-fixture-list" class="fx-fixture-list"></div>
+                                <div style="display: flex; gap: 5px; margin-top: 5px;">
+                                    <button class="btn-secondary" style="flex:1; padding:4px;" id="fx-select-all">All</button>
+                                    <button class="btn-secondary" style="flex:1; padding:4px;" id="fx-select-none">None</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-actions" style="margin-top: 20px;">
+                            <button type="button" class="btn-secondary" onclick="document.getElementById('fx-modal').classList.remove('active')">Cancel</button>
+                            <button type="button" class="btn-primary" id="fx-create-btn">Create FX Cue</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Populate fixture list
+        const list = modal.querySelector('#fx-fixture-list');
+        list.innerHTML = '';
+        this.devices.forEach(dev => {
+            const item = document.createElement('label');
+            item.className = 'fx-fixture-item';
+            item.innerHTML = `
+                <input type="checkbox" value="${dev.id}" checked>
+                <span>${dev.name} <small>(Ch ${dev.dmx_address})</small></span>
+            `;
+            list.appendChild(item);
+        });
+
+        document.getElementById('fx-select-all').onclick = () => list.querySelectorAll('input').forEach(i => i.checked = true);
+        document.getElementById('fx-select-none').onclick = () => list.querySelectorAll('input').forEach(i => i.checked = false);
+
+        // Calculate clicked time/track for insertion
+        const area = document.querySelector('.timeline-area');
+        const rect = area.getBoundingClientRect();
+        const timelineLeft = area.scrollLeft;
+        const x = e.clientX - rect.left + timelineLeft - 100; // 100 is label padding
+        const startTime = x / this.pixelsPerSecond;
+        const trackEl = e.target.closest('.track');
+        const trackId = trackEl ? parseInt(trackEl.dataset.trackId) : this.tracks[0].id;
+
+        modal.classList.add('active');
+
+        // PREVIEW LOGIC
+        const canvas = document.getElementById('fx-preview-canvas');
+        const updatePreview = () => {
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            const amp = parseInt(document.getElementById('fx-size').value);
+            const base = parseInt(document.getElementById('fx-offset').value);
+            const wf = document.getElementById('fx-waveform').value;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Draw Grid
+            ctx.strokeStyle = '#333';
+            ctx.beginPath();
+            for (let i = 0; i <= 4; i++) {
+                let y = h - (i / 4 * h);
+                ctx.moveTo(0, y); ctx.lineTo(w, y);
+            }
+            ctx.stroke();
+
+            // Draw Wave
+            ctx.strokeStyle = '#00ffcc';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            for (let x = 0; x < w; x++) {
+                const phaseDeg = (x / w) * 360;
+                const rad = (phaseDeg * Math.PI) / 180;
+                let val = 0;
+                if (wf === 'sine') val = base + ((Math.sin(rad) + 1) / 2) * amp;
+                else if (wf === 'square') val = (phaseDeg < 180) ? (base + amp) : base;
+                else if (wf === 'saw') val = base + (1.0 - (phaseDeg / 360)) * amp;
+                else if (wf === 'ramp') val = base + (phaseDeg / 360) * amp;
+                else if (wf === 'strobe') val = (phaseDeg < 36) ? (base + amp) : base;
+
+                const yPos = h - ((Math.min(255, val) / 255) * (h - 20)) - 10;
+                if (x === 0) ctx.moveTo(x, yPos);
+                else ctx.lineTo(x, yPos);
+            }
+            ctx.stroke();
+        };
+
+        // Interactive Canvas
+        let isDraggingCanvas = false;
+        canvas.onmousedown = (e) => {
+            isDraggingCanvas = true;
+            handleCanvasDrag(e);
+        };
+        const handleCanvasDrag = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const xNorm = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            const yNorm = 1.0 - Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+
+            const val = Math.round(yNorm * 255);
+
+            // 1. Horizontal sets SPEED (range 0.1 to 10.0)
+            const newSpeed = (xNorm * 9.9) + 0.1;
+            document.getElementById('fx-speed').value = newSpeed.toFixed(1);
+
+            // 2. Vertical split: Left side = Base, Right side = Amplitude
+            if (xNorm < 0.5) {
+                document.getElementById('fx-offset').value = val;
+            } else {
+                const currentBase = parseInt(document.getElementById('fx-offset').value);
+                document.getElementById('fx-size').value = Math.max(0, val - currentBase);
+            }
+            updatePreview();
+        };
+
+        const onMove = (e) => { if (isDraggingCanvas) handleCanvasDrag(e); };
+        const onUp = () => { isDraggingCanvas = false; };
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+
+        ['fx-size', 'fx-offset', 'fx-waveform', 'fx-speed'].forEach(id => {
+            document.getElementById(id).oninput = updatePreview;
+        });
+        updatePreview();
+
+        document.getElementById('fx-create-btn').onclick = () => {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+            const selectedIds = Array.from(list.querySelectorAll('input:checked')).map(i => parseInt(i.value));
+            if (selectedIds.length === 0) {
+                alert('Please select at least one fixture!');
+                return;
+            }
+
+            const config = {
+                attribute: document.getElementById('fx-attribute').value,
+                waveform: document.getElementById('fx-waveform').value,
+                speed: parseFloat(document.getElementById('fx-speed').value),
+                spread: parseFloat(document.getElementById('fx-spread').value),
+                size: parseInt(document.getElementById('fx-size').value),
+                offset: parseInt(document.getElementById('fx-offset').value),
+                wings: parseInt(document.getElementById('fx-wings').value),
+                targetFixtureIds: selectedIds
+            };
+
+            this.createFXCue(trackId, startTime, config);
+            modal.classList.remove('active');
+        };
+    }
+
+    createFXCue(trackId, startTime, config) {
+        const cue = {
+            id: Date.now(),
+            trackId,
+            sceneId: 'fx_generated',
+            sceneName: `FX: ${config.waveform.toUpperCase()}`,
+            startTime,
+            duration: 5.0,
+            fadeIn: 0,
+            fadeOut: 0,
+            automationPoints: [{ x: 0, y: 0.5 }, { x: 1, y: 0.5 }],
+            sceneId: null, // No static scene
+            type: 'fx',
+            channel_data: config
+        };
+        this.cues.push(cue);
+        this.renderCues();
     }
 
     hexToRgb(hex) {

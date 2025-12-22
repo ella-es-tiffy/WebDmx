@@ -34,9 +34,16 @@
                 </div>
             </div>
             <div class="editor-actions">
+                <div class="toggle-group" title="Full Tracking: Lights stay on after cue ends">
+                    <label style="font-size: 10px; color: #888;">Tracking</label>
+                    <input type="checkbox" id="tracking-toggle" checked>
+                </div>
                 <button class="btn-secondary" id="add-track-btn">+ Track</button>
-                <button class="btn-secondary" id="clear-timeline-btn">Clear</button>
+                <button class="btn-secondary" id="clear-timeline-btn">Clear Timeline</button>
                 <button class="btn-primary" id="save-show-btn">Save Show</button>
+                <button class="btn-secondary"
+                    onclick="window.open('dmx_monitor.html', 'dmx_mon', 'width=800,height=600')">Monitor</button>
+                <button class="btn-danger" id="panic-btn" title="Blackout - Reset all DMX">STOP</button>
                 <button class="btn-danger" id="close-btn">Close</button>
             </div>
         </div>

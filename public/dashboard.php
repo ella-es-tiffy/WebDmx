@@ -46,6 +46,10 @@
                 <div class="icon-box"><i class="fas fa-play-circle" style="color: #febc2e;"></i></div>
                 <span>Cue Editor</span>
             </div>
+            <div class="icon-item" onclick="openMonitor()">
+                <div class="icon-box"><i class="fas fa-desktop" style="color: #00f2ff;"></i></div>
+                <span>DMX Monitor</span>
+            </div>
         </div>
     </div>
 
@@ -172,6 +176,16 @@
                 top: '30px',
                 left: '50px',
                 content: `<iframe src="cue_editor.html?v=${Date.now()}" style="width:100%; height:100%; border:none;"></iframe>`
+            });
+        }
+
+        function openMonitor() {
+            wm.createWindow('dmx-monitor', 'DMX Live Monitor', {
+                width: '800px',
+                height: '600px',
+                top: '100px',
+                left: '100px',
+                content: `<iframe src="dmx_monitor.html?v=${Date.now()}" style="width:100%; height:100%; border:none;"></iframe>`
             });
         }
 

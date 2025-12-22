@@ -408,6 +408,22 @@ class FaderConsole {
             wheel.addEventListener('touchstart', start);
             document.addEventListener('touchmove', move, { passive: false });
             document.addEventListener('touchend', end);
+
+            // Mouse wheel support
+            wheel.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                // Determine direction: up is positive change
+                const wheelDelta = -e.deltaY;
+
+                // Visual rotation (more aggressive for coarser feel)
+                const rotDelta = (wheelDelta > 0 ? 15 : -15);
+                currentRotation += rotDelta;
+                wheel.style.transform = `rotate(${currentRotation}deg)`;
+                this.encoders[type].rotation = currentRotation;
+
+                // Pass a significantly larger delta for coarser steps (roughly 10 DMX units per notch)
+                this.handleEncoderChange(type, wheelDelta > 0 ? 120 : -120);
+            }, { passive: false });
         });
     }
 
@@ -1371,6 +1387,7 @@ class FaderConsole {
         // --- ENCODERS ---
         const createEncoder = (color) => {
             const wheel = document.createElement('div');
+            wheel.className = 'encoder-wheel-small';
             wheel.style.cssText = `width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #2a2a2a, #111); border: 2px solid #555; position: relative; cursor: grab; box-shadow: inset 0 2px 4px rgba(0,0,0,0.8); touch-action: none;`;
             const indicator = document.createElement('div');
             indicator.style.cssText = `position: absolute; top:4px; left:50%; transform:translateX(-50%); transform-origin: center 15px; width:2px; height:10px; background:${color}; box-shadow:0 0 6px ${color}; pointer-events:none;`;
@@ -1411,6 +1428,25 @@ class FaderConsole {
             enc.wheel.onmousedown = onDown; enc.wheel.ontouchstart = onDown;
             window.addEventListener('mousemove', onMove); window.addEventListener('touchmove', onMove, { passive: false });
             window.addEventListener('mouseup', onUp); window.addEventListener('touchend', onUp);
+
+            // Mouse wheel support for effect encoders
+            enc.wheel.addEventListener('wheel', (e) => {
+                if (!this.selectedChaser) return;
+                e.preventDefault();
+                const dy = -e.deltaY;
+                rotation += (dy > 0 ? 30 : -30);
+                enc.indicator.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+
+                if (prop === 'fade_time') {
+                    const c = (this.selectedChaser.fade_time || 3000) / 1000;
+                    this.selectedChaser.fade_time = Math.max(min, Math.min(max, c + (dy > 0 ? 0.2 : -0.2))) * 1000;
+                } else {
+                    const c = this.selectedChaser[prop] || 0;
+                    this.selectedChaser[prop] = Math.max(min, Math.min(max, Math.round(c + (dy > 0 ? 10 : -10))));
+                }
+                updateEffectUI(this.selectedChaser);
+                saveCurrentChaser();
+            }, { passive: false });
         };
 
         bindEnc(eFade, 'fade_time', 0.1, 0.1, 10, true);
