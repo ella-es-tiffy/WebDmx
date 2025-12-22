@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Szenen-Manager | WebDMX</title>
-    <link rel="stylesheet" href="css/scenes.css?v=6">
+    <link rel="stylesheet" href="css/scenes.css?v=7">
 </head>
 
 <body>
@@ -72,17 +72,24 @@
                 </select>
 
                 <label>Farbe (optional):</label>
-                <input type="color" id="scene-color" value="#ff0000">
+                <input type="color" id="scene-color" value="#ff0000"
+                    style="width: 100px; height: 40px; border: 1px solid #333; border-radius: 4px; cursor: pointer;">
 
                 <div class="form-group" style="margin-top: 10px;">
-                    <label style="display:flex; justify-content:space-between;">
-                        <span>Fixtures (Auswahl):</span>
-                        <span style="font-size:10px; color:#00bcd4; cursor:pointer;" id="toggle-all-fixtures">Alle /
-                            Keine</span>
-                    </label>
-                    <div id="fixture-select-list"
-                        style="max-height: 120px; overflow-y: auto; background: #111; border: 1px solid #333; padding: 5px; border-radius: 4px;">
-                        <!-- Filled by JS -->
+                    <label>Attribute (Filter):</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <label style="font-size: 11px; display: flex; align-items: center; gap: 4px; color: #ddd;">
+                            <input type="checkbox" id="filter-dimmer" checked> Intensity
+                        </label>
+                        <label style="font-size: 11px; display: flex; align-items: center; gap: 4px; color: #ddd;">
+                            <input type="checkbox" id="filter-color" checked> Color
+                        </label>
+                        <label style="font-size: 11px; display: flex; align-items: center; gap: 4px; color: #ddd;">
+                            <input type="checkbox" id="filter-position" checked> Position
+                        </label>
+                        <label style="font-size: 11px; display: flex; align-items: center; gap: 4px; color: #ddd;">
+                            <input type="checkbox" id="filter-beam" checked> Beam
+                        </label>
                     </div>
                 </div>
 
@@ -113,7 +120,7 @@
         </div>
     </div>
 
-    <script src="js/scenes.js?v=6"></script>
+    <script src="js/scenes.js?v=9"></script>
 </body>
 
 </html>

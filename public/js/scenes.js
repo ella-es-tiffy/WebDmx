@@ -166,28 +166,74 @@ class SceneManager {
         const infoEl = document.getElementById('inspector-info');
         if (infoEl) infoEl.textContent = '--';
 
+        // Parse channelData to get list of actually stored channels
+        let storedChannels = new Set();
+        if (Array.isArray(channelData)) {
+            channelData.forEach((val, idx) => {
+                if (val !== undefined && val !== null) storedChannels.add(idx + 1);
+            });
+        } else if (typeof channelData === 'string') {
+            try {
+                const parsed = JSON.parse(channelData);
+                if (Array.isArray(parsed)) {
+                    parsed.forEach((val, idx) => {
+                        if (val !== undefined && val !== null) storedChannels.add(idx + 1);
+                    });
+                } else {
+                    Object.keys(parsed).forEach(k => storedChannels.add(parseInt(k)));
+                }
+            } catch (e) { }
+        } else if (typeof channelData === 'object' && channelData !== null) {
+            Object.keys(channelData).forEach(k => storedChannels.add(parseInt(k)));
+        }
+
         for (let i = 1; i <= 512; i++) {
             const val = getVal(i);
+            const isStored = storedChannels.has(i);
             const cell = document.createElement('div');
             cell.className = 'dmx-cell';
 
+            // Highlight stored channels
+            if (isStored) {
+                cell.style.background = 'rgba(0, 212, 255, 0.15)';
+                cell.style.borderColor = '#00d4ff';
+            }
+
             // Mouseover Info
             cell.onmouseover = () => {
-                if (infoEl) infoEl.textContent = `CH ${i} : VAL ${val} (${Math.round(val / 2.55)}%)`;
+                if (infoEl) infoEl.textContent = `CH ${i} : VAL ${val} (${Math.round(val / 2.55)}%)${isStored ? ' [SAVED]' : ''}`;
             };
 
             const bar = document.createElement('div');
             bar.className = 'dmx-fill';
             bar.style.height = `${(val / 255) * 100}%`;
+
+            // Color bar based on value
+            if (val > 200) bar.style.background = '#4caf50';
+            else if (val > 100) bar.style.background = '#ffeb3b';
+            else if (val > 0) bar.style.background = '#ff9800';
+
             cell.appendChild(bar);
 
-            if (val > 0) {
+            // Always show channel number if stored
+            if (isStored) {
                 const num = document.createElement('div');
                 num.className = 'dmx-num';
                 num.textContent = i;
+                num.style.color = '#00d4ff';
+                num.style.fontWeight = 'bold';
                 cell.appendChild(num);
-                cell.style.borderColor = '#4caf50';
+
+                // Add value text below
+                const valText = document.createElement('div');
+                valText.className = 'dmx-val';
+                valText.textContent = val;
+                valText.style.fontSize = '9px';
+                valText.style.color = val > 0 ? '#fff' : '#666';
+                valText.style.marginTop = '2px';
+                cell.appendChild(valText);
             }
+
             container.appendChild(cell);
         }
 
@@ -223,8 +269,7 @@ class SceneManager {
         const folderId = document.getElementById('scene-folder').value;
         const color = document.getElementById('scene-color').value;
 
-        // Fixture Selection
-        const selectedFixIds = Array.from(document.querySelectorAll('.fix-checkbox:checked')).map(cb => parseInt(cb.value));
+
 
         // 1. Get Current DMX State
         const dmxRes = await fetch(`${API}/api/dmx/channels`);
@@ -233,25 +278,89 @@ class SceneManager {
         // 2. Build Data (Sparse or Full)
         let channelData = {};
 
-        if (selectedFixIds.length === 0) {
-            // Fallback: Full snapshot if nothing selected
-            channelData = snapshot;
-        } else {
-            // Selective Mode
-            selectedFixIds.forEach(id => {
-                const fix = this.fixtures.find(f => f.id === id);
-                if (fix) {
-                    for (let ch = 0; ch < fix.channel_count; ch++) {
-                        const addr = fix.dmx_address + ch; // 1-based address
-                        if (addr <= 512) {
-                            // Snapshot is 0-indexed (index 0 = ch 1)
-                            const val = snapshot[addr - 1] || 0;
-                            channelData[addr] = val; // Store as Key "1"
-                        }
+        // Attribute Filters
+        const filterDimmer = document.getElementById('filter-dimmer').checked;
+        const filterColor = document.getElementById('filter-color').checked;
+        const filterPosition = document.getElementById('filter-position').checked;
+        const filterBeam = document.getElementById('filter-beam').checked;
+
+        // Load Template Data (with Group information)
+        let templates = {};
+        try {
+            const tplRes = await fetch(`${API}/api/templates`);
+            const tplData = await tplRes.json();
+            if (tplData.success) {
+                // Build lookup: templates[fixture.template_id] = { channels: [...] }
+                tplData.templates.forEach(t => {
+                    templates[t.id] = t;
+                });
+            }
+        } catch (e) { }
+
+        const getChannelGroup = (fix, relCh) => {
+            // relCh is 1-based (1 = first channel of fixture)
+            const template = templates[fix.template_id];
+            if (!template || !template.channels) return 'None'; // No template = None
+
+            const channelDef = template.channels.find(ch => ch.channel_num === relCh);
+            if (!channelDef) return 'None'; // Not defined = None
+
+            // Use explicitly set group, or None if empty
+            if (channelDef.group && channelDef.group !== '') {
+                return channelDef.group;
+            }
+
+            return 'None'; // Default: None (not included unless explicitly set)
+        };
+
+        // Get selected fixtures from global selection (BroadcastChannel or localStorage)
+        let selectedFixtureIds = [];
+
+        try {
+            // Try to get from localStorage (set by fader console)
+            const selectionData = localStorage.getItem('dmx_selected_fixture_ids');
+            if (selectionData) {
+                selectedFixtureIds = JSON.parse(selectionData);
+            }
+        } catch (e) {
+            console.warn('Could not load fixture selection, using all fixtures');
+        }
+
+        // If no selection, use all fixtures
+        const fixturesToSave = selectedFixtureIds.length > 0
+            ? this.fixtures.filter(f => selectedFixtureIds.includes(f.id))
+            : this.fixtures;
+
+        if (fixturesToSave.length === 0) {
+            alert('No fixtures selected! Click on fixtures in the Dashboard first.');
+            return;
+        }
+
+        console.log(`Saving scene with ${fixturesToSave.length} fixture(s):`, fixturesToSave.map(f => f.name));
+
+        // Iterate over selected fixtures only
+        fixturesToSave.forEach(fix => {
+            for (let ch = 0; ch < fix.channel_count; ch++) {
+                const relCh = ch + 1; // 1-based relative channel
+                const group = getChannelGroup(fix, relCh);
+
+                let include = false;
+                if (group === 'Intensity' && filterDimmer) include = true;
+                else if (group === 'Color' && filterColor) include = true;
+                else if (group === 'Position' && filterPosition) include = true;
+                else if (group === 'Beam' && filterBeam) include = true;
+                else if (group === 'Control') include = false; // Never auto-include Control
+                else if (group === 'None') include = false; // Never include None (not assigned)
+
+                if (include) {
+                    const addr = fix.dmx_address + ch; // 1-based address
+                    if (addr <= 512) {
+                        const val = snapshot[addr - 1] || 0;
+                        channelData[addr] = val;
                     }
                 }
-            });
-        }
+            }
+        });
 
         const payload = {
             name,
@@ -267,40 +376,10 @@ class SceneManager {
         });
 
         if (res.ok) {
+            // Save color to localStorage for next time
+            localStorage.setItem('webdmx_last_scene_color', color);
             document.getElementById('new-scene-modal').classList.remove('active');
             this.loadScenes();
-        }
-    }
-
-    // Modal Helpers
-    populateFixtureList() {
-        const list = document.getElementById('fixture-select-list');
-        list.innerHTML = '';
-
-        if (this.fixtures.length === 0) {
-            list.innerHTML = '<div style="color:#666; font-size:10px; padding:5px;">Keine Fixtures gepatcht.</div>';
-            return;
-        }
-
-        this.fixtures.forEach(fix => {
-            const div = document.createElement('div');
-            div.innerHTML = `
-                <label style="display: flex; align-items: center; gap: 5px; font-size: 11px; margin-bottom: 2px;">
-                    <input type="checkbox" value="${fix.id}" checked class="fix-checkbox">
-                    <span style="color:#ddd;">${fix.name}</span>
-                    <span style="color:#666;">(Addr: ${fix.dmx_address}, Mode: ${fix.channel_count}ch)</span>
-                </label>
-            `;
-            list.appendChild(div);
-        });
-
-        const toggle = document.getElementById('toggle-all-fixtures');
-        if (toggle) {
-            toggle.onclick = () => {
-                const checkboxes = list.querySelectorAll('.fix-checkbox');
-                const allChecked = Array.from(checkboxes).every(c => c.checked);
-                checkboxes.forEach(c => c.checked = !allChecked);
-            };
         }
     }
 
@@ -313,7 +392,12 @@ class SceneManager {
         document.getElementById('new-scene-btn').onclick = () => {
             sceneModal.classList.add('active');
             this.populateFolderSelect();
-            this.populateFixtureList();
+
+            // Restore last used color
+            const lastColor = localStorage.getItem('webdmx_last_scene_color');
+            if (lastColor) {
+                document.getElementById('scene-color').value = lastColor;
+            }
         };
         document.getElementById('cancel-scene-btn').onclick = () => sceneModal.classList.remove('active');
 

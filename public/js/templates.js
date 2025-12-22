@@ -123,6 +123,13 @@ class TemplateManager {
                             <h4>Channel Layout</h4>
                             <button class="btn-secondary" onclick="templateManager.addChannelRow()">+ Add Channel</button>
                         </div>
+                        <div style="display: grid; grid-template-columns: 45px 90px 100px 1fr 28px; gap: 6px; padding: 6px 8px; font-size: 10px; color: rgba(255,255,255,0.4); font-weight: 600; text-transform: uppercase; border-bottom: 1px solid #333;">
+                            <div>CH</div>
+                            <div>Group</div>
+                            <div>Function</div>
+                            <div>Label</div>
+                            <div></div>
+                        </div>
                         <div id="channel-layout" class="channel-layout">
                             ${channels.length > 0 ? channels.map((ch, i) => this.renderChannelRow(ch, i)).join('') : this.renderChannelRow({}, 0)}
                         </div>
@@ -140,24 +147,32 @@ class TemplateManager {
     }
 
     renderChannelRow(channel, index) {
+        const groups = ['Intensity', 'Position', 'Color', 'Beam', 'Control'];
         return `
             <div class="channel-row" data-index="${index}">
-                <div class="channel-num">
+                <div class="channel-num" style="width: 50px;">
                     <label>CH</label>
                     <input type="number" class="ch-num" min="1" max="512" value="${channel.channel_num || index + 1}" placeholder="${index + 1}">
                 </div>
-                <div class="channel-function">
+                <div class="channel-group" style="width: 100px;">
+                    <label>Group</label>
+                     <select class="ch-group">
+                        <option value="">None</option>
+                        ${groups.map(g => `<option value="${g}" ${channel.group === g ? 'selected' : ''}>${g}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="channel-function" style="flex: 1;">
                     <label>Function</label>
                     <select class="ch-function">
                         <option value="">-- Select --</option>
                         ${this.functionTypes.map(f => `<option value="${f}" ${channel.function_type === f ? 'selected' : ''}>${f}</option>`).join('')}
                     </select>
                 </div>
-                <div class="channel-label">
+                <div class="channel-label" style="flex: 1.5;">
                     <label>Label</label>
                     <input type="text" class="ch-label" value="${channel.label || ''}" placeholder="e.g. Red, Pan, Dimmer">
                 </div>
-                <button class="btn-remove" onclick="this.parentElement.remove()">×</button>
+                <button class="btn-remove" onclick="this.parentElement.remove()" style="margin-top: 18px;">×</button>
             </div>
         `;
     }
@@ -186,12 +201,14 @@ class TemplateManager {
             const num = parseInt(row.querySelector('.ch-num').value);
             const func = row.querySelector('.ch-function').value;
             const label = row.querySelector('.ch-label').value;
+            const group = row.querySelector('.ch-group')?.value || ''; // NEW: Read Group
 
             if (num && func) {
                 channels.push({
                     channel_num: num,
                     function_type: func,
-                    label: label || func
+                    label: label || func,
+                    group: group // NEW: Save Group
                 });
             }
         });

@@ -13,6 +13,7 @@ import { createCueRoutes } from './routes/cueRoutes';
 import { createFaderRoutes } from './routes/faderRoutes';
 import { createTemplateRoutes } from './routes/templateRoutes';
 import { createGroupRoutes } from './routes/groupRoutes';
+import { createTimelineRoutes } from './routes/timelineRoutes'; // Added
 import sceneRoutes from './routes/sceneRoutes';
 
 dotenv.config();
@@ -101,6 +102,7 @@ class App {
         this.app.use('/api', createFaderRoutes(this.dmxController)); // Fader names
         this.app.use('/api/templates', createTemplateRoutes());
         this.app.use('/api/groups', createGroupRoutes());
+        this.app.use('/api', createTimelineRoutes()); // Added
         this.app.use('/api', sceneRoutes); // Scene management
 
         // 404 handler

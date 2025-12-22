@@ -60,9 +60,8 @@ class CueEditor {
         try {
             await this.loadScenes();
             await this.loadPatch(); // Load devices and assignments
-            this.addTrack(false);
-            this.addTrack(false);
-            this.addTrack(false);
+            // Start loading saved state
+            await this.loadShow();
 
             this.renderTracks();
             this.renderTimeline();
@@ -1059,7 +1058,45 @@ class CueEditor {
     }
 
     renderAutomation(cue, block) {
+        // --- ADDED: Only Show Automation Line if Cue actually controls Dimmer ---
+        const scene = this.scenes.find(s => s.id === cue.sceneId);
+        let hasDimmer = false;
+
+        if (scene) {
+            if (scene.type === 'chaser') {
+                // Chasers usually have Dimmer, but we can check config if we want to be precise.
+                // For now, assume Chasers are "active" elements that might need dimmer control.
+                // Or better: Let's assume YES for chasers as they default to full brightness.
+                hasDimmer = true;
+            } else {
+                let data = scene.channel_data;
+                if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { } }
+
+                if (Array.isArray(data)) {
+                    // Array format (full DMX frame)
+                    // Check if any Non-Zero value maps to a Dimmer channel
+                    hasDimmer = data.some((val, idx) => {
+                        const v = (typeof val === 'number') ? val : (val.value || 0);
+                        return v > 0 && this.channelMap[idx] && this.channelMap[idx].isIntensity;
+                    });
+                } else if (data && typeof data === 'object') {
+                    // Object format { "1": 255 }
+                    hasDimmer = Object.entries(data).some(([ch, val]) => {
+                        const idx = parseInt(ch) - 1;
+                        const v = parseInt(val);
+                        return v > 0 && this.channelMap[idx] && this.channelMap[idx].isIntensity;
+                    });
+                }
+            }
+        }
+
         const layer = block.querySelector('.automation-layer');
+        if (!hasDimmer) {
+            layer.style.display = 'none'; // Hide if no dimmer
+            return;
+        }
+        layer.style.display = 'block';
+
         const svg = layer.querySelector('svg');
         const path = svg.querySelector('.automation-line');
         if (!cue.automationPoints) cue.automationPoints = [{ x: 0, y: 0.5 }, { x: 1, y: 0.5 }];
@@ -1347,10 +1384,25 @@ class CueEditor {
             });
         }
 
-        for (const cueId of this.activeCues) {
-            const cue = this.cues.find(c => c.id === cueId);
-            if (!cue) continue;
+        // 2. Sort active cues by TRACK ORDER (Layering) then StartTime
+        // This makes tracks act as Layers: Track 1 (Bottom) < Track 2 (Top).
+        // User wants "Violett" (Track 2) to override "W1 Down" (Track 1).
+        // Assuming Track 2 has higher Index in this.tracks array.
+        const getTrackIndex = (tId) => this.tracks.findIndex(t => t.id === tId);
 
+        const sortedActiveCues = Array.from(this.activeCues)
+            .map(id => this.cues.find(c => c.id === id))
+            .filter(c => c)
+            .sort((a, b) => {
+                const idxA = getTrackIndex(a.trackId);
+                const idxB = getTrackIndex(b.trackId);
+                // Primary Sort: Track Index (Lower Index = Background, Higher Index = Foreground)
+                if (idxA !== idxB) return idxA - idxB;
+                // Secondary Sort: StartTime (LTP within same track)
+                return a.startTime - b.startTime;
+            });
+
+        for (const cue of sortedActiveCues) {
             const scene = this.scenes.find(s => s.id === cue.sceneId);
             if (!scene || scene.type === 'chaser') continue;
 
@@ -1360,23 +1412,53 @@ class CueEditor {
                 try { data = JSON.parse(data); } catch (e) { data = []; }
             }
 
+            const processChannel = (idx, valRaw) => {
+                if (idx >= 512) return;
+                addressedThisFrame.add(idx);
+                const isInt = this.channelMap[idx].isIntensity;
+
+                let finalVal;
+                if (isInt) {
+                    // HTP for Intensity (Dimmer)
+                    const v = (typeof valRaw === 'number') ? valRaw : (valRaw.value || 0);
+                    finalVal = Math.round(v * factor);
+                    frameBuffer[idx] = Math.max(frameBuffer[idx], finalVal);
+                } else {
+                    // LTP for Attributes (Color, Position, etc.) - Only if value is defined
+                    // Automation (factor) usually only applies to Dimmer, but let's apply it if it's explicitly intensity
+                    // Actually, for attributes, we usually just take the raw value, 
+                    // BUT: If users automate "opacity" of a cue, they expect attributes to fade?
+                    // Professional consoles: "Size/Scale" automation vs "Time" fading.
+                    // Here `factor` is the automation curve (opacity).
+                    // If we want to fade in a color, we need to interpolate. 
+                    // But `frameBuffer` holds the RESULT.
+                    // If this cue is opaque (factor 1), it overwrites.
+                    // If it's transparent (factor 0), it shouldn't touch it?
+                    // Simple LTP: Just overwrite. 
+                    // Better LTP mix: interpolate(old, new, factor).
+
+                    const v = (typeof valRaw === 'number') ? valRaw : (valRaw.value || 0);
+
+                    if (factor < 0.01) {
+                        // Cue is invisible, don't overwrite (pass through previous LTP)
+                    } else if (factor >= 0.99) {
+                        // Full overwrite
+                        frameBuffer[idx] = v;
+                    } else {
+                        // Crossfade Logic for Attributes (Mix previous buffer value with new value)
+                        // This allows smooth automation fades for valid modular overrides
+                        const current = frameBuffer[idx];
+                        frameBuffer[idx] = current + (v - current) * factor;
+                    }
+                }
+            };
+
             if (Array.isArray(data)) {
-                data.forEach((val, idx) => {
-                    if (idx >= 512) return;
-                    addressedThisFrame.add(idx);
-                    const isInt = this.channelMap[idx].isIntensity;
-                    const v = (typeof val === 'number') ? val : (val.value || 0);
-                    const finalVal = isInt ? (v * factor) : v;
-                    frameBuffer[idx] = Math.max(frameBuffer[idx], Math.round(finalVal));
-                });
+                data.forEach((val, idx) => processChannel(idx, val));
             } else if (typeof data === 'object' && data !== null) {
                 Object.entries(data).forEach(([ch, val]) => {
                     const idx = parseInt(ch) - 1;
-                    if (idx < 0 || idx >= 512) return;
-                    addressedThisFrame.add(idx);
-                    const isInt = this.channelMap[idx].isIntensity;
-                    const finalVal = isInt ? (parseInt(val) * factor) : parseInt(val);
-                    frameBuffer[idx] = Math.max(frameBuffer[idx], Math.round(finalVal));
+                    processChannel(idx, parseInt(val));
                 });
             }
         }
@@ -2137,10 +2219,66 @@ class CueEditor {
         const nextCues = this.cues.filter(c => c.startTime > this.currentTime).sort((a, b) => a.startTime - b.startTime);
         if (nextCues.length > 0) { this.currentTime = nextCues[0].startTime; this.updatePlayhead(); }
     }
+    async loadShow() {
+        try {
+            const res = await fetch(`${API}/api/timeline`);
+            const data = await res.json();
+
+            if (data.success && data.timeline) {
+                const tl = data.timeline;
+                this.tracks = tl.tracks || [];
+                this.cues = tl.cues || [];
+                this.maxTime = tl.maxTime || 60;
+
+                // Fallback if empty
+                if (this.tracks.length === 0) {
+                    this.addTrack(false); this.addTrack(false); this.addTrack(false);
+                }
+                console.log('✅ Loaded Timeline');
+            } else {
+                console.log('ℹ️ No saved timeline, starting fresh.');
+                this.addTrack(false); this.addTrack(false); this.addTrack(false);
+            }
+        } catch (e) {
+            console.error('Failed to load timeline:', e);
+            this.addTrack(false); this.addTrack(false); this.addTrack(false);
+        }
+    }
+
     async saveShow() {
-        const showData = { tracks: this.tracks, cues: this.cues, maxTime: this.maxTime };
-        console.log('Saving show:', showData);
-        alert('Show saved! (TODO: Implement backend)');
+        const showData = {
+            tracks: this.tracks,
+            cues: this.cues,
+            maxTime: this.maxTime
+        };
+
+        try {
+            const res = await fetch(`${API}/api/timeline`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(showData)
+            });
+            const result = await res.json();
+
+            if (result.success) {
+                console.log('✅ Show saved successfully');
+                const btn = document.getElementById('save-show-btn');
+                if (btn) {
+                    const originalText = btn.innerHTML; // Use innerHTML to preserve icon if any
+                    btn.innerText = 'Saved!';
+                    btn.style.background = '#4CAF50';
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.style.background = '';
+                    }, 2000);
+                }
+            } else {
+                alert('Failed to save: ' + result.error);
+            }
+        } catch (e) {
+            console.error('Error saving show:', e);
+            alert('Error saving show');
+        }
     }
 }
 

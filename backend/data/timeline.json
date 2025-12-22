@@ -1,0 +1,42 @@
+{
+  "tracks": [
+    {
+      "id": 1,
+      "name": "Track 1",
+      "cues": [],
+      "muted": false
+    },
+    {
+      "id": 2,
+      "name": "Track 2",
+      "cues": [],
+      "muted": false
+    },
+    {
+      "id": 3,
+      "name": "Track 3",
+      "cues": [],
+      "muted": false
+    },
+    {
+      "id": 4,
+      "name": "Track 4",
+      "cues": [],
+      "muted": false
+    },
+    {
+      "id": 5,
+      "name": "Track 5",
+      "cues": [],
+      "muted": false
+    },
+    {
+      "id": 6,
+      "name": "Track 6",
+      "cues": [],
+      "muted": false
+    }
+  ],
+  "cues": [],
+  "maxTime": 60
+}

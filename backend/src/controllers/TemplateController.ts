@@ -28,9 +28,15 @@ export class TemplateController {
                 channel_num INT,
                 function_type VARCHAR(20),
                 label VARCHAR(50),
+                \`group\` VARCHAR(20),
                 PRIMARY KEY (template_id, channel_num)
             )
         `);
+        // Add group column if it doesn't exist (migration)
+        try {
+            await pool.execute('ALTER TABLE fixture_template_channels ADD COLUMN `group` VARCHAR(20)');
+        } catch (e) { /* Column already exists */ }
+
         // Add template_id to devices if not exists
         try {
             await pool.execute('ALTER TABLE devices ADD COLUMN template_id INT');
@@ -45,7 +51,7 @@ export class TemplateController {
 
             for (const row of rows) {
                 const [channels]: any = await pool.execute(
-                    'SELECT channel_num, function_type, label FROM fixture_template_channels WHERE template_id = ? ORDER BY channel_num',
+                    'SELECT channel_num, function_type, label, `group` FROM fixture_template_channels WHERE template_id = ? ORDER BY channel_num',
                     [row.id]
                 );
                 row.channels = channels;
@@ -68,7 +74,7 @@ export class TemplateController {
             }
             const template = rows[0];
             const [channels]: any = await pool.execute(
-                'SELECT channel_num, function_type, label FROM fixture_template_channels WHERE template_id = ? ORDER BY channel_num',
+                'SELECT channel_num, function_type, label, `group` FROM fixture_template_channels WHERE template_id = ? ORDER BY channel_num',
                 [id]
             );
             template.channels = channels;
@@ -92,8 +98,8 @@ export class TemplateController {
             if (channels && Array.isArray(channels)) {
                 for (const ch of channels) {
                     await pool.execute(
-                        'INSERT INTO fixture_template_channels (template_id, channel_num, function_type, label) VALUES (?, ?, ?, ?)',
-                        [templateId, ch.channel_num, ch.function_type, ch.label]
+                        'INSERT INTO fixture_template_channels (template_id, channel_num, function_type, label, `group`) VALUES (?, ?, ?, ?, ?)',
+                        [templateId, ch.channel_num, ch.function_type, ch.label, ch.group || null]
                     );
                 }
             }
@@ -119,8 +125,8 @@ export class TemplateController {
             if (channels && Array.isArray(channels)) {
                 for (const ch of channels) {
                     await pool.execute(
-                        'INSERT INTO fixture_template_channels (template_id, channel_num, function_type, label) VALUES (?, ?, ?, ?)',
-                        [id, ch.channel_num, ch.function_type, ch.label]
+                        'INSERT INTO fixture_template_channels (template_id, channel_num, function_type, label, `group`) VALUES (?, ?, ?, ?, ?)',
+                        [id, ch.channel_num, ch.function_type, ch.label, ch.group || null]
                     );
                 }
             }
