@@ -36,16 +36,16 @@ docker-compose down -v
 
 - **Website:** http://localhost:8080
 - **phpMyAdmin:** http://localhost:8081
-  - Username: `root`
-  - Password: `root`
+  - Username: ``
+  - Password: ``
 
 ## Database Credentials
 
 - **Host:** `db` (from within PHP)
-- **Database:** `dmx`
-- **User:** `dmx_user`
-- **Password:** `dmx_pass`
-- **Root Password:** `root`
+- **Database:** ``
+- **User:** ``
+- **Password:** ``
+- **Root Password:** ``
 
 ## File Structure
 
