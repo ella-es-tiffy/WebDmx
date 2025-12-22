@@ -192,6 +192,7 @@ class FaderConsole {
         await this.loadPresets();
         this.renderMacros(); // Refresh sidebar to show global palettes
         this.renderMacros(); // Update macro UI for new fixture status
+        this.renderPresetsSidebar(); // Rebuild sidebar for new fixture context
 
         // Force immediate LED fill update for all channels (after backend values loaded)
         if (this.backendValues) {
@@ -1127,12 +1128,41 @@ class FaderConsole {
                 const box = document.createElement('div');
                 box.className = 'macro-box chaser-box';
 
+                // Add relative positioning to box to contain absolute layers
+                box.style.position = 'relative';
+
+                // Background Layer for visual feedback (Color + Zoom Mask)
+                const bgLayer = document.createElement('div');
+                bgLayer.className = 'macro-bg-layer';
+                bgLayer.style.position = 'absolute';
+                bgLayer.style.inset = '0';
+                bgLayer.style.zIndex = '0';
+                bgLayer.style.pointerEvents = 'none'; // Allow clicks to pass through to box
+                bgLayer.style.transition = 'background 0.2s';
+                box.appendChild(bgLayer);
+
                 // Box Display Logic: Gradient if Color Fade is ON, else Solid Color
+                // + Zoom Spot Masking
                 const updateBoxDisplay = () => {
+                    // 1. Zoom Masking (Spot vs Wide)
+                    // DMX 0 -> Wide (100%), DMX 255 -> Spot (30%)
+                    let maskScale = 100;
+                    if (state.zoom_enabled) {
+                        const max = state.zoom_max !== undefined ? state.zoom_max : 255;
+                        // Map 0 -> 100, 255 -> 30
+                        maskScale = 100 - ((max / 255) * 70);
+                    }
+
+                    // Apply Mask to BG Layer
+                    const maskFn = `radial-gradient(circle, black ${maskScale}%, transparent ${maskScale}%)`;
+                    bgLayer.style.webkitMaskImage = maskFn;
+                    bgLayer.style.maskImage = maskFn;
+
+                    // 2. Color (Background)
                     if (state.color_fade_enabled !== false) {
-                        box.style.background = `linear-gradient(90deg, ${state.start_color} 0%, ${state.start_color} 50%, ${state.end_color} 50%, ${state.end_color} 100%)`;
+                        bgLayer.style.background = `linear-gradient(90deg, ${state.start_color} 0%, ${state.start_color} 50%, ${state.end_color} 50%, ${state.end_color} 100%)`;
                     } else {
-                        box.style.background = state.start_color;
+                        bgLayer.style.background = state.start_color;
                     }
                 };
                 updateBoxDisplay();
@@ -1166,11 +1196,14 @@ class FaderConsole {
                 endPicker.value = state.end_color;
                 endPicker.style.display = 'none';
 
-                // Double-click to edit colors (detect left/right half)
-                box.addEventListener('dblclick', (e) => {
+                // Right-click to edit colors (detect left/right half)
+                box.addEventListener('contextmenu', (e) => {
+                    e.preventDefault(); // Block default context menu
                     e.stopPropagation();
+
                     const rect = box.getBoundingClientRect();
                     const clickX = e.clientX - rect.left;
+
                     if (clickX < rect.width / 2 || state.color_fade_enabled === false) {
                         startPicker.click();
                     } else {
@@ -1217,7 +1250,7 @@ class FaderConsole {
         }
 
         // --- PRESETS SIDEBAR (Right Side) ---
-        this.renderPresetsSidebar();
+        // Decoupled: Do not render sidebar here inside renderMacros, as it causes recreation of active controls
     }
 
     renderPresetsSidebar() {
@@ -1883,16 +1916,26 @@ class FaderConsole {
                         let zVal = 0;
                         if (state.zoom_enabled) {
                             const zoomMax = state.zoom_max !== undefined ? state.zoom_max : 255;
-                            const zEffectiveProgress = state.zoom_sawtooth ?
-                                ((currentTime - startTime) % (currentFadeTime / 2) / (currentFadeTime / 2)) :
-                                (() => {
-                                    const zTime = currentFadeTime / 2;
-                                    const zElapsed = (currentTime - startTime) % (zTime * 2);
-                                    return zElapsed < zTime ? (zElapsed / zTime) : (1 - ((zElapsed - zTime) / zTime));
-                                })();
 
-                            const zFinalProgress = state.zoom_invert ? (1 - zEffectiveProgress) : zEffectiveProgress;
-                            zVal = Math.round(zFinalProgress * zoomMax);
+                            // Check if configured for oscillation (Zoom Enabled + Color/Master Fade Enabled)
+                            // If Fade is OFF, we treat Zoom as a STATIC value (at Max)
+                            const shouldOscillate = (state.color_fade_enabled !== false);
+
+                            if (shouldOscillate) {
+                                const zEffectiveProgress = state.zoom_sawtooth ?
+                                    ((currentTime - startTime) % (currentFadeTime / 2) / (currentFadeTime / 2)) :
+                                    (() => {
+                                        const zTime = currentFadeTime / 2;
+                                        const zElapsed = (currentTime - startTime) % (zTime * 2);
+                                        return zElapsed < zTime ? (zElapsed / zTime) : (1 - ((zElapsed - zTime) / zTime));
+                                    })();
+
+                                const zFinalProgress = state.zoom_invert ? (1 - zEffectiveProgress) : zEffectiveProgress;
+                                zVal = Math.round(zFinalProgress * zoomMax);
+                            } else {
+                                // Static Zoom
+                                zVal = zoomMax;
+                            }
                         }
 
                         if (shouldSendDMX) this.sendAbsoluteDMX(absAddr, zVal);
