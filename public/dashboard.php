@@ -50,6 +50,10 @@
                 <div class="icon-box"><i class="fas fa-desktop" style="color: #00f2ff;"></i></div>
                 <span>DMX Monitor</span>
             </div>
+            <div class="icon-item" onclick="openGroups()">
+                <div class="icon-box"><i class="fas fa-layer-group" style="color: #ff5722;"></i></div>
+                <span>Groups</span>
+            </div>
         </div>
     </div>
 
@@ -186,6 +190,16 @@
                 top: '100px',
                 left: '100px',
                 content: `<iframe src="dmx_monitor.html?v=${Date.now()}" style="width:100%; height:100%; border:none;"></iframe>`
+            });
+        }
+
+        function openGroups() {
+            wm.createWindow('groups', 'Fixture Groups', {
+                width: '700px',
+                height: '500px',
+                top: '200px',
+                left: '300px',
+                content: `<iframe src="groups.html?v=${Date.now()}" style="width:100%; height:100%; border:none;"></iframe>`
             });
         }
 

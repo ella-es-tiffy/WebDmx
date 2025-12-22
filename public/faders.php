@@ -16,11 +16,6 @@
             <div id="fader-bank" class="fader-bank">
                 <!-- Faders will be dynamically generated here -->
             </div>
-            
-            <!-- Fixture Selection Bar -->
-            <div id="fixture-selector" class="fixture-selector-bar">
-                <!-- Fixture buttons will be dynamically generated here -->
-            </div>
         </div>
 
         <!-- Encoders Column (right side, vertical) -->

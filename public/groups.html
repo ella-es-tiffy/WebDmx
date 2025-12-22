@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Fixture & Group Manager</title>
+    <style>
+        body {
+            background: #111;
+            color: #eee;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 15px;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        h2 {
+            font-size: 16px;
+            margin: 0 0 15px 0;
+            color: #00d4ff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #333;
+        }
+
+        .scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        /* Fixture Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px;
+        }
+
+        .item {
+            background: #25252b;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 60px;
+        }
+
+        .item:hover {
+            border-color: #00d4ff;
+            background: #2a2a35;
+        }
+
+        .item.active {
+            border-color: #00d4ff;
+            background: #203545;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+
+        .item.selected {
+            background: #2d4a35;
+            border-color: #28c840;
+        }
+
+        .fix-id {
+            font-size: 9px;
+            color: #888;
+            margin-bottom: 2px;
+        }
+
+        .fix-name {
+            font-size: 11px;
+            font-weight: bold;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Group List */
+        .group-item {
+            background: #222;
+            border-left: 4px solid #4488ff;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .group-item:hover {
+            background: #2a2a2a;
+        }
+
+        .group-item.active {
+            background: #203545;
+            border-color: #00d4ff;
+        }
+
+        .group-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .group-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .group-meta {
+            font-size: 10px;
+            color: #888;
+            margin-top: 3px;
+        }
+
+        .delete-btn {
+            color: #888;
+            background: transparent;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .delete-btn:hover {
+            color: #ff4444;
+        }
+
+        .toolbar {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: #333;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            flex: 1;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #444;
+            border-color: #666;
+        }
+
+        .btn-primary {
+            background: #00d4ff;
+            color: #000;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: #00b8e6;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
+
+        /* Custom Modal */
+        #modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-box {
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            width: 300px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-box h3 {
+            margin-top: 0;
+            color: #00d4ff;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .modal-input {
+            width: 100%;
+            background: #111;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 8px;
+            border-radius: 4px;
+            box-sizing: border-box;
+            margin: 15px 0;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="modal-overlay">
+        <div class="modal-box">
+            <h3 id="modal-title">Title</h3>
+            <p id="modal-text" style="font-size: 12px; color: #aaa; margin-bottom: 5px; display:none;"></p>
+            <input type="text" id="modal-input" class="modal-input" placeholder="Enter name...">
+            <div class="modal-actions">
+                <button class="btn" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" id="modal-confirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="layout">
+        <!-- Fixtures Column -->
+        <div class="column">
+            <h2>Fixtures</h2>
+            <div class="scroll-area">
+                <div id="fixture-grid" class="grid"></div>
+            </div>
+            <div class="toolbar">
+                <button class="btn" onclick="clearSelection()">Clear Selection</button>
+                <button class="btn btn-primary" onclick="createGroup()">Save as Group</button>
+            </div>
+        </div>
+
+        <!-- Groups Column -->
+        <div class="column">
+            <h2>Groups</h2>
+            <div class="scroll-area">
+                <div id="group-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = `http://${window.location.hostname}:3000`;
+        const bc = new BroadcastChannel('dmx_selection_sync');
+
+        let fixtures = [];
+        let groups = [];
+        let selectedIds = [];
+        let activeFixtureId = null;
+
+        async function init() {
+            await loadFixtures();
+            await loadGroups();
+
+            // Initial sync from localStorage
+            const savedSelected = localStorage.getItem('dmx_selected_fixture_ids');
+            if (savedSelected) selectedIds = JSON.parse(savedSelected);
+            const savedActive = localStorage.getItem('dmx_active_fixture_id');
+            if (savedActive) activeFixtureId = parseInt(savedActive);
+
+            render();
+        }
+
+        async function loadFixtures() {
+            const res = await fetch(`${API}/api/devices`);
+            fixtures = await res.json();
+        }
+
+        async function loadGroups() {
+            const res = await fetch(`${API}/api/groups`);
+            const data = await res.json();
+            if (data.success) groups = data.groups;
+        }
+
+        function render() {
+            renderFixtures();
+            renderGroups();
+        }
+
+        function renderFixtures() {
+            const grid = document.getElementById('fixture-grid');
+            grid.innerHTML = '';
+            fixtures.forEach(fix => {
+                const item = document.createElement('div');
+                const isSelected = selectedIds.includes(fix.id);
+                const isActive = activeFixtureId === fix.id;
+
+                item.className = `item ${isSelected ? 'selected' : ''} ${isActive ? 'active' : ''}`;
+                item.innerHTML = `
+                    <div class="fix-id">#${fix.id}</div>
+                    <div class="fix-name">${fix.name}</div>
+                `;
+                item.onclick = (e) => toggleFixture(fix, e.shiftKey || e.ctrlKey || e.metaKey);
+                grid.appendChild(item);
+            });
+        }
+
+        function renderGroups() {
+            const list = document.getElementById('group-list');
+            list.innerHTML = '';
+            groups.forEach(group => {
+                const item = document.createElement('div');
+                const isExactSelection = group.members.length === selectedIds.length && group.members.every(id => selectedIds.includes(id));
+
+                item.className = `group-item ${isExactSelection ? 'active' : ''}`;
+                item.style.borderLeftColor = group.color_code;
+
+                // Content area
+                const info = document.createElement('div');
+                info.className = 'group-info';
+                info.innerHTML = `
+                    <span class="group-name">${group.name}</span>
+                    <span class="group-meta">${group.members.length} Fixtures</span>
+                `;
+
+                // Delete button
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-btn';
+                delBtn.title = 'Dissolve Group';
+                delBtn.innerHTML = '&times;';
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteGroup(group.id);
+                };
+
+                item.appendChild(info);
+                item.appendChild(delBtn);
+                item.onclick = () => selectGroup(group);
+                list.appendChild(item);
+            });
+        }
+
+        function toggleFixture(fix, isMulti) {
+            if (isMulti) {
+                if (selectedIds.includes(fix.id)) {
+                    if (selectedIds.length > 1) {
+                        selectedIds = selectedIds.filter(id => id !== fix.id);
+                    }
+                } else {
+                    selectedIds.push(fix.id);
+                }
+            } else {
+                selectedIds = [fix.id];
+                activeFixtureId = fix.id;
+            }
+            sync();
+            render();
+        }
+
+        function selectGroup(group) {
+            selectedIds = [...group.members];
+            if (selectedIds.length > 0) activeFixtureId = selectedIds[0];
+            sync();
+            render();
+        }
+
+        function clearSelection() {
+            if (fixtures.length > 0) {
+                activeFixtureId = fixtures[0].id;
+                selectedIds = [activeFixtureId];
+                sync();
+                render();
+            }
+        }
+
+        let modalCallback = null;
+
+        function showModal(title, text, showInput, callback) {
+            console.log(`[Modal] Showing: ${title}`);
+            document.getElementById('modal-title').textContent = title;
+            const textEl = document.getElementById('modal-text');
+            const inputEl = document.getElementById('modal-input');
+
+            if (text) {
+                textEl.textContent = text;
+                textEl.style.display = 'block';
+            } else {
+                textEl.style.display = 'none';
+            }
+
+            inputEl.style.display = showInput ? 'block' : 'none';
+            if (showInput) {
+                inputEl.value = '';
+                // Add Enter key listener
+                inputEl.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        document.getElementById('modal-confirm').click();
+                    }
+                    if (e.key === 'Escape') closeModal();
+                };
+            }
+
+            document.getElementById('modal-overlay').style.display = 'flex';
+            if (showInput) setTimeout(() => inputEl.focus(), 50);
+
+            modalCallback = callback;
+        }
+
+        function closeModal() {
+            console.log('[Modal] Closing');
+            document.getElementById('modal-overlay').style.display = 'none';
+            modalCallback = null;
+        }
+
+        document.getElementById('modal-confirm').onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const val = document.getElementById('modal-input').value;
+            console.log(`[Modal] Confirmed with value: ${val}`);
+            if (modalCallback) modalCallback(val);
+            closeModal();
+        };
+
+        async function createGroup() {
+            if (selectedIds.length === 0) return;
+            showModal('New Group', 'Name for these selected fixtures:', true, async (name) => {
+                if (!name) return;
+                try {
+                    const res = await fetch(`${API}/api/groups`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, members: selectedIds })
+                    });
+                    if (res.ok) {
+                        await loadGroups();
+                        render();
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            });
+        }
+
+        async function deleteGroup(id) {
+            showModal('Dissolve Group', 'Are you sure you want to delete this group?', false, async () => {
+                try {
+                    const res = await fetch(`${API}/api/groups/${id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        await loadGroups();
+                        render();
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            });
+        }
+
+        function sync() {
+            bc.postMessage({
+                type: 'sync',
+                selectedFixtureIds: selectedIds,
+                activeFixtureId: activeFixtureId,
+                isMultiSelectMode: selectedIds.length > 1,
+                source: 'group_manager'
+            });
+            localStorage.setItem('dmx_active_fixture_id', activeFixtureId);
+            localStorage.setItem('dmx_selected_fixture_ids', JSON.stringify(selectedIds));
+        }
+
+        bc.onmessage = (msg) => {
+            if (msg.data.type === 'sync' && msg.data.source !== 'group_manager') {
+                selectedIds = msg.data.selectedFixtureIds;
+                activeFixtureId = msg.data.activeFixtureId;
+                // Don't re-render background while modal is open to prevent flickering/focus loss
+                if (document.getElementById('modal-overlay').style.display !== 'flex') {
+                    render();
+                }
+            }
+        };
+
+        init();
+    </script>
+</body>
+
+</html>

@@ -14,7 +14,6 @@ class FaderConsole {
         this.fixtureId = 1; // Current selected fixture
         this.fixtureStartAddress = 1; // Base DMX address of current fixture
         this.fixtureChannelCount = 16; // How many channels this fixture has
-        this.isMultiSelectMode = false; // Toggle for easier multi-selection
         this.availableFixtures = [];
         this.channels = [];
         this.globalValueCache = {}; // Global cache for all 512 channels
@@ -22,10 +21,12 @@ class FaderConsole {
         this.assignmentCache = {}; // Cache for all 32 assignments per fixture
         this.groupCache = {}; // Cache for channel groups
         this.selectedFixtureIds = [1]; // For multi-fixture actions
+        this.fullAssignmentCache = null; // Cache for multi-fixture operations
         this.isInitializing = false; // Flag to prevent accidental DMX pushes
         this.globalPaletteStates = [];
         this.presetStates = [];
         this.macroStates = [];
+        this.bc = new BroadcastChannel('dmx_selection_sync');
 
         // Encoder states
         this.encoders = {
@@ -54,7 +55,7 @@ class FaderConsole {
 
         // Initial load
         await this.loadFixtures();
-        this.renderFixtureSelector();
+        this.initSync();
 
         // Create faders
         this.createFaders();
@@ -119,92 +120,63 @@ class FaderConsole {
         }
     }
 
-    renderFixtureSelector() {
-        const container = document.getElementById('fixture-selector');
-        if (!container) return;
-
-        container.innerHTML = '';
-
-        // Add Multi-Select Toggle
-        const multiToggle = document.createElement('div');
-        multiToggle.className = `fixture-btn multi-toggle ${this.isMultiSelectMode ? 'active' : ''}`;
-        multiToggle.style.background = this.isMultiSelectMode ? '#f0f' : '#333';
-        multiToggle.style.borderColor = this.isMultiSelectMode ? '#f0f' : '#555';
-        multiToggle.innerHTML = `
-            <div class="fix-btn-id" style="font-size: 8px;">MODE</div>
-            <div class="fix-btn-name">MULTI</div>
-        `;
-        multiToggle.onclick = () => {
-            this.isMultiSelectMode = !this.isMultiSelectMode;
-            this.renderFixtureSelector();
+    initSync() {
+        this.bc.onmessage = (msg) => {
+            if (msg.data.type === 'sync') {
+                this.handleRemoteSync(msg.data);
+            }
         };
-        container.appendChild(multiToggle);
-        this.availableFixtures.forEach(fix => {
-            const btn = document.createElement('div');
-            const isActive = this.fixtureId === fix.id;
-            const isSelected = this.selectedFixtureIds.includes(fix.id);
 
-            btn.className = `fixture-btn ${isActive ? 'active' : ''} ${isSelected ? 'selected' : ''}`;
-            btn.innerHTML = `
-                <div class="fix-btn-id">#${fix.id}</div>
-                <div class="fix-btn-name">${fix.name}</div>
-                <div style="font-size:7px; opacity:0.5;">CH ${fix.dmx_address}</div>
-            `;
+        // Load initial state
+        const savedSelected = localStorage.getItem('dmx_selected_fixture_ids');
+        if (savedSelected) this.selectedFixtureIds = JSON.parse(savedSelected);
+        const savedActive = localStorage.getItem('dmx_active_fixture_id');
+        if (savedActive) {
+            const fix = this.availableFixtures.find(f => f.id === parseInt(savedActive));
+            if (fix) this.selectFixture(fix, false);
+        }
+    }
 
-            btn.onclick = (e) => {
-                if (this.isMultiSelectMode || e.shiftKey || e.ctrlKey || e.metaKey) {
-                    this.toggleFixtureSelection(fix.id);
-                } else {
-                    this.selectFixture(fix);
-                }
-            };
+    handleRemoteSync(data) {
+        console.log('🔄 Remote Sync:', data);
+        if (data.selectedFixtureIds) {
+            this.selectedFixtureIds = data.selectedFixtureIds;
+        }
+        if (data.activeFixtureId && data.activeFixtureId !== this.fixtureId) {
+            const fix = this.availableFixtures.find(f => f.id === data.activeFixtureId);
+            if (fix) this.selectFixture(fix, false);
+        }
+    }
 
-            // Drag-to-select: Add to selection when mouse enters while pressed
-            btn.onmouseenter = (e) => {
-                if (e.buttons === 1 && (e.shiftKey || e.ctrlKey || e.metaKey)) {
-                    if (!this.selectedFixtureIds.includes(fix.id)) {
-                        this.selectedFixtureIds.push(fix.id);
-                        this.renderFixtureSelector();
-                    }
-                }
-            };
-
-            container.appendChild(btn);
+    syncSelection() {
+        this.bc.postMessage({
+            type: 'sync',
+            selectedFixtureIds: this.selectedFixtureIds,
+            activeFixtureId: this.fixtureId,
+            source: 'fader_console'
         });
+        localStorage.setItem('dmx_active_fixture_id', this.fixtureId);
+        localStorage.setItem('dmx_selected_fixture_ids', JSON.stringify(this.selectedFixtureIds));
     }
 
-    toggleFixtureSelection(id) {
-        if (this.selectedFixtureIds.includes(id)) {
-            if (this.selectedFixtureIds.length > 1) {
-                this.selectedFixtureIds = this.selectedFixtureIds.filter(fid => fid !== id);
-            }
-        } else {
-            this.selectedFixtureIds.push(id);
-        }
-        this.renderFixtureSelector();
-    }
+    // Integrated selector removed. Selection is now managed externally by Group Manager.
 
-    async selectFixture(fixture) {
-        if (this.fixtureId === fixture.id) {
-            // If already active, just ensure it's selected
-            if (!this.selectedFixtureIds.includes(fixture.id)) {
-                this.selectedFixtureIds = [fixture.id];
-                this.renderFixtureSelector();
-            }
-            return;
-        }
+
+    async selectFixture(fixture, shouldSync = true) {
+        if (this.fixtureId === fixture.id) return;
         this.isInitializing = true; // Block DMX pushes while switching
 
         this.fixtureId = fixture.id;
-        this.selectedFixtureIds = [fixture.id]; // Reset selection to just this one
         this.fixtureStartAddress = fixture.dmx_address;
         this.fixtureChannelCount = fixture.channel_count || 16;
         this.startChannel = 1; // Reset to Page 1 (Relative 1-16)
 
         console.log(`🎯 Active Fixture changed to: ${fixture.name} (ID: ${fixture.id}, DMX Start: ${fixture.dmx_address})`);
 
-        // Update UI
-        this.renderFixtureSelector();
+        if (shouldSync) {
+            this.selectedFixtureIds = [fixture.id];
+            this.syncSelection();
+        }
 
         // Re-create faders starting at the fixture's DMX address
         this.createFaders();
@@ -219,6 +191,7 @@ class FaderConsole {
         await this.loadMacros();
         await this.loadPresets();
         this.renderMacros(); // Refresh sidebar to show global palettes
+        this.renderMacros(); // Update macro UI for new fixture status
 
         // Force immediate LED fill update for all channels (after backend values loaded)
         if (this.backendValues) {
@@ -500,6 +473,21 @@ class FaderConsole {
         }
     }
 
+    async getFullAssignments() {
+        if (this.fullAssignmentCache) return this.fullAssignmentCache;
+        try {
+            const res = await fetch(`${API}/api/faders/all-assignments`);
+            const data = await res.json();
+            if (data.success) {
+                this.fullAssignmentCache = data.mapping;
+                return data.mapping;
+            }
+        } catch (e) {
+            console.error('Failed to load all assignments:', e);
+        }
+        return {};
+    }
+
     /**
      * Apply encoder to ALL selected fixtures with P or T assignment
      */
@@ -514,42 +502,38 @@ class FaderConsole {
 
         console.log(`🎯 Applying ${type.toUpperCase()} (${value}) to selected fixtures:`, this.selectedFixtureIds);
 
+        const updates = {};
+
         // Apply to ALL selected fixtures
         for (const fixtureId of this.selectedFixtureIds) {
-            const fixture = this.availableFixtures.find(f => f.id === fixtureId);
+            const fixture = this.availableFixtures.find(f => f.id == fixtureId);
             if (!fixture) continue;
 
             const assignments = allAssignments[fixtureId];
             if (!assignments) continue;
 
-            // For each channel with P or T assignment, send DMX
+            // Update Cache for each fixture
+            if (!this.globalValueCache[fixtureId]) this.globalValueCache[fixtureId] = {};
+
+            // For each channel with P or T assignment, prepare update
             Object.keys(assignments).forEach(relCh => {
                 const functions = assignments[relCh];
                 const relChNum = parseInt(relCh);
-
                 if (functions.includes(assignKey)) {
                     const absAddr = fixture.dmx_address + relChNum - 1;
-                    this.sendAbsoluteDMX(absAddr, value);
+                    updates[absAddr] = value;
+                    this.globalValueCache[fixtureId][relChNum] = { value, isOn: true };
                 }
             });
         }
 
-        // Update UI if active fixture is in selection
-        if (this.selectedFixtureIds.includes(this.fixtureId)) {
-            const assignments = this.assignmentCache[this.fixtureId] || {};
+        // Send batched DMX update
+        await this.sendSparseDMX(updates);
 
-            for (let relCh = 1; relCh <= 32; relCh++) {
-                const channelAssignments = assignments[relCh] || [];
-                if (!channelAssignments.includes(assignKey)) continue;
-
-                // Update Cache
-                if (!this.globalValueCache[this.fixtureId]) this.globalValueCache[this.fixtureId] = {};
-                const cached = this.globalValueCache[this.fixtureId][relCh] || { value: 0, isOn: true };
-                this.globalValueCache[this.fixtureId][relCh] = { value, isOn: cached.isOn };
-
-                // Update UI if fader is visible
-                const state = this.channels.find(c => c.channel === relCh);
-                if (state) {
+        // Update UI for current fixture if in selection
+        if (this.selectedFixtureIds.some(id => id == this.fixtureId)) {
+            this.channels.forEach(state => {
+                if (state.assignments[assignKey.toLowerCase()]) {
                     state.fader.value = value;
                     state.currentValue = value;
                     state.valueDisplay.textContent = value;
@@ -557,7 +541,7 @@ class FaderConsole {
                     if (value > 0) state.element.classList.add('active');
                     else state.element.classList.remove('active');
                 }
-            }
+            });
         }
     }
 
@@ -571,71 +555,69 @@ class FaderConsole {
             b: Math.round(rgb.b * 255)
         };
 
-        // Update the preview display in the encoder column
         const preview = document.getElementById('rgbw-value');
-        preview.style.backgroundColor = `rgb(${rgbValues.r}, ${rgbValues.g}, ${rgbValues.b})`;
-        preview.style.color = (rgb.r + rgb.g + rgb.b > 1.5) ? '#000' : '#fff';
-        preview.textContent = `${this.encoders.rgbw.hue}°`;
+        if (preview) {
+            preview.style.backgroundColor = `rgb(${rgbValues.r}, ${rgbValues.g}, ${rgbValues.b})`;
+            preview.style.color = (rgb.r + rgb.g + rgb.b > 1.5) ? '#000' : '#fff';
+            preview.textContent = `${this.encoders.rgbw.hue}°`;
+        }
 
-        // Load all assignments
-        const res = await fetch(`${API}/api/faders/all-assignments`);
-        const data = await res.json();
-        if (!data.success) return;
-        const allAssignments = data.mapping;
+        const allAssignments = await this.getFullAssignments();
+        const updates = {};
 
-        // Apply to ALL selected fixtures
         for (const fixtureId of this.selectedFixtureIds) {
-            const fixture = this.availableFixtures.find(f => f.id === fixtureId);
+            const fixture = this.availableFixtures.find(f => f.id == fixtureId);
             if (!fixture) continue;
 
             const assignments = allAssignments[fixtureId];
             if (!assignments) continue;
 
-            // For each channel with R/G/B assignment, send DMX
+            if (!this.globalValueCache[fixtureId]) this.globalValueCache[fixtureId] = {};
+
             Object.keys(assignments).forEach(relCh => {
                 const functions = assignments[relCh];
                 const relChNum = parseInt(relCh);
                 const absAddr = fixture.dmx_address + relChNum - 1;
 
                 functions.forEach(f => {
-                    if (f === 'R') this.sendAbsoluteDMX(absAddr, rgbValues.r);
-                    if (f === 'G') this.sendAbsoluteDMX(absAddr, rgbValues.g);
-                    if (f === 'B') this.sendAbsoluteDMX(absAddr, rgbValues.b);
+                    let val = -1;
+                    const ft = f.toLowerCase();
+                    if (ft === 'r') val = rgbValues.r;
+                    else if (ft === 'g') val = rgbValues.g;
+                    else if (ft === 'b') val = rgbValues.b;
+                    else if (ft === 'w') val = 0; // Saturate
+                    else if (ft === 'dim') val = 255;
+                    else if (ft === 'strobe') val = 255;
+
+                    if (val !== -1) {
+                        updates[absAddr] = val;
+                        this.globalValueCache[fixtureId][relChNum] = { value: val, isOn: true };
+                    }
                 });
             });
         }
 
-        // Update UI if active fixture is in selection
-        if (this.selectedFixtureIds.includes(this.fixtureId)) {
-            const assignments = this.assignmentCache[this.fixtureId] || {};
-            if (!this.globalValueCache[this.fixtureId]) this.globalValueCache[this.fixtureId] = {};
+        await this.sendSparseDMX(updates);
 
-            for (let relCh = 1; relCh <= 32; relCh++) {
-                const channelAssignments = assignments[relCh] || [];
-                let valueToSet = -1;
+        if (this.selectedFixtureIds.some(id => id == this.fixtureId)) {
+            this.channels.forEach(state => {
+                let valToSet = -1;
+                if (state.assignments.r) valToSet = rgbValues.r;
+                else if (state.assignments.g) valToSet = rgbValues.g;
+                else if (state.assignments.b) valToSet = rgbValues.b;
+                else if (state.assignments.w) valToSet = 0;
+                else if (state.assignments.dim) valToSet = 255;
+                else if (state.assignments.strobe) valToSet = 255;
 
-                if (channelAssignments.includes('R')) valueToSet = rgbValues.r;
-                else if (channelAssignments.includes('G')) valueToSet = rgbValues.g;
-                else if (channelAssignments.includes('B')) valueToSet = rgbValues.b;
-
-                if (valueToSet !== -1) {
-                    const cached = this.globalValueCache[this.fixtureId][relCh] || { value: 0, isOn: true };
-
-                    // Update Cache
-                    this.globalValueCache[this.fixtureId][relCh] = { value: valueToSet, isOn: cached.isOn };
-
-                    // Update UI if fader is visible
-                    const state = this.channels.find(c => c.channel === relCh);
-                    if (state) {
-                        state.fader.value = valueToSet;
-                        state.currentValue = valueToSet;
-                        state.valueDisplay.textContent = valueToSet;
-                        state.ledFill.style.height = `${(valueToSet / 255) * 100}%`;
-                        if (valueToSet > 0) state.element.classList.add('active');
-                        else state.element.classList.remove('active');
-                    }
+                if (valToSet !== -1) {
+                    state.fader.value = valToSet;
+                    state.currentValue = valToSet;
+                    state.valueDisplay.textContent = valToSet;
+                    state.ledFill.style.height = `${(valToSet / 255) * 100}%`;
+                    if (valToSet > 0) state.element.classList.add('active');
+                    else state.element.classList.remove('active');
                 }
-            }
+            });
         }
     }
 
@@ -866,21 +848,23 @@ class FaderConsole {
                 const channelAssignments = (this.assignmentCache[this.fixtureId] || {})[state.channel] || [];
 
                 if (channelAssignments.length > 0) {
-                    // Load all assignments
-                    const res = await fetch(`${API}/api/faders/all-assignments`);
-                    const data = await res.json();
-                    if (!data.success) return;
-                    const allAssignments = data.mapping;
+                    // Use cached assignments
+                    const allAssignments = await this.getFullAssignments();
+                    const updates = {};
 
                     // Apply to all selected fixtures
                     for (const fixtureId of this.selectedFixtureIds) {
-                        if (fixtureId === this.fixtureId) continue; // Skip active fixture (already updated)
+                        // Skip active fixture (already updated by updateFaderValue)
+                        if (fixtureId === this.fixtureId || fixtureId === String(this.fixtureId)) continue;
 
-                        const fixture = this.availableFixtures.find(f => f.id === fixtureId);
+                        const fixture = this.availableFixtures.find(f => f.id == fixtureId);
                         if (!fixture) continue;
 
                         const assignments = allAssignments[fixtureId];
                         if (!assignments) continue;
+
+                        // Force cache update
+                        if (!this.globalValueCache[fixtureId]) this.globalValueCache[fixtureId] = {};
 
                         // Find channels with the same assignments
                         Object.keys(assignments).forEach(relCh => {
@@ -894,10 +878,14 @@ class FaderConsole {
 
                             if (hasMatchingFunction) {
                                 const absAddr = fixture.dmx_address + relChNum - 1;
-                                this.sendAbsoluteDMX(absAddr, value);
+                                updates[absAddr] = value;
+                                this.globalValueCache[fixtureId][relChNum] = { value, isOn: true };
                             }
                         });
                     }
+
+                    // Send batched update
+                    this.sendSparseDMX(updates);
                 }
             }
         });
@@ -1149,9 +1137,22 @@ class FaderConsole {
                 };
                 updateBoxDisplay();
 
-                // Running state
-                if (state.running) {
+                // Running state logic: Only show running if CURRENTLY SELECTED fixture is in the target list
+                // OR if NO fixture is selected, show if running anywhere (optional, but per-fixture is safer)
+
+                // Ensure active set of IDs to check against
+                const currentSelectionChecks = (this.selectedFixtureIds && this.selectedFixtureIds.length > 0)
+                    ? this.selectedFixtureIds
+                    : [this.fixtureId];
+
+                const isRunningHere = state.running && state.targetFixtureIds && state.targetFixtureIds.some(fid =>
+                    currentSelectionChecks.some(sel => String(sel) === String(fid))
+                );
+
+                if (isRunningHere) {
                     box.classList.add('running');
+                } else {
+                    box.classList.remove('running');
                 }
 
                 // Hidden color pickers
@@ -1346,6 +1347,10 @@ class FaderConsole {
         dimBtn.textContent = 'DIM';
         dimBtn.style.cssText = `font-size: 8px; font-weight: 700; color: #ffffff; background: #111; border: 1px solid #333; border-radius: 3px; padding: 2px 4px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; margin-top: 4px;`;
 
+        // Ensure default is true if undefined
+        if (this.selectedChaser && this.selectedChaser.color_fade_enabled === undefined) this.selectedChaser.color_fade_enabled = true;
+
+
 
         const wBtn = document.createElement('button');
         wBtn.textContent = '+W';
@@ -1416,7 +1421,7 @@ class FaderConsole {
                 enc.indicator.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
                 if (prop === 'fade_time') {
                     const c = (this.selectedChaser.fade_time || 3000) / 1000;
-                    this.selectedChaser.fade_time = Math.max(min, Math.min(max, c + (dy * sensitivity))) * 1000;
+                    this.selectedChaser.fade_time = Math.max(min, Math.min(max, c + (dy * sensitivity * 0.1))) * 1000; // Slower coarse adjustment
                 } else {
                     const c = this.selectedChaser[prop] || 0;
                     this.selectedChaser[prop] = Math.max(min, Math.min(max, Math.round(c + dy * sensitivity)));
@@ -1490,16 +1495,39 @@ class FaderConsole {
             wBtn.style.background = state.w_enabled ? '#eebb99' : '#111';
             wBtn.style.color = state.w_enabled ? '#000' : '#eebb99';
             wBtn.style.borderColor = state.w_enabled ? '#eebb99' : '#333';
+
+            // Also refresh the macro grid to show running status correctly immediately
+            this.renderMacros();
         };
 
         // --- EVENT HANDLERS ---
-        fadeBtn.onclick = () => { if (this.selectedChaser) { this.selectedChaser.color_fade_enabled = !(this.selectedChaser.color_fade_enabled !== false); updateEffectUI(this.selectedChaser); saveCurrentChaser(); } };
+        fadeBtn.onclick = () => { if (this.selectedChaser) { this.selectedChaser.color_fade_enabled = !this.selectedChaser.color_fade_enabled; updateEffectUI(this.selectedChaser); saveCurrentChaser(); } };
         zoomBtn.onclick = () => { if (this.selectedChaser) { this.selectedChaser.zoom_enabled = !this.selectedChaser.zoom_enabled; updateEffectUI(this.selectedChaser); saveCurrentChaser(); } };
         invBtn.onclick = () => { if (this.selectedChaser) { this.selectedChaser.zoom_invert = !this.selectedChaser.zoom_invert; updateEffectUI(this.selectedChaser); saveCurrentChaser(); } };
         sawBtn.onclick = () => { if (this.selectedChaser) { this.selectedChaser.zoom_sawtooth = !this.selectedChaser.zoom_sawtooth; updateEffectUI(this.selectedChaser); saveCurrentChaser(); } };
-        strobeBtn.onclick = () => { if (this.selectedChaser) { this.selectedChaser.strobe_enabled = !this.selectedChaser.strobe_enabled; updateEffectUI(this.selectedChaser); saveCurrentChaser(); } };
+        strobeBtn.onclick = () => {
+            if (this.selectedChaser) {
+                this.selectedChaser.strobe_enabled = !this.selectedChaser.strobe_enabled;
+                updateEffectUI(this.selectedChaser);
+                saveCurrentChaser();
+                // If turning OFF, force reset to 0
+                if (!this.selectedChaser.strobe_enabled) {
+                    this.resetSpecialChannels(this.selectedChaser, 'strobe');
+                }
+            }
+        };
         dimBtn.onclick = () => { if (this.selectedChaser) { this.selectedChaser.dimmer_enabled = !this.selectedChaser.dimmer_enabled; updateEffectUI(this.selectedChaser); saveCurrentChaser(); } };
-        wBtn.onclick = () => { if (this.selectedChaser) { this.selectedChaser.w_enabled = !this.selectedChaser.w_enabled; updateEffectUI(this.selectedChaser); saveCurrentChaser(); } };
+        wBtn.onclick = () => {
+            if (this.selectedChaser) {
+                this.selectedChaser.w_enabled = !this.selectedChaser.w_enabled;
+                updateEffectUI(this.selectedChaser);
+                saveCurrentChaser();
+                // If turning OFF, force reset to 0
+                if (!this.selectedChaser.w_enabled) {
+                    this.resetSpecialChannels(this.selectedChaser, 'w');
+                }
+            }
+        };
         saveCueBtn.onclick = () => { if (this.selectedChaser) this.saveChaserAsScene(this.selectedChaser); };
 
         // --- ASSEMBLY ---
@@ -1599,8 +1627,8 @@ class FaderConsole {
     selectChaser(state) {
         console.log(`🎯 Selected Chaser ${state.id}: ${state.name}`);
 
-        // Kill any leftovers on target fixtures before starting new one
-        const targets = state.targetFixtureIds || [...this.selectedFixtureIds];
+        // Only cleanup current selection if we are starting fresh
+        const targets = [...this.selectedFixtureIds];
         targets.forEach(fid => this.resetFixtureEffects(fid));
 
         // Initialize Zoom parameters if missing
@@ -1631,52 +1659,138 @@ class FaderConsole {
         // Visual feedback: highlight selected chaser
 
 
-        // Stop other running chasers to ensure clean switch
-        this.chaserStates.forEach(other => {
-            if (other.id !== state.id && other.running) {
-                this.stopChaser(other);
-            }
-        });
+        // Multi-chaser support: we no longer stop others here
+        // Each chaser slot can run independently on its captured targetFixtureIds
 
         // Also toggle the chaser animation
         this.toggleChaser(state);
     }
 
     toggleChaser(state) {
-        if (state.running) {
-            this.stopChaser(state);
+        // Check if ANY of the currently selected fixtures are in this chaser's target list
+        // If yes -> Stop specific fixtures (remove them from this chaser)
+        // If no -> Start specific fixtures (add/transfer them to this chaser)
+
+        const targets = this.selectedFixtureIds.length > 0 ? this.selectedFixtureIds : [this.fixtureId];
+        const isRunningOnSelection = state.running && state.targetFixtureIds.some(fid =>
+            targets.some(sel => String(sel) === String(fid))
+        );
+
+        if (isRunningOnSelection) {
+            // Stop ONLY for selected fixtures
+            this.stopChaser(state, false, targets);
         } else {
+            // Start for selected fixtures (this effectively adds them to the chaser)
             this.startChaser(state);
         }
     }
 
     startChaser(state) {
         console.log(`▶ Starting Chaser ${state.id}:`, state.name);
+
+        // 1. Capture current selection (ensure it's an array of strings/numbers)
+        let targets = [...this.selectedFixtureIds];
+        if (targets.length === 0) targets = [this.fixtureId]; // Fallback to active fixture
+
+        // 2. EXCLUSIVITY: Remove THESE fixtures from ALL other running chasers
+        // We iterate BACKWARDS or use a separate loop to avoid skipping due to array mutation issues if any
+        this.chaserStates.forEach(ch => {
+            if (ch.running && ch.id !== state.id && ch.targetFixtureIds) {
+                const originalCount = ch.targetFixtureIds.length;
+                ch.targetFixtureIds = ch.targetFixtureIds.filter(fid =>
+                    !targets.some(t => String(t) === String(fid))
+                );
+
+                if (ch.targetFixtureIds.length !== originalCount) {
+                    console.log(`✂️ Removed fixtures from Chaser ${ch.id} (overlap with new chaser)`);
+                }
+
+                // If a chaser has no more fixtures, stop it
+                if (ch.targetFixtureIds.length === 0) {
+                    this.stopChaser(ch);
+                }
+            }
+        });
+
+        // 3. Set targets for THIS new chaser
+        // Merge with existing targets instead of overwriting, to allow multi-fixture build-up if desired
+        // But first, ensure we don't have duplicates (though the exclusivity check above should have handled it if we are stealing)
+        // Actually, for "independent instances", sharing the same stored state means they share parameters.
+        // If we want to add to the group:
+        state.targetFixtureIds = [...(state.targetFixtureIds || []), ...targets];
+        // Deduplicate just in case
+        state.targetFixtureIds = [...new Set(state.targetFixtureIds.map(String))].map(id => isNaN(id) ? id : parseInt(id));
+
         state.running = true;
+        // Don't auto-add class here, renderMacros/updateBoxDisplay handles it based on selection context
+        // if (state.box) state.box.classList.add('running'); 
+        this.updateEffectUI(state); // Update render
 
-        // Capture current selection - this chaser will run on THESE fixtures
-        state.targetFixtureIds = [...this.selectedFixtureIds];
-
-        if (state.box) state.box.classList.add('running');
-
-        // Start animation loop
-        this.runChaserAnimation(state);
+        // 4. Start animation loop IF NOT ALREADY RUNNING
+        // If it's already running, the loop will just pick up the updated targetFixtureIds automatically.
+        if (!state.animationFrame) {
+            this.runChaserAnimation(state);
+        }
     }
 
-    stopChaser(state) {
-        console.log(`⏹ Stopping Chaser ${state.id}:`, state.name);
-        state.running = false;
-        if (state.box) state.box.classList.remove('running');
+    /**
+     * Remove running chasers from specific fixtures
+     */
+    stopChasersOnFixtures(fixtureIds) {
+        if (!fixtureIds || fixtureIds.length === 0) return;
 
-        // Kill effects on all target fixtures
-        const targets = state.targetFixtureIds || [...this.selectedFixtureIds];
-        targets.forEach(fid => this.resetFixtureEffects(fid));
+        this.chaserStates.forEach(ch => {
+            if (ch.running && ch.targetFixtureIds) {
+                // Filter out the fixtures that are now getting a new look
+                ch.targetFixtureIds = ch.targetFixtureIds.filter(fid =>
+                    !fixtureIds.some(targetId => String(targetId) === String(fid))
+                );
+
+                // If a chaser has no more fixtures to run on, stop it entirely
+                if (ch.targetFixtureIds.length === 0) {
+                    this.stopChaser(ch);
+                }
+            }
+        });
+    }
+
+    stopChaser(state, resetDMX = false, specificTargets = null) {
+        console.log(`⏹ Stopping Chaser ${state.id} for targets:`, specificTargets || 'ALL');
+
+        // If specific targets provided, remove only them
+        if (specificTargets) {
+            if (state.targetFixtureIds) {
+                state.targetFixtureIds = state.targetFixtureIds.filter(fid =>
+                    !specificTargets.some(t => String(t) === String(fid))
+                );
+            }
+            if (resetDMX) {
+                specificTargets.forEach(fid => this.resetFixtureEffects(fid));
+            }
+            // If targets remain, keep running
+            if (state.targetFixtureIds.length > 0) {
+                this.updateEffectUI(state); // Refresh UI
+                return;
+            }
+        } else {
+            // Stop ALL (Old behavior)
+            if (resetDMX) {
+                const targets = state.targetFixtureIds || [];
+                targets.forEach(fid => this.resetFixtureEffects(fid));
+            }
+            state.targetFixtureIds = [];
+        }
+
+        // If we get here, the chaser is fully empty or forced stop
+        state.running = false;
+        // if (state.box) state.box.classList.remove('running'); // Handled by updateBoxDisplay
 
         // Cancel animation frame if exists
         if (state.animationFrame) {
             cancelAnimationFrame(state.animationFrame);
             state.animationFrame = null;
         }
+        this.updateEffectUI(state);
     }
 
     runChaserAnimation(state) {
@@ -1770,9 +1884,9 @@ class FaderConsole {
                         if (state.zoom_enabled) {
                             const zoomMax = state.zoom_max !== undefined ? state.zoom_max : 255;
                             const zEffectiveProgress = state.zoom_sawtooth ?
-                                ((currentTime - startTime) % (fadeTime / 2) / (fadeTime / 2)) :
+                                ((currentTime - startTime) % (currentFadeTime / 2) / (currentFadeTime / 2)) :
                                 (() => {
-                                    const zTime = fadeTime / 2;
+                                    const zTime = currentFadeTime / 2;
                                     const zElapsed = (currentTime - startTime) % (zTime * 2);
                                     return zElapsed < zTime ? (zElapsed / zTime) : (1 - ((zElapsed - zTime) / zTime));
                                 })();
@@ -1795,25 +1909,30 @@ class FaderConsole {
                     }
 
                     // Strobe Channels
+                    // Only apply if Strobe is enabled in the chaser. If disabled, leave it to manual control.
                     if (chFunctions.some(a => a.toLowerCase() === 'strobe')) {
-                        const sVal = state.strobe_enabled ? (state.strobe_value !== undefined ? state.strobe_value : 128) : 0;
-                        if (shouldSendDMX) this.sendAbsoluteDMX(absAddr, sVal);
+                        if (state.strobe_enabled) {
+                            const sVal = state.strobe_value !== undefined ? state.strobe_value : 128;
+                            if (shouldSendDMX) this.sendAbsoluteDMX(absAddr, sVal);
 
-                        // Visual feedback ONLY for the currently active fixture
-                        if (fixtureId === this.fixtureId) {
-                            const chState = this.channels.find(c => c.channel === relChNum);
-                            if (chState) {
-                                chState.fader.value = sVal;
-                                chState.valueDisplay.textContent = sVal;
-                                chState.ledFill.style.height = `${(sVal / 255) * 100}%`;
+                            // Visual feedback ONLY for the currently active fixture
+                            if (fixtureId === this.fixtureId) {
+                                const chState = this.channels.find(c => c.channel === relChNum);
+                                if (chState) {
+                                    chState.fader.value = sVal;
+                                    chState.valueDisplay.textContent = sVal;
+                                    chState.ledFill.style.height = `${(sVal / 255) * 100}%`;
+                                }
                             }
                         }
                     }
 
                     // Dimmer Channels (DIM only, not W)
-                    if (chFunctions.some(a => ['dim'].includes(a.toLowerCase()))) {
-                        const dVal = state.dimmer_enabled ? (state.dimmer_value !== undefined ? state.dimmer_value : 255) : 0;
+                    // Only apply if Dimmer is enabled in the chaser. If disabled, leave it to manual control.
+                    if (state.dimmer_enabled && chFunctions.some(a => ['dim'].includes(a.toLowerCase()))) {
+                        const dVal = state.dimmer_value !== undefined ? state.dimmer_value : 255;
                         if (shouldSendDMX) this.sendAbsoluteDMX(absAddr, dVal);
+
                         // Visual feedback
                         if (fixtureId === this.fixtureId) {
                             const chState = this.channels.find(c => c.channel === relChNum);
@@ -1826,10 +1945,11 @@ class FaderConsole {
                     }
 
                     // W Channels (+W logic)
-                    if (chFunctions.some(a => ['w'].includes(a.toLowerCase()))) {
-                        // Use Dimmer Value for W if enabled, otherwise 0
-                        const wVal = state.w_enabled ? (state.dimmer_value !== undefined ? state.dimmer_value : 255) : 0;
+                    // Only apply if W is explicitly enabled
+                    if (state.w_enabled && chFunctions.some(a => ['w'].includes(a.toLowerCase()))) {
+                        const wVal = state.dimmer_value !== undefined ? state.dimmer_value : 255;
                         if (shouldSendDMX) this.sendAbsoluteDMX(absAddr, wVal);
+
                         // Visual feedback
                         if (fixtureId === this.fixtureId) {
                             const chState = this.channels.find(c => c.channel === relChNum);
@@ -1857,12 +1977,51 @@ class FaderConsole {
                             }
                         }
                     }
-                });
-            });
+                }); // end inner channel loop
+            }); // end outer fixture loop
+
+
             state.animationFrame = requestAnimationFrame(animate);
         };
 
         state.animationFrame = requestAnimationFrame(animate);
+    }
+
+    /**
+     * Force reset special channels (Strobe, W) to 0 for target fixtures
+     */
+    resetSpecialChannels(state, type) {
+        if (!state.targetFixtureIds) return;
+
+        console.log(`🧹 Resetting ${type} for Chaser ${state.id}`);
+        state.targetFixtureIds.forEach(fid => {
+            const fixture = this.availableFixtures.find(f => f.id === fid);
+            if (!fixture) return;
+
+            const fStartAddr = fixture.dmx_address;
+            const fAssignments = this.assignmentCache[fid] || {};
+
+            Object.keys(fAssignments).forEach(relCh => {
+                const chFunctions = fAssignments[relCh].map(f => f.toLowerCase());
+                const relChNum = parseInt(relCh);
+                const absAddr = fStartAddr + relChNum - 1;
+
+                if (chFunctions.includes(type.toLowerCase())) {
+                    this.sendAbsoluteDMX(absAddr, 0);
+
+                    // UI Update if active
+                    if (fid === this.fixtureId) {
+                        const chState = this.channels.find(c => c.channel === relChNum);
+                        if (chState) {
+                            chState.fader.value = 0;
+                            chState.valueDisplay.textContent = 0;
+                            chState.ledFill.style.height = '0%';
+                            chState.element.classList.remove('active');
+                        }
+                    }
+                }
+            });
+        });
     }
 
     resetFixtureEffects(fixtureId) {
@@ -1878,7 +2037,9 @@ class FaderConsole {
             const relChNum = parseInt(relCh);
             const absAddr = fStartAddr + relChNum - 1;
 
-            if (chFunctions.includes('zoom') || chFunctions.includes('strobe') || chFunctions.includes('dim') || chFunctions.includes('w')) {
+            // Reset only truly 'effect' channels like Zoom or Strobe. 
+            // DO NOT reset DIM or W here, as it causes unintended blackouts on fixture/slot switches.
+            if (chFunctions.includes('zoom') || chFunctions.includes('strobe')) {
                 this.sendAbsoluteDMX(absAddr, 0);
 
                 // Update global cache
@@ -2371,7 +2532,7 @@ class FaderConsole {
 
         // Update UI if active fixture is in selection
         // Update UI if active fixture is in selection
-        if (this.selectedFixtureIds.includes(this.fixtureId)) {
+        if (this.selectedFixtureIds.some(id => id == this.fixtureId)) {
             this.channels.forEach(chState => {
                 const chAssignments = (this.assignmentCache[this.fixtureId]?.[chState.channel] || []).map(f => f.toUpperCase());
 
@@ -2436,8 +2597,8 @@ class FaderConsole {
     }
 
     async applyMacroColor(hex, shouldSave = true) {
-        // Stop any running chasers when static color is applied
-        this.stopAllChasers();
+        // Only stop chasers on the CURRENTLY selected fixtures
+        this.stopChasersOnFixtures(this.selectedFixtureIds);
 
         if (!hex || hex.length < 7) {
             console.error('Invalid Macro Color:', hex);
@@ -2450,55 +2611,61 @@ class FaderConsole {
 
         console.log(`🎨 Applying color ${hex} to selected fixtures:`, this.selectedFixtureIds);
 
-        // Load all assignments if not cached
-        const res = await fetch(`${API}/api/faders/all-assignments`);
-        const data = await res.json();
-        if (!data.success) return;
-        const allAssignments = data.mapping;
+        const allAssignments = await this.getFullAssignments();
+        const updates = {};
 
-        // Apply to ALL selected fixtures
         for (const fixtureId of this.selectedFixtureIds) {
-            const fixture = this.availableFixtures.find(f => f.id === fixtureId);
+            const fixture = this.availableFixtures.find(f => f.id == fixtureId);
             if (!fixture) continue;
 
             const assignments = allAssignments[fixtureId];
-            if (!assignments) {
-                console.warn(`Fixture ${fixtureId} has no assignments yet`);
-                continue;
-            }
+            if (!assignments) continue;
 
-            // For each channel with R/G/B assignment, send DMX
+            if (!this.globalValueCache[fixtureId]) this.globalValueCache[fixtureId] = {};
+
             Object.keys(assignments).forEach(relCh => {
                 const functions = assignments[relCh];
                 const relChNum = parseInt(relCh);
                 const absAddr = fixture.dmx_address + relChNum - 1;
 
                 functions.forEach(f => {
-                    if (f === 'R') this.sendAbsoluteDMX(absAddr, r);
-                    if (f === 'G') this.sendAbsoluteDMX(absAddr, g);
-                    if (f === 'B') this.sendAbsoluteDMX(absAddr, b);
+                    let val = -1;
+                    if (f === 'R' || f === 'r') val = r;
+                    else if (f === 'G' || f === 'g') val = g;
+                    else if (f === 'B' || f === 'b') val = b;
+                    else if (f === 'W' || f === 'w') val = 0; // Fix: reset white for RGB macros
+                    else if (f === 'DIM' || f === 'dim') val = 255; // Force turn on for color pick
+                    else if (f === 'STROBE' || f === 'strobe') val = 255; // Force open shutter
+
+                    if (val !== -1) {
+                        updates[absAddr] = val;
+                        this.globalValueCache[fixtureId][relChNum] = { value: val, isOn: true };
+                    }
                 });
             });
         }
 
-        // Also update UI if active fixture is in selection
-        if (this.selectedFixtureIds.includes(this.fixtureId)) {
-            let count = 0;
-            this.channels.forEach(ch => {
-                if (ch.assignments.r) {
-                    this.updateFaderValue(ch, r, shouldSave);
-                    count++;
-                }
-                if (ch.assignments.g) {
-                    this.updateFaderValue(ch, g, shouldSave);
-                    count++;
-                }
-                if (ch.assignments.b) {
-                    this.updateFaderValue(ch, b, shouldSave);
-                    count++;
+        await this.sendSparseDMX(updates);
+
+        if (this.selectedFixtureIds.some(id => id == this.fixtureId)) {
+            this.channels.forEach(state => {
+                let valToSet = -1;
+                if (state.assignments.r) valToSet = r;
+                else if (state.assignments.g) valToSet = g;
+                else if (state.assignments.b) valToSet = b;
+                else if (state.assignments.w) valToSet = 0;
+                else if (state.assignments.dim) valToSet = 255;
+                else if (state.assignments.strobe) valToSet = 255;
+
+                if (valToSet !== -1) {
+                    state.fader.value = valToSet;
+                    state.currentValue = valToSet;
+                    state.valueDisplay.textContent = valToSet;
+                    state.ledFill.style.height = `${(valToSet / 255) * 100}%`;
+                    if (valToSet > 0) state.element.classList.add('active');
+                    else state.element.classList.remove('active');
                 }
             });
-            console.log(`Updated ${count} faders in UI`);
         }
     }
 
@@ -2869,7 +3036,7 @@ class FaderConsole {
             }
 
             // Sync UI if the active fixture was modified
-            if (targetFixtures.includes(this.fixtureId)) {
+            if (targetFixtures.some(id => id == this.fixtureId)) {
                 setTimeout(() => this.updateValues(), 200);
             }
         } catch (e) {
@@ -2878,17 +3045,37 @@ class FaderConsole {
     }
 
     async sendAbsoluteDMX(address, value) {
+        // Validation Clamp
+        const safeValue = Math.max(0, Math.min(255, Math.round(value)));
+
         try {
             const res = await fetch(`${API}/api/dmx/channel`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ channel: address, value })
+                body: JSON.stringify({ channel: address, value: safeValue })
             });
             if (!res.ok) {
                 const data = await res.json();
                 console.error(`❌ DMX Error (Ch:${address}, Val:${value}):`, data.error || res.statusText);
             }
         } catch (e) { }
+    }
+
+    async sendSparseDMX(updates) {
+        if (Object.keys(updates).length === 0) return;
+        try {
+            const res = await fetch(`${API}/api/dmx/sparse`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ channels: updates })
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                console.error('❌ Sparse DMX Error:', data.error || res.statusText);
+            }
+        } catch (e) {
+            console.error('❌ Sparse DMX Request Failed:', e);
+        }
     }
 
     async createNewGlobalPalette() {
