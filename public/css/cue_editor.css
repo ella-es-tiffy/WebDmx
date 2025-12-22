@@ -386,10 +386,12 @@ body {
     position: absolute;
     right: 0;
     top: 0;
-    width: 8px;
+    width: 10px;
     height: 100%;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
     cursor: ew-resize;
+    z-index: 50;
+    /* Above Automation Layer (10) and Nodes (30) */
 }
 
 .cue-resize-handle:hover {

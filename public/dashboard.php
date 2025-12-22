@@ -60,6 +60,7 @@
     <div id="taskbar">
         <div class="taskbar-item" onclick="openProgrammer()"><i class="fas fa-sliders-h icon-live"></i></div>
         <div class="taskbar-item" onclick="openMap()"><i class="fas fa-project-diagram icon-map"></i></div>
+        <div class="taskbar-item" id="debug-toggle" onclick="toggleDebugMode()" title="Toggle Debug Mode"><i class="fas fa-bug"></i></div>
         <div class="taskbar-item"><i class="fas fa-cog"></i></div>
     </div>
 
@@ -267,7 +268,28 @@
             startWebSocket();
         }
 
+
+        function toggleDebugMode() {
+            const current = localStorage.getItem('webdmx_debug_mode') === 'true';
+            const newState = !current;
+            localStorage.setItem('webdmx_debug_mode', newState);
+            updateDebugIcon();
+            // Notify user
+            // Use a simple alert or console for now, or visual cue
+            console.log('Debug Mode:', newState ? 'ON' : 'OFF');
+        }
+
+        function updateDebugIcon() {
+            const debugState = localStorage.getItem('webdmx_debug_mode') === 'true';
+            const btn = document.querySelector('#debug-toggle i');
+            if(btn) {
+                btn.style.color = debugState ? '#ff4444' : '#666';
+                btn.style.textShadow = debugState ? '0 0 5px rgba(255,0,0,0.5)' : 'none';
+            }
+        }
+
         startDashboardStatus();
+        updateDebugIcon(); // Init state
     </script>
     
     <style>

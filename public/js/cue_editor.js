@@ -38,6 +38,10 @@ class CueEditor {
     }
 
     init() {
+        // Read Debug Flag from LocalStorage (set by Dashboard)
+        this.debugMode = localStorage.getItem('webdmx_debug_mode') === 'true';
+        if (this.debugMode) console.log('🐞 Debug Mode ENABLED');
+
         console.log('🎬 Initializing Cue Editor...');
         this.dragState = {
             active: false,
@@ -367,12 +371,14 @@ class CueEditor {
             active: true,
             mode: 'clone-drag',
             sourceCue: cue,
+            // Store element reference for simpler parent lookup
+            sourceElement: element,
             startX: e.clientX,
             ghosts: [], // Array of temporary ghost elements
             cloneCount: 0
         };
 
-        console.log('👯 Clone Drag Started');
+        if (this.debugMode) console.log('👯 Clone Drag Started');
     }
 
     handleCueMouseDown(e, cue, element) {
@@ -543,35 +549,50 @@ class CueEditor {
             const newCloneCount = Math.floor((deltaSeconds + (dur * (1 - triggerThreshold))) / dur);
 
             if (newCloneCount !== this.dragState.cloneCount) {
-                // Sync Ghosts
-                // Add needed
-                while (this.dragState.ghosts.length < newCloneCount) {
-                    const i = this.dragState.ghosts.length;
-                    const ghost = document.createElement('div');
-                    ghost.className = 'cue-block ghost-clone';
-                    ghost.style.position = 'absolute';
-                    ghost.style.height = '50px'; // Match track heighish
-                    ghost.style.top = '5px';
-                    ghost.style.opacity = '0.5';
-                    ghost.style.pointerEvents = 'none';
-                    ghost.style.background = '#4CAF50'; // Green for 'Add'
-                    ghost.style.border = '1px dashed #fff';
+                // BRUTE FORCE REBUILD -> No Gaps Possible
 
-                    // Position: Start of source + Duration * (i+1)
+                // 1. CLEAR ALL PREVIOUS GHOSTS
+                if (this.dragState.ghosts) {
+                    this.dragState.ghosts.forEach(g => { if (g && g.parentNode) g.remove(); });
+                }
+                this.dragState.ghosts = [];
+
+                // 2. CREATE NEW BATCH
+                const isChaser = this.dragState.sourceElement.classList.contains('chaser');
+
+                for (let i = 0; i < newCloneCount; i++) {
+                    const ghost = document.createElement('div');
+                    ghost.className = 'cue-block ghost-clone'; // Reset classes, manual style
+
+                    ghost.style.position = 'absolute';
+                    ghost.style.height = '50px';
+                    ghost.style.top = '5px';
+                    ghost.style.opacity = '0.9'; // High visibility
+                    ghost.style.pointerEvents = 'none';
+                    // Manual Color Fallback
+                    ghost.style.background = isChaser ? 'rgba(255, 153, 0, 0.8)' : 'rgba(102, 126, 234, 0.8)';
+                    ghost.style.border = '2px dashed #fff';
+                    ghost.style.borderRadius = '4px';
+                    ghost.style.zIndex = '100';
+                    ghost.style.boxSizing = 'border-box'; // Ensure border doesn't expand width
+
+                    ghost.textContent = `+${i + 1}`;
+                    ghost.style.display = 'flex';
+                    ghost.style.alignItems = 'center';
+                    ghost.style.justifyContent = 'center';
+                    ghost.style.color = '#fff';
+                    ghost.style.fontWeight = 'bold';
+                    ghost.style.fontSize = '14px';
+
                     const startT = this.dragState.sourceCue.startTime + (dur * (i + 1));
                     ghost.style.left = `${startT * this.pixelsPerSecond}px`;
                     ghost.style.width = `${dur * this.pixelsPerSecond}px`;
 
-                    // Find track element to append to
-                    const trackEl = this.cueElements.get(this.dragState.sourceCue.id).parentElement;
-                    trackEl.appendChild(ghost);
-                    this.dragState.ghosts.push(ghost);
-                }
-
-                // Remove excess
-                while (this.dragState.ghosts.length > newCloneCount) {
-                    const ghost = this.dragState.ghosts.pop();
-                    ghost.remove();
+                    const trackEl = this.dragState.sourceElement.parentElement;
+                    if (trackEl) {
+                        trackEl.appendChild(ghost);
+                        this.dragState.ghosts.push(ghost);
+                    }
                 }
 
                 this.dragState.cloneCount = newCloneCount;
@@ -681,8 +702,10 @@ class CueEditor {
 
             // Commit clones
             for (let i = 0; i < count; i++) {
+                // Gapless sequential cloning
                 const newStart = src.startTime + (src.duration * (i + 1));
-                this.createCue(src.trackId, src.sceneId, src.sceneName, newStart, src.duration, true); // ignoreCollisions=true initially
+                // ignoreCollisions=true to allow tightly packed cues initially
+                this.createCue(src.trackId, src.sceneId, src.sceneName, newStart, src.duration, true);
             }
 
             // Cleanup ghosts
@@ -939,8 +962,9 @@ class CueEditor {
     }
 
     createCue(trackId, sceneId, sceneName, startTime, duration = 5, ignoreCollisions = false) {
+        // Fix for Loop-Creation: Date.now() is not unique enough for sync loops
         const cue = {
-            id: Date.now(),
+            id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
             trackId,
             sceneId,
             sceneName,
@@ -1285,6 +1309,44 @@ class CueEditor {
             });
         }
 
+        // --- ADDED: Mark channels addressed by CHASERS ---
+        // This prevents Tracking logic from releasing them to 0 before updateChasers() runs
+        if (this.runningChasers && this.runningChasers.length > 0) {
+            this.runningChasers.forEach(ch => {
+                const targetIds = ch.config.targetFixtureIds || [];
+                // Chasers control Color (RGB), Zoom, Strobe, and Dimmer
+                // We must mark ALL these as addressed.
+
+                targetIds.forEach(fId => {
+                    const idNum = Number(fId);
+                    const dev = this.devices.find(d => d.id === idNum);
+                    const assign = this.assignments[idNum] || this.assignments[String(idNum)];
+                    if (!dev || !assign) return;
+
+                    const start = dev.dmx_address;
+                    Object.entries(assign).forEach(([rel, funcs]) => {
+                        const relNum = parseInt(rel);
+                        const absIdx = start + relNum - 2;
+                        if (absIdx < 0 || absIdx >= 512) return;
+
+                        // Optimization: We could check if function matches chaser capability, but marking all is safer for now
+                        // to ensure full control retention. Or filtering for R,G,B,Dim,Zoom,Strobe.
+                        const list = Array.isArray(funcs) ? funcs.map(f => f.toLowerCase()) : [funcs.toLowerCase()];
+
+                        const isControlled = list.some(f =>
+                            ['red', 'r', 'green', 'g', 'blue', 'b', 'white', 'w', 'color',
+                                'zoom', 'strobe', 'shutter', 'dimmer', 'dim', 'intensity'].includes(f)
+                        );
+
+                        if (isControlled) {
+                            addressedThisFrame.add(absIdx);
+                            if (window.debugChaser) console.log(`[CHASER LOCK] Channel ${absIdx + 1} locked by Chaser ${ch.id}`);
+                        }
+                    });
+                });
+            });
+        }
+
         for (const cueId of this.activeCues) {
             const cue = this.cues.find(c => c.id === cueId);
             if (!cue) continue;
@@ -1377,6 +1439,15 @@ class CueEditor {
 
     async checkCues() {
         const newActiveCues = new Set();
+
+        // Debug: Log active status periodically
+        if (this.isPlaying && Math.floor(this.currentTime * 10) % 50 === 0 && !this._lastLogged) {
+            const cueStates = this.cues.map(c => ({ id: c.id, start: c.startTime, end: c.startTime + c.duration, trig: c.triggered, mute: this.tracks.find(t => t.id === c.trackId)?.muted }));
+            console.log(`⏱ [CheckCues] Time: ${this.currentTime.toFixed(2)}s | Cues:`, cueStates);
+            this._lastLogged = true;
+        }
+        if (this.isPlaying && Math.floor(this.currentTime * 10) % 50 !== 0) this._lastLogged = false;
+
         for (const cue of this.cues) {
             const track = this.tracks.find(t => t.id === cue.trackId);
             const isMuted = track ? track.muted : false;
@@ -1395,20 +1466,14 @@ class CueEditor {
                 if (!cue.triggered) {
                     cue.triggered = true;
 
-                    // Priority 1: Data directly on the cue (for generated FX)
+                    // Priority 1: Data directly on the cue (for generated FX - future)
                     if (cue.type === 'fx') {
                         this.startFX(cue.id, cue.channel_data, cue, cue.startTime);
                     }
-                    // Priority 2: Data from scene pool (for chasers/scenes from pool)
+                    // Priority 2: Standard Scene/Chaser via recallScene (central logic)
                     else {
-                        const scene = this.scenes.find(s => s.id === cue.sceneId);
-                        if (scene) {
-                            if (scene.type === 'chaser') {
-                                this.startChaser(scene.id, scene.channel_data, cue, cue.startTime);
-                            } else if (scene.type === 'fx') {
-                                this.startFX(scene.id, scene.channel_data, cue, cue.startTime);
-                            }
-                        }
+                        // Use recallScene to handle type detection (Chaser vs Scene vs Legacy)
+                        this.recallScene(cue.sceneId, cue, cue.startTime);
                     }
                 }
             } else {
@@ -1432,7 +1497,12 @@ class CueEditor {
 
     async recallScene(sceneId, cueRef, cueStartTime = 0) { // Accept startTime
         const scene = this.scenes.find(s => s.id === sceneId);
-        if (!scene) return;
+        if (!scene) {
+            console.warn(`❌ Scenes not found for ID: ${sceneId}`);
+            return;
+        }
+
+        if (this.debugMode) console.log(`🎬 [TRACE] recallScene ENTER: ${scene.name} (Type: ${scene.type})`);
 
         try {
             let channelData = scene.channel_data;
@@ -1442,6 +1512,7 @@ class CueEditor {
 
             // STRICT Fallback: Check for Chaser Object format
             if (!isChaser && !Array.isArray(channelData)) {
+                console.log('🔍 [TRACE] Inspection for Scene:', scene.name, channelData);
                 // If it's an object, it MIGHT be sparse channel data OR a chaser config.
                 // Chaser config usually has 'start_color', 'fade_time' etc.
                 if (channelData.start_color || channelData.fade_time || channelData.mode) {
@@ -1452,9 +1523,12 @@ class CueEditor {
 
             if (isChaser) {
                 // --- CHASER PLAYBACK ---
-                if (!this.runningChasers.find(c => c.id.startsWith(sceneId + '_'))) { // avoid dupes if triggered multiple times
-                    console.log(`🏃‍♂️ Playing Chaser Cue: ${scene.name} @ ${cueStartTime}s`);
+                const existing = this.runningChasers.find(c => c.id.startsWith(sceneId + '_'));
+                if (!existing) {
+                    if (this.debugMode) console.log(`✅ [TRACE] recallScene: Starting Chaser Cue '${scene.name}' (ID: ${sceneId}) @ ${cueStartTime}s`);
                     this.startChaser(sceneId, channelData, cueRef, cueStartTime);
+                } else {
+                    if (this.debugMode) console.log(`ℹ️ [TRACE] recallScene: Chaser '${scene.name}' already running.`);
                 }
             } else {
                 // --- STATIC SCENE PLAYBACK ---
@@ -1523,8 +1597,10 @@ class CueEditor {
             cueRef: cueRef // CRITICAL: Store for automation Factor
         };
 
+
         this.runningChasers.push(chaserState);
         cueRef.activeChaserId = chaserState.id;
+        if (this.debugMode) console.log(`✨ [TRACE] startChaser: Chaser registered. Total running: ${this.runningChasers.length}`, activeConfig);
     }
 
     stopChaser(runId) {
@@ -1535,86 +1611,170 @@ class CueEditor {
     updateChasers() {
         if (!this.runningChasers || this.runningChasers.length === 0) return;
 
-        // Use Timeline Time instead of System Time
+        // Use Timeline Time convert to ms for compatibility with fader logic
         const currentMs = this.currentTime * 1000;
 
         this.runningChasers.forEach(chaser => {
             const state = chaser.config;
-            const elapsed = Math.max(0, currentMs - (chaser.cueStartTime * 1000));
+            const startTime = chaser.cueStartTime * 1000;
+            const elapsed = Math.max(0, currentMs - startTime);
 
-            // Fade Logic
-            const currentFadeTime = parseInt(state.fade_time) || 1000;
-            const cycleDuration = currentFadeTime * 2;
+            // --- PARAMETERS ---
+            const fadeTime = parseInt(state.fade_time) || 3000; // ms
+            const cycleDuration = fadeTime * 2; // Loop: A->B->A
 
-            // Deterministic Phase Calculation
-            // Full cycle 0->1->2 (where 2 wraps to 0)
-            const rawPhase = (elapsed / (currentFadeTime)) % 2;
+            // Automation Factor
+            const cueRef = chaser.cueRef;
+            const factor = cueRef ? this.getAutomationValue(cueRef, this.currentTime - cueRef.startTime) : 1.0;
 
-            // rawPhase goes 0 -> 2. 
-            // 0 -> 1 is Fade In (or A->B)
-            // 1 -> 2 is Fade Out (or B->A)
-
-            let progress;
-            if (state.mode === 'pulse') {
-                progress = (rawPhase < 1) ? rawPhase : 0;
-            } else if (state.mode === 'strobe') {
-                progress = (rawPhase < 1) ? 1 : 0;
-            } else { // Linear / Default
-                progress = (rawPhase < 1) ? rawPhase : (2 - rawPhase);
-            }
-
-            // --- Reverse Logic ---
-            if (state.reverse) {
-                progress = 1.0 - progress;
-            }
-            // ---------------------
-
-            // Colors
-            // console.log('Chaser State:', state);
+            // --- COLOR CALCULATION ---
+            let r, g, b;
             const startRGB = this.hexToRgb(state.start_color || '#000000');
             const endRGB = this.hexToRgb(state.end_color || '#000000');
 
-            let r, g, b;
-            if (state.color_fade_enabled) {
+            if (state.color_fade_enabled !== false) {
+                // Determine Phase (0..2)
+                let phase = (elapsed / fadeTime) % 2;
+
+                // Mode Logic
+                let progress;
+                if (state.mode === 'pulse') {
+                    progress = (phase < 1) ? phase : 0;
+                } else if (state.mode === 'strobe') {
+                    progress = (phase < 1) ? 1 : 0; // 50% duty cycle logic
+                } else {
+                    // Linear / Default (Ping-Pong)
+                    progress = (phase < 1) ? phase : (2 - phase);
+                }
+
+                if (state.reverse) progress = 1.0 - progress;
+
                 r = Math.round(startRGB.r + (endRGB.r - startRGB.r) * progress);
                 g = Math.round(startRGB.g + (endRGB.g - startRGB.g) * progress);
                 b = Math.round(startRGB.b + (endRGB.b - startRGB.b) * progress);
             } else {
+                // Static Color
                 r = startRGB.r;
                 g = startRGB.g;
                 b = startRGB.b;
             }
 
-            // console.log(`RGB: ${r}, ${g}, ${b} | Progress: ${progress.toFixed(2)}`);
+            // Apply Master Dimming / Automation to Color
+            r = Math.min(255, Math.round(r * factor));
+            g = Math.min(255, Math.round(g * factor));
+            b = Math.min(255, Math.round(b * factor));
 
-            // --- Automation ---
-            const cueRef = chaser.cueRef;
-            const factor = cueRef ? this.getAutomationValue(cueRef, this.currentTime - cueRef.startTime) : 1.0;
-            r = Math.round(r * factor);
-            g = Math.round(g * factor);
-            b = Math.round(b * factor);
 
-            // Apply to specific target fixtures
+            // --- ZOOM CALCULATION ---
+            let zVal = 0;
+            if (state.zoom_enabled) {
+                const zoomMax = state.zoom_max !== undefined ? state.zoom_max : 255;
+                const shouldOscillate = (state.color_fade_enabled !== false); // Match faders.js logic
+
+                if (shouldOscillate) {
+                    // Calc separate zoom phase
+                    // Zoom Time is usually sync with Fade Time or explicitly set. 
+                    // Faders.js logic:
+                    // const currentFadeTime = ...; 
+                    // const zEffectiveProgress ...
+                    // Here we reuse fadeTime as base for sync
+
+                    const zTime = fadeTime / 2; // Default logic from faders.js
+                    const zElapsed = elapsed % (zTime * 2);
+
+                    let zEffectiveProgress;
+                    if (state.zoom_sawtooth) {
+                        zEffectiveProgress = (elapsed % cycleDuration) / cycleDuration; // Simplified sawtooth over full cycle
+                        // ACTUALLY: faders.js uses: ((currentTime - startTime) % (currentFadeTime / 2) / (currentFadeTime / 2))
+                        // Let's stick to faders.js exactly:
+                        zEffectiveProgress = (elapsed % (fadeTime / 2)) / (fadeTime / 2);
+                    } else {
+                        // Triangle / PingPong
+                        zEffectiveProgress = (zElapsed < zTime) ? (zElapsed / zTime) : (1 - ((zElapsed - zTime) / zTime));
+                    }
+
+                    let zFinalProgress = state.zoom_invert ? (1 - zEffectiveProgress) : zEffectiveProgress;
+                    // Phase shift reverse for zoom if global reverse is on? Usually separate.
+                    // But cue reverse might want to reverse everything.
+                    if (state.reverse) zFinalProgress = 1.0 - zFinalProgress;
+
+                    zVal = Math.round(zFinalProgress * zoomMax);
+                } else {
+                    // Static Zoom Output
+                    zVal = zoomMax;
+                }
+            }
+
+
+            // --- STROBE CALCULATION ---
+            let sVal = 0;
+            if (state.strobe_enabled) {
+                sVal = state.strobe_value !== undefined ? state.strobe_value : 128;
+                // Strobe usually doesn't fade, just exists.
+            }
+
+            // --- DIMMER CALCULATION (If specified or Default) ---
+            let dVal = 255; // Default full for active chasers
+            if (state.dimmer_enabled && state.dimmer_value !== undefined) {
+                const baseDim = state.dimmer_value;
+                dVal = Math.round(baseDim * factor);
+            } else {
+                // Even if dimmer_enabled is false, we usually want chasers to be visible.
+                // Force 100% unless explicitly 0?
+                dVal = Math.round(255 * factor);
+            }
+
+
+            // --- OUTPUT TO BUFFER ---
             const targetIds = state.targetFixtureIds || [];
             targetIds.forEach(fId => {
-                const device = this.devices.find(d => d.id === fId);
-                // We need to know which channels of this device are R, G, B
-                const devAssignments = this.assignments[fId];
+                const idNum = Number(fId);
+                const device = this.devices.find(d => d.id === idNum);
+                const devAssignments = this.assignments[idNum] || this.assignments[String(idNum)];
+
                 if (device && devAssignments) {
                     const startAddr = device.dmx_address;
                     Object.entries(devAssignments).forEach(([relCh, funcs]) => {
                         const relChNum = parseInt(relCh);
-                        const absCh = startAddr + relChNum - 1;
-                        if (absCh < 1 || absCh > 512) return;
+                        const absCh = startAddr + relChNum - 2; // 0-indexed Buffer
+                        if (absCh < 0 || absCh >= 512) return;
 
-                        const funcList = Array.isArray(funcs) ? funcs.map(f => f.toLowerCase()) : [];
-                        let val = -1;
-                        if (funcList.includes('r')) val = r;
-                        else if (funcList.includes('g')) val = g;
-                        else if (funcList.includes('b')) val = b;
+                        const funcList = Array.isArray(funcs) ? funcs.map(f => f.toLowerCase()) : [funcs.toLowerCase()];
 
-                        if (val !== -1) {
-                            this.dmxBuffer[absCh - 1] = Math.max(this.dmxBuffer[absCh - 1], val);
+                        let valToSet = -1;
+
+                        // Color
+                        if (funcList.includes('red') || funcList.includes('r')) valToSet = r;
+                        else if (funcList.includes('green') || funcList.includes('g')) valToSet = g;
+                        else if (funcList.includes('blue') || funcList.includes('b')) valToSet = b;
+                        else if (funcList.includes('white') || funcList.includes('w')) {
+                            // White handling? If w_enabled? For now basic.
+                            if (state.w_enabled) valToSet = 255; // Simplistic
+                        }
+
+                        // Zoom
+                        else if (funcList.includes('zoom')) {
+                            if (state.zoom_enabled) valToSet = zVal;
+                        }
+
+                        // Strobe
+                        else if (funcList.includes('strobe') || funcList.includes('shutter')) {
+                            if (state.strobe_enabled) valToSet = sVal;
+                        }
+
+                        // Master Dimmer
+                        else if (funcList.includes('dimmer') || funcList.includes('dim') || funcList.includes('intensity')) {
+                            // Always apply calculated dVal (255 or custom) to ensure visibility
+                            valToSet = dVal;
+                        }
+
+
+                        if (valToSet !== -1) {
+                            // HTP or Overwrite?
+                            // For Cues, usually Highest Wins or Latest. 
+                            // Since updateChasers runs AFTER processDmxFrame, this acts as LTP overlay.
+                            // But if multiple Chasers target same fixture... HTP is safer for colors.
+                            this.dmxBuffer[absCh] = Math.max(this.dmxBuffer[absCh], valToSet);
                         }
                     });
                 }
