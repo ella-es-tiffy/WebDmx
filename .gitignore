@@ -43,4 +43,18 @@ temp/
 *.tmp
 
 # Build files
+# Build files
 *.map
+
+# Claude / AI Assistant
+.claude/
+.claude.md
+claude.md
+
+# Database Credentials & Configs
+**/database.js
+**/db_config.php
+**/config.php
+**/credentials.json
+# Block any directory named database if it contains only config/data
+/database/
