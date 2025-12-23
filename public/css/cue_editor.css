@@ -271,11 +271,29 @@ body {
     box-shadow: 0 0 5px rgba(211, 47, 47, 0.5);
 }
 
+.track-menu-btn {
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 2px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.track-menu-btn:hover {
+    color: #fff;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
 .mute-groups {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    margin-left: 4px;
+    margin-left: 2px;
     margin-right: 0px;
 }
 

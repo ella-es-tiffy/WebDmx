@@ -34,6 +34,13 @@
                     <label>Zoom: </label>
                     <input type="range" id="zoom-slider" min="20" max="300" step="10" value="50">
                 </div>
+                <div class="snap-controls"
+                    style="display:flex; gap:8px; margin-left:10px; font-size:10px; color:#aaa; align-items:center;">
+                    <label style="display:flex; align-items:center; gap:3px;"><input type="checkbox" id="snap-grid"
+                            checked> Grid</label>
+                    <label style="display:flex; align-items:center; gap:3px;"><input type="checkbox" id="snap-cue"
+                            checked> Cues</label>
+                </div>
             </div>
             <div class="editor-actions">
                 <div class="toggle-group" title="Full Tracking: Lights stay on after cue ends">
@@ -145,7 +152,7 @@
             <li id="ctx-track-delete" class="danger">🗑️ Delete Track</li>
         </ul>
     </div>
-    <script src="js/cue_editor.js?v=daw_v52"></script>
+    <script src="js/cue_editor.js?v=daw_v59"></script>
 </body>
 
 </html>

@@ -2,27 +2,18 @@
   "tracks": [
     {
       "id": 1,
-      "name": "new track",
+      "name": "FX",
       "cues": [],
       "muted": false
     },
     {
       "id": 2,
-      "name": "pan/tilt",
+      "name": "Move",
       "cues": [],
       "muted": false,
       "muteGroups": [
         "C",
         "A"
-      ]
-    },
-    {
-      "id": 3,
-      "name": "new track",
-      "cues": [],
-      "muted": false,
-      "muteGroups": [
-        "C"
       ]
     },
     {
@@ -43,6 +34,12 @@
     {
       "id": 6,
       "name": "other",
+      "cues": [],
+      "muted": false
+    },
+    {
+      "id": 9,
+      "name": "Free",
       "cues": [],
       "muted": false
     }

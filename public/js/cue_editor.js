@@ -479,9 +479,37 @@ class CueEditor {
             }
         }
 
-        // Build drag group from all selected cues
+        // Build drag group (Chain Selection if no Ctrl)
+        let dragIds = new Set(this.selectedCues);
+        const useChain = !e.ctrlKey && !e.metaKey;
+
+        if (useChain) {
+            const EPSILON = 0.05; // 50ms tolerance for loose connections
+            let changed = true;
+            let loops = 0;
+            while (changed && loops < 50) { // Limit iterations
+                changed = false;
+                loops++;
+                const currentIds = Array.from(dragIds);
+                this.cues.forEach(c => {
+                    if (dragIds.has(c.id)) return;
+                    const isConnected = currentIds.some(id => {
+                        const existing = this.cues.find(ex => ex.id === id);
+                        if (!existing || existing.trackId !== c.trackId) return false;
+                        const endToStart = Math.abs((existing.startTime + existing.duration) - c.startTime) < EPSILON;
+                        const startToEnd = Math.abs((c.startTime + c.duration) - existing.startTime) < EPSILON;
+                        return endToStart || startToEnd;
+                    });
+                    if (isConnected) {
+                        dragIds.add(c.id);
+                        changed = true;
+                    }
+                });
+            }
+        }
+
         const group = [];
-        this.selectedCues.forEach(id => {
+        dragIds.forEach(id => {
             const c = this.cues.find(x => x.id === id);
             if (c) group.push({ cue: c, originalTime: c.startTime });
         });
@@ -572,34 +600,45 @@ class CueEditor {
                 const myCenterRaw = rawTargetTime + (selfDuration / 2);
 
                 let candidates = [];
+                const snapThreshold = 5 / this.pixelsPerSecond;
+
+                // Toggles
+                const snapGridEl = document.getElementById('snap-grid');
+                const snapCueEl = document.getElementById('snap-cue');
+                const useGrid = snapGridEl ? snapGridEl.checked : true;
+                const useCue = snapCueEl ? snapCueEl.checked : true;
 
                 // 1. Grid Snap
-                const gridSnapStart = Math.round(rawTargetTime / this.snapGrid) * this.snapGrid;
-                candidates.push({ time: gridSnapStart, dist: Math.abs(gridSnapStart - rawTargetTime), type: 'grid' });
+                if (useGrid) {
+                    const gridSnapStart = Math.round(rawTargetTime / this.snapGrid) * this.snapGrid;
+                    candidates.push({ time: gridSnapStart, dist: Math.abs(gridSnapStart - rawTargetTime), type: 'grid' });
+                }
 
                 // 2. Object Snap
-                const currentTrackId = this.dragState.cue.trackId;
-                const ignoreIds = this.dragState.group.map(g => g.cue.id);
-                const otherCues = this.cues.filter(c => c.trackId === currentTrackId && !ignoreIds.includes(c.id));
-                const snapThreshold = 15 / this.pixelsPerSecond;
+                if (useCue) {
+                    const ignoreIds = this.dragState.group.map(g => g.cue.id);
+                    // Allow cross-track snapping (removed currentTrackId check)
+                    const otherCues = this.cues.filter(c => !ignoreIds.includes(c.id));
 
-                otherCues.forEach(other => {
-                    const oStart = other.startTime;
-                    const oEnd = other.startTime + other.duration;
-                    const oCenter = other.startTime + (other.duration / 2);
 
-                    const isLeft = myCenterRaw < oCenter;
+                    otherCues.forEach(other => {
+                        const oStart = other.startTime;
+                        const oEnd = other.startTime + other.duration;
+                        const oCenter = other.startTime + (other.duration / 2);
 
-                    if (isLeft) {
-                        if (Math.abs(oStart - rawTargetTime) < snapThreshold) candidates.push({ time: oStart, dist: Math.abs(oStart - rawTargetTime), type: 'obj-start-start' });
-                        const snapPosForEndToStart = oStart - selfDuration;
-                        if (Math.abs(rawTargetEnd - oStart) < snapThreshold) candidates.push({ time: snapPosForEndToStart, dist: Math.abs(rawTargetEnd - oStart), type: 'obj-end-start' });
-                    } else {
-                        if (Math.abs(oEnd - rawTargetTime) < snapThreshold) candidates.push({ time: oEnd, dist: Math.abs(oEnd - rawTargetTime), type: 'obj-start-end' });
-                        const snapPosForEndToEnd = oEnd - selfDuration;
-                        if (Math.abs(rawTargetEnd - oEnd) < snapThreshold) candidates.push({ time: snapPosForEndToEnd, dist: Math.abs(rawTargetEnd - oEnd), type: 'obj-end-end' });
-                    }
-                });
+                        const isLeft = myCenterRaw < oCenter;
+
+                        if (isLeft) {
+                            if (Math.abs(oStart - rawTargetTime) < snapThreshold) candidates.push({ time: oStart, dist: Math.abs(oStart - rawTargetTime), type: 'obj-start-start' });
+                            const snapPosForEndToStart = oStart - selfDuration;
+                            if (Math.abs(rawTargetEnd - oStart) < snapThreshold) candidates.push({ time: snapPosForEndToStart, dist: Math.abs(rawTargetEnd - oStart), type: 'obj-end-start' });
+                        } else {
+                            if (Math.abs(oEnd - rawTargetTime) < snapThreshold) candidates.push({ time: oEnd, dist: Math.abs(oEnd - rawTargetTime), type: 'obj-start-end' });
+                            const snapPosForEndToEnd = oEnd - selfDuration;
+                            if (Math.abs(rawTargetEnd - oEnd) < snapThreshold) candidates.push({ time: snapPosForEndToEnd, dist: Math.abs(rawTargetEnd - oEnd), type: 'obj-end-end' });
+                        }
+                    });
+                }
 
                 candidates.sort((a, b) => a.dist - b.dist);
                 if (candidates.length > 0 && candidates[0].dist < snapThreshold) {
@@ -1024,7 +1063,9 @@ class CueEditor {
     }
 
     addTrack(render = true) {
-        const trackId = this.tracks.length + 1;
+        // Safer ID generation to avoid duplicates after delete
+        const maxId = this.tracks.reduce((max, t) => Math.max(max, parseInt(t.id) || 0), 0);
+        const trackId = maxId + 1;
         this.tracks.push({ id: trackId, name: `Track ${trackId}`, cues: [], muted: false });
         if (render) this.renderTracks();
     }
@@ -1066,7 +1107,9 @@ class CueEditor {
 
     setBPM(bpm) {
         if (!bpm || bpm < 1) bpm = 60;
-        this.speed = bpm / 60;
+        this.bpm = bpm;
+        this.speed = this.bpm / 60;
+        this.snapGrid = (60 / this.bpm) / 4;
         const el = document.getElementById('bpm-input');
         if (el) el.value = Math.round(bpm);
         this.renderGrid();
@@ -1123,7 +1166,18 @@ class CueEditor {
                 this.toggleMute(track.id);
             };
 
+            const menuBtn = document.createElement('button');
+            menuBtn.className = 'track-menu-btn';
+            menuBtn.innerHTML = '&#8942;';
+            menuBtn.title = 'Options';
+            menuBtn.onclick = (e) => {
+                e.stopPropagation();
+                const rect = menuBtn.getBoundingClientRect();
+                this.showTrackContextMenu({ clientX: rect.left, clientY: rect.bottom, preventDefault: () => { } }, track);
+            };
+
             label.appendChild(nameSpan);
+            label.appendChild(menuBtn);
             label.appendChild(muteBtn);
 
             const mgContainer = document.createElement('div');
