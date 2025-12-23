@@ -27,9 +27,9 @@ While the software is built to be compatible with most standard FTDI-based devic
 *   **Host:** macOS with M1 Chip
 
 ## Requirements
-- ** Npm (Server Backend)
-- ** Webserver (Browser Frontend)
-- ** Mysql
+- **Npm (Server Backend)
+- **Webserver (Browser Frontend)
+- **Mysql
 
 
 <img width="1849" height="1082" alt="Bildschirmfoto 2025-12-23 um 11 17 12" src="https://github.com/user-attachments/assets/f1157249-d34b-4d2d-93d7-422fbe9e06d2" />
