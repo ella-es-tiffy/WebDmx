@@ -3,7 +3,7 @@ const TEMPLATE_API_URL = `http://${window.location.hostname}:3000/api/templates`
 class TemplateManager {
     constructor() {
         this.templates = [];
-        this.functionTypes = ['R', 'G', 'B', 'W', 'P', 'T', 'DIM', 'STROBE', 'GOBO', 'PRISM', 'FOCUS', 'ZOOM', 'IRIS', 'SHUTTER', 'OTHER'];
+        this.functionTypes = ['R', 'G', 'B', 'W', 'P', 'T', 'SPEED', 'DIM', 'STROBE', 'GOBO', 'PRISM', 'FOCUS', 'ZOOM', 'IRIS', 'SHUTTER', 'OTHER'];
     }
 
     async init() {
@@ -147,7 +147,7 @@ class TemplateManager {
     }
 
     renderChannelRow(channel, index) {
-        const groups = ['Intensity', 'Position', 'Color', 'Beam', 'Control'];
+        const groups = ['Intensity', 'Position', 'Color', 'Beam', 'Speed', 'Control'];
         return `
             <div class="channel-row" data-index="${index}">
                 <div class="channel-num" style="width: 50px;">

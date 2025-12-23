@@ -2,41 +2,375 @@
   "tracks": [
     {
       "id": 1,
-      "name": "Track 1",
+      "name": "new track",
       "cues": [],
       "muted": false
     },
     {
       "id": 2,
-      "name": "Track 2",
+      "name": "pan/tilt",
       "cues": [],
-      "muted": false
+      "muted": true,
+      "muteGroup": "C"
     },
     {
       "id": 3,
-      "name": "Track 3",
+      "name": "new track",
       "cues": [],
       "muted": false
     },
     {
       "id": 4,
-      "name": "Track 4",
+      "name": "zoom",
       "cues": [],
       "muted": false
     },
     {
       "id": 5,
-      "name": "Track 5",
+      "name": "colors",
       "cues": [],
       "muted": false
     },
     {
       "id": 6,
-      "name": "Track 6",
+      "name": "other",
       "cues": [],
       "muted": false
     }
   ],
-  "cues": [],
+  "cues": [
+    {
+      "id": "1766450698477_jxjg37c4m",
+      "trackId": 2,
+      "sceneId": 48,
+      "sceneName": "up",
+      "startTime": 5,
+      "duration": 5,
+      "fadeIn": 0,
+      "fadeOut": 0,
+      "reverse": false,
+      "automationPoints": [
+        {
+          "x": 0,
+          "y": 0.5
+        },
+        {
+          "x": 1,
+          "y": 0.5
+        }
+      ],
+      "triggered": false
+    },
+    {
+      "id": "1766454494982_f5txdpxxu",
+      "trackId": 2,
+      "sceneId": 54,
+      "sceneName": "001",
+      "startTime": 0,
+      "duration": 5,
+      "fadeIn": 0,
+      "fadeOut": 0,
+      "reverse": false,
+      "automationPoints": [
+        {
+          "x": 0,
+          "y": 0.5
+        },
+        {
+          "x": 1,
+          "y": 0.5
+        }
+      ],
+      "triggered": false
+    },
+    {
+      "id": "1766454519117_44racx1gq",
+      "trackId": 2,
+      "sceneId": 55,
+      "sceneName": "002",
+      "startTime": 10,
+      "duration": 5,
+      "fadeIn": 0,
+      "fadeOut": 0,
+      "reverse": false,
+      "automationPoints": [
+        {
+          "x": 0,
+          "y": 0.5
+        },
+        {
+          "x": 1,
+          "y": 0.5
+        }
+      ],
+      "triggered": false
+    },
+    {
+      "id": "1766454525664_w01goqf0y",
+      "trackId": 2,
+      "sceneId": 56,
+      "sceneName": "004",
+      "startTime": 15,
+      "duration": 5,
+      "fadeIn": 0,
+      "fadeOut": 0,
+      "reverse": false,
+      "automationPoints": [
+        {
+          "x": 0,
+          "y": 0.5
+        },
+        {
+          "x": 1,
+          "y": 0.5
+        }
+      ],
+      "triggered": false
+    },
+    {
+      "id": "1766454530283_rccf3blbb",
+      "trackId": 2,
+      "sceneId": 57,
+      "sceneName": "005",
+      "startTime": 20,
+      "duration": 5,
+      "fadeIn": 0,
+      "fadeOut": 0,
+      "reverse": false,
+      "automationPoints": [
+        {
+          "x": 0,
+          "y": 0.5
+        },
+        {
+          "x": 1,
+          "y": 0.5
+        }
+      ],
+      "triggered": false
+    },
+    {
+      "id": "1766454536489_3grfm2ena",
+      "trackId": 2,
+      "sceneId": 58,
+      "sceneName": "006",
+      "startTime": 25.1,
+      "duration": 5,
+      "fadeIn": 0,
+      "fadeOut": 0,
+      "reverse": false,
+      "automationPoints": [
+        {
+          "x": 0,
+          "y": 0.5
+        },
+        {
+          "x": 1,
+          "y": 0.5
+        }
+      ],
+      "triggered": false
+    },
+    {
+      "id": "1766454607291_ien3p82xy",
+      "trackId": 5,
+      "sceneId": 52,
+      "sceneName": "RED Aqua",
+      "startTime": 10.200000000000001,
+      "duration": 5,
+      "fadeIn": 0,
+      "fadeOut": 0,
+      "reverse": false,
+      "automationPoints": [
+        {
+          "x": 0.02032520325203252,
+          "y": 0.8
+        },
+        {
+          "x": 1,
+          "y": 0.8
+        }
+      ],
+      "triggered": false,
+      "activeChaserId": null
+    },
+    {
+      "id": "cue_1766454641959_30795",
+      "trackId": 5,
+      "sceneId": 52,
+      "sceneName": "RED Aqua",
+      "startTime": 15.200000000000001,
+      "duration": 5,
+      "fadeIn": 0,
+      "fadeOut": 0,
+      "reverse": true,
+      "automationPoints": [
+        {
+          "x": 0,
+          "y": 0.8
+        },
+        {
+          "x": 1,
+          "y": 0.8
+        }
+      ],
+      "triggered": false,
+      "activeChaserId": null
+    },
+    {
+      "id": "1766454757885_dwjqnq6dm",
+      "trackId": 5,
+      "sceneId": 60,
+      "sceneName": "green",
+      "startTime": 5.2,
+      "duration": 5,
+      "fadeIn": 0,
+      "fadeOut": 0,
+      "reverse": false,
+      "automationPoints": [
+        {
+          "x": 0,
+          "y": 0.8
+        },
+        {
+          "x": 1,
+          "y": 0.8
+        }
+      ],
+      "triggered": false
+    },
+    {
+      "id": "1766454768128_vyq4kq1s5",
+      "trackId": 5,
+      "sceneId": 49,
+      "sceneName": "violett",
+      "startTime": 0.1,
+      "duration": 5,
+      "fadeIn": 0,
+      "fadeOut": 0,
+      "reverse": false,
+      "automationPoints": [
+        {
+          "x": 0,
+          "y": 0.8
+        },
+        {
+          "x": 1,
+          "y": 0.8
+        }
+      ],
+      "triggered": false
+    },
+    {
+      "id": "1766454769990_k2zetfsnp",
+      "trackId": 5,
+      "sceneId": 49,
+      "sceneName": "violett",
+      "startTime": 20.200000000000003,
+      "duration": 5,
+      "fadeIn": 0,
+      "fadeOut": 0,
+      "reverse": false,
+      "automationPoints": [
+        {
+          "x": 0,
+          "y": 0.8
+        },
+        {
+          "x": 1,
+          "y": 0.8
+        }
+      ],
+      "triggered": false
+    },
+    {
+      "id": "1766455879531_zytfkzt95",
+      "trackId": 6,
+      "sceneId": 62,
+      "sceneName": "strobe",
+      "startTime": 3.4000000000000004,
+      "duration": 5,
+      "fadeIn": 0,
+      "fadeOut": 0,
+      "reverse": false,
+      "automationPoints": [
+        {
+          "x": 0,
+          "y": 0.8
+        },
+        {
+          "x": 1,
+          "y": 0.8
+        }
+      ],
+      "triggered": false
+    },
+    {
+      "id": "1766455894128_t82zt7z3g",
+      "trackId": 4,
+      "sceneId": 50,
+      "sceneName": "zoom 255",
+      "startTime": 11.200000000000001,
+      "duration": 5,
+      "fadeIn": 0,
+      "fadeOut": 0,
+      "reverse": false,
+      "automationPoints": [
+        {
+          "x": 0,
+          "y": 0.2
+        },
+        {
+          "x": 0.975609756097561,
+          "y": 0.8
+        }
+      ],
+      "triggered": false
+    },
+    {
+      "id": "1766455955598_hx81icc0z",
+      "trackId": 4,
+      "sceneId": 50,
+      "sceneName": "zoom 255",
+      "startTime": 16.200000000000003,
+      "duration": 5,
+      "fadeIn": 0,
+      "fadeOut": 0,
+      "reverse": false,
+      "automationPoints": [
+        {
+          "x": 0.02032520325203252,
+          "y": 0.8
+        },
+        {
+          "x": 1,
+          "y": 0.8
+        }
+      ],
+      "triggered": false
+    },
+    {
+      "id": "1766455961700_dl7yeh4xl",
+      "trackId": 4,
+      "sceneId": 50,
+      "sceneName": "zoom 255",
+      "startTime": 21.200000000000003,
+      "duration": 5,
+      "fadeIn": 0,
+      "fadeOut": 0,
+      "reverse": false,
+      "automationPoints": [
+        {
+          "x": 0.0020325203252032522,
+          "y": 0.8
+        },
+        {
+          "x": 1,
+          "y": 0.2
+        }
+      ],
+      "triggered": false
+    }
+  ],
   "maxTime": 60
 }

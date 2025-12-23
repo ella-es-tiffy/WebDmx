@@ -271,6 +271,46 @@ body {
     box-shadow: 0 0 5px rgba(211, 47, 47, 0.5);
 }
 
+.mute-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-left: 4px;
+    margin-right: 0px;
+}
+
+.mute-group {
+    width: 8px;
+    height: 6px;
+    border: 1px solid #444;
+    background: #111;
+    cursor: pointer;
+    border-radius: 1px;
+    transition: all 0.2s;
+}
+
+.mute-group:hover {
+    border-color: #888;
+}
+
+.mute-group.active.grp-a {
+    background: #ff1744;
+    border-color: #ff1744;
+    box-shadow: 0 0 4px #ff1744;
+}
+
+.mute-group.active.grp-b {
+    background: #00e676;
+    border-color: #00e676;
+    box-shadow: 0 0 4px #00e676;
+}
+
+.mute-group.active.grp-c {
+    background: #2979ff;
+    border-color: #2979ff;
+    box-shadow: 0 0 4px #2979ff;
+}
+
 .track-content {
     flex: 1;
     position: relative;
@@ -282,7 +322,7 @@ body {
     position: absolute;
     height: 50px;
     top: 5px;
-    background: var(--cue-block);
+    background: var(--cue-bg, var(--cue-block));
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 4px;
     padding: 2px 8px;
@@ -317,7 +357,15 @@ body {
     fill: none;
     stroke: rgba(255, 255, 255, 0.4);
     stroke-width: 2px;
-    cursor: copy;
+    pointer-events: none;
+    /* Events handled by hit line */
+}
+
+.automation-line-hit {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 15px;
+    cursor: crosshair;
     pointer-events: stroke;
 }
 
@@ -332,8 +380,8 @@ body {
 
 .automation-node-div {
     position: absolute;
-    width: 8px;
-    height: 8px;
+    width: 12px;
+    height: 12px;
     background: #fff;
     /* Snow white nodes */
     border: 1px solid #000;
@@ -380,6 +428,19 @@ body {
 .cue-block-time {
     font-size: 9px;
     color: rgba(255, 255, 255, 0.7);
+}
+
+.cue-dmx-value {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 24px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.3);
+    font-family: 'Courier New', monospace;
+    pointer-events: none;
+    z-index: 8;
 }
 
 .cue-resize-handle {

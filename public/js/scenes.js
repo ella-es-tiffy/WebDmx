@@ -283,6 +283,8 @@ class SceneManager {
         const filterColor = document.getElementById('filter-color').checked;
         const filterPosition = document.getElementById('filter-position').checked;
         const filterBeam = document.getElementById('filter-beam').checked;
+        const filterSpeed = document.getElementById('filter-speed').checked;
+        const filterControl = document.getElementById('filter-control').checked;
 
         // Load Template Data (with Group information)
         let templates = {};
@@ -349,7 +351,8 @@ class SceneManager {
                 else if (group === 'Color' && filterColor) include = true;
                 else if (group === 'Position' && filterPosition) include = true;
                 else if (group === 'Beam' && filterBeam) include = true;
-                else if (group === 'Control') include = false; // Never auto-include Control
+                else if (group === 'Speed' && filterSpeed) include = true;
+                else if (group === 'Control' && filterControl) include = true;
                 else if (group === 'None') include = false; // Never include None (not assigned)
 
                 if (include) {

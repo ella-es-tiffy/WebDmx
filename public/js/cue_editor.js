@@ -53,6 +53,8 @@ class CueEditor {
             group: [],
             lastSnapSource: null
         };
+        this.selectedCues = new Set();
+        this.clipboard = null;
         this.initAsync();
     }
 
@@ -222,8 +224,34 @@ class CueEditor {
                 if (this.isPlaying) this.pause();
                 else this.play();
             }
+
+            // Duration shortcuts for SELECTED cue
+            if (this.selectedCue) {
+                if (e.shiftKey && e.key.toLowerCase() === 'w') {
+                    e.preventDefault();
+                    this.selectedCue.duration = Math.min(60, this.selectedCue.duration + 0.5);
+                    this.renderCues();
+                    console.log(`⏱️ Duration +0.5s: ${this.selectedCue.duration}s`);
+                } else if (e.shiftKey && e.key.toLowerCase() === 'q') {
+                    e.preventDefault();
+                    this.selectedCue.duration = Math.max(0.1, this.selectedCue.duration - 0.5);
+                    this.renderCues();
+                    console.log(`⏱️ Duration -0.5s: ${this.selectedCue.duration}s`);
+                }
+            }
+
             if (e.code === 'Delete' || e.code === 'Backspace') {
                 if (this.selectedCue) this.deleteSelectedCue();
+            }
+
+            // Copy/Paste Shortcuts
+            if ((e.metaKey || e.ctrlKey) && key === 'c') {
+                e.preventDefault();
+                this.copySelectedCue();
+            }
+            if ((e.metaKey || e.ctrlKey) && key === 'v') {
+                e.preventDefault();
+                this.pasteCue();
             }
         });
 
@@ -275,6 +303,43 @@ class CueEditor {
                 this.deleteSelectedCue();
             }
         });
+
+        bindCtx('ctx-reset', (cue) => {
+            if (cue) {
+                // Reset automation: Clear all points, set default to middle (0.5 = 100%)
+                cue.automationPoints = [{ x: 0, y: 0.5 }, { x: 1, y: 0.5 }];
+                this.renderCues();
+                console.log(`🔄 Reset Automation for Cue ${cue.id}`);
+            }
+        });
+
+        bindCtx('ctx-copy', (cue) => {
+            if (cue) {
+                this.selectedCue = cue;
+                this.copySelectedCue();
+            }
+        });
+
+        bindCtx('ctx-paste', () => {
+            this.pasteCue();
+        });
+
+        bindCtx('ctx-duration-plus', (cue) => {
+            if (cue) {
+                cue.duration = Math.min(60, cue.duration + 0.5); // Max 60s
+                this.renderCues();
+                console.log(`⏱️ Duration +0.5s: ${cue.duration}s`);
+            }
+        });
+
+        bindCtx('ctx-duration-minus', (cue) => {
+            if (cue) {
+                cue.duration = Math.max(0.1, cue.duration - 0.5); // Min 0.1s
+                this.renderCues();
+                console.log(`⏱️ Duration -0.5s: ${cue.duration}s`);
+            }
+        });
+
 
         // Timeline Context Menu Actions
         const bindTimeCtx = (id, fn) => {
@@ -384,8 +449,43 @@ class CueEditor {
         e.stopPropagation();
         if (e.target.classList.contains('cue-resize-handle')) return;
 
-        const isCtrl = e.ctrlKey || e.metaKey;
-        const group = isCtrl ? [{ cue, originalTime: cue.startTime }] : this.findConnectedGroup(cue);
+        // Right click: Select if not selected, keep selection if already part of group
+        if (e.button === 2) {
+            if (!this.selectedCues.has(cue.id)) {
+                this.selectedCues.clear();
+                this.selectedCues.add(cue.id);
+                this.selectedCue = cue;
+                this.renderCues();
+            }
+            return;
+        }
+
+        // Shift+Click: Multi-Select Toggle
+        if (e.shiftKey) {
+            if (this.selectedCues.has(cue.id)) {
+                this.selectedCues.delete(cue.id);
+                if (this.selectedCue && this.selectedCue.id === cue.id) this.selectedCue = null;
+            } else {
+                this.selectedCues.add(cue.id);
+                this.selectedCue = cue;
+            }
+            this.renderCues();
+        } else {
+            // Normal Click: Select single unless dragging existing selection
+            if (!this.selectedCues.has(cue.id)) {
+                this.selectedCues.clear();
+                this.selectedCues.add(cue.id);
+                this.selectedCue = cue;
+                this.renderCues();
+            }
+        }
+
+        // Build drag group from all selected cues
+        const group = [];
+        this.selectedCues.forEach(id => {
+            const c = this.cues.find(x => x.id === id);
+            if (c) group.push({ cue: c, originalTime: c.startTime });
+        });
 
         this.dragState = {
             active: true,
@@ -398,14 +498,10 @@ class CueEditor {
             group: group
         };
 
-        element.classList.add('dragging');
         group.forEach(g => {
             const el = this.cueElements.get(g.cue.id);
             if (el) el.classList.add('dragging');
         });
-
-        this.selectedCue = cue;
-        this.highlightSelectedCue();
     }
 
     handlePoolMouseDown(e, scene) {
@@ -437,11 +533,15 @@ class CueEditor {
         ghost.style.borderWidth = '2px';
         ghost.style.borderStyle = 'solid';
 
+
+
+
         ghost.style.opacity = '0.9';
-        ghost.style.pointerEvents = 'none';
+        ghost.style.pointerEvents = 'none'; // Ghosts don't block clicks
         ghost.style.zIndex = '9999';
         ghost.style.left = `${e.clientX}px`;
         ghost.style.top = `${e.clientY}px`;
+
         document.body.appendChild(ghost);
 
         this.dragState = {
@@ -450,7 +550,8 @@ class CueEditor {
             scene: scene,
             ghostElement: ghost,
             startX: e.clientX,
-            offsetY: 20
+            offsetY: 20,
+            duration: dur
         };
     }
 
@@ -537,6 +638,7 @@ class CueEditor {
             const ghost = this.dragState.ghostElement;
             ghost.style.left = `${e.clientX}px`;
             ghost.style.top = `${e.clientY - this.dragState.offsetY}px`;
+
         } else if (this.dragState.mode === 'clone-drag') {
             const deltaX = Math.max(0, e.clientX - this.dragState.startX);
             const deltaSeconds = deltaX / this.pixelsPerSecond;
@@ -607,7 +709,7 @@ class CueEditor {
                 let y = 1.0 - ((e.clientY - rect.top) / rect.height);
 
                 pt.x = Math.max(0, Math.min(1, x));
-                pt.y = Math.max(0, Math.min(0.5, y)); // WALL: 0.5 is 255 DMX
+                pt.y = Math.max(0.2, Math.min(0.8, y)); // 10px margin Top/Bottom (0.2 - 0.8)
 
                 this.renderAutomation(cue, block);
             }
@@ -680,13 +782,28 @@ class CueEditor {
                 startTime = Math.max(0, startTime);
 
                 const scene = this.dragState.scene;
-                let dur = 5;
-                if (scene.duration !== undefined && scene.duration !== null) {
-                    dur = parseFloat(scene.duration) / 1000;
-                }
-                if (isNaN(dur) || dur <= 0) dur = 5;
+                // Use duration from dragState (may have been changed via scroll wheel)
+                let dur = this.dragState.duration || 2;
+                if (!dur || isNaN(dur) || dur <= 0) dur = 2;
 
-                this.createCue(trackId, scene.id, scene.name, startTime, dur, isCtrl);
+                // Determine Default Automation (Dimmer/Zoom start at TOP)
+                let autoPoints = null;
+                if (scene) {
+                    let data = scene.channel_data;
+                    if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { } }
+                    let isTopStart = false;
+                    const check = (idx) => {
+                        const ch = this.channelMap[idx];
+                        // Check for Dimmer or Beam (Zoom/Iris/etc)
+                        if (ch && (ch.isDimmer || ch.isBeam)) isTopStart = true;
+                    };
+                    if (Array.isArray(data)) data.forEach((v, i) => v !== null && check(i));
+                    else if (typeof data === 'object') Object.keys(data).forEach(k => check(parseInt(k) - 1));
+
+                    if (isTopStart) autoPoints = [{ x: 0, y: 0.8 }, { x: 1, y: 0.8 }];
+                }
+
+                this.createCue(trackId, scene.id, scene.name, startTime, dur, isCtrl, autoPoints);
             }
         } else if (this.dragState.mode === 'resize') {
             const cue = this.dragState.cue;
@@ -715,6 +832,9 @@ class CueEditor {
         } else if (this.dragState.mode === 'automation') {
             this.renderCues();
         }
+
+        // Clean up DMX tooltip
+
 
         const area = document.querySelector('.timeline-area');
         if (area) area.style.cursor = 'default';
@@ -780,7 +900,7 @@ class CueEditor {
     }
 
     buildChannelMap() {
-        this.channelMap = new Array(512).fill(null).map(() => ({ isIntensity: false }));
+        this.channelMap = new Array(512).fill(null).map(() => ({ isIntensity: false, isPosition: false, isBeam: false, isSpeed: false, isControl: false }));
 
         this.devices.forEach(dev => {
             const start = dev.dmx_address;
@@ -797,12 +917,24 @@ class CueEditor {
                 // Determine channel type:
                 // Dimmer/Intensity -> HTP (Must go to 0 when inactive)
                 // Color, Pan, Tilt, etc -> LTP (Should HOLD last value)
-                const isDimmer = funcList.some(f => f === 'dim' || f === 'dimmer' || f === 'intensity' || f === 'brightness');
-                const isColor = funcList.some(f => f === 'red' || f === 'r' || f === 'green' || f === 'g' || f === 'blue' || f === 'b' || f === 'white' || f === 'w' || f === 'color');
+                // Substring matching for robustness
+                const has = (keywords) => funcList.some(f => keywords.some(k => f.includes(k)));
+                const exact = (keywords) => funcList.some(f => keywords.includes(f));
+
+                const isDimmer = has(['dim', 'intensity', 'brightness']);
+                const isColor = has(['red', 'green', 'blue', 'white', 'color', 'cyan', 'magenta', 'yellow', 'amber', 'uv']) || exact(['r', 'g', 'b', 'w', 'c', 'm', 'y', 'a']);
+                const isPosition = has(['pan', 'tilt']) || exact(['p', 't']);
+                const isBeam = has(['zoom', 'iris', 'focus', 'gobo', 'prism', 'frost', 'blade']);
+                const isSpeed = has(['speed', 'rate']);
+                const isControl = has(['strobe', 'shutter', 'macro', 'reset', 'lamp', 'control', 'func', 'flash', 'duration', 'ctrl']);
 
                 this.channelMap[absIdx].isDimmer = isDimmer;
                 this.channelMap[absIdx].isColor = isColor;
                 this.channelMap[absIdx].isIntensity = isDimmer || (isColor && !this.hasSeparateDimmer(assign));
+                this.channelMap[absIdx].isPosition = isPosition;
+                this.channelMap[absIdx].isBeam = isBeam;
+                this.channelMap[absIdx].isSpeed = isSpeed;
+                this.channelMap[absIdx].isControl = isControl;
             });
         });
         console.log('🛰️ Channel Efficiency Map built.');
@@ -900,10 +1032,37 @@ class CueEditor {
 
     toggleMute(trackId) {
         const track = this.tracks.find(t => t.id === trackId);
-        if (track) {
-            track.muted = !track.muted;
-            this.renderTracks();
+        if (!track) return;
+
+        // Migrate legacy muteGroup to muteGroups
+        if (track.muteGroup && !track.muteGroups) track.muteGroups = [track.muteGroup];
+
+        const newState = !track.muted;
+        track.muted = newState;
+
+        if (track.muteGroups && track.muteGroups.length > 0) {
+            this.tracks.forEach(t => {
+                if (t === track) return;
+                if (t.muteGroup && !t.muteGroups) t.muteGroups = [t.muteGroup]; // Migrate other
+                if (t.muteGroups && t.muteGroups.some(g => track.muteGroups.includes(g))) {
+                    t.muted = newState;
+                }
+            });
         }
+
+        this.renderTracks();
+    }
+
+    setMuteGroup(track, group) {
+        if (!track.muteGroups) track.muteGroups = [];
+        if (track.muteGroup) { track.muteGroups.push(track.muteGroup); delete track.muteGroup; }
+
+        if (track.muteGroups.includes(group)) {
+            track.muteGroups = track.muteGroups.filter(g => g !== group);
+        } else {
+            track.muteGroups.push(group);
+        }
+        this.renderTracks();
     }
 
     renderTracks() {
@@ -923,6 +1082,9 @@ class CueEditor {
 
             const nameSpan = document.createElement('span');
             nameSpan.textContent = track.name;
+            nameSpan.ondblclick = (e) => { e.stopPropagation(); this.renameTrack(track.id); }; // Moved here
+
+            label.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); this.showTrackContextMenu(e, track); return false; };
 
             const muteBtn = document.createElement('button');
             muteBtn.className = `mute-btn ${track.muted ? 'active' : ''}`;
@@ -935,6 +1097,22 @@ class CueEditor {
 
             label.appendChild(nameSpan);
             label.appendChild(muteBtn);
+
+            const mgContainer = document.createElement('div');
+            mgContainer.className = 'mute-groups';
+            ['A', 'B', 'C'].forEach(grp => {
+                const box = document.createElement('div');
+                const groups = track.muteGroups || (track.muteGroup ? [track.muteGroup] : []);
+                const isActive = groups.includes(grp);
+                box.className = `mute-group grp-${grp.toLowerCase()} ${isActive ? 'active' : ''}`;
+                box.title = `Mute Group ${grp}`;
+                box.onclick = (e) => {
+                    e.stopPropagation();
+                    this.setMuteGroup(track, grp);
+                };
+                mgContainer.appendChild(box);
+            });
+            label.appendChild(mgContainer);
 
             const content = document.createElement('div');
             content.className = 'track-content';
@@ -952,6 +1130,7 @@ class CueEditor {
             // Timeline Context Menu (Right Click on empty space)
             trackEl.addEventListener('contextmenu', (e) => {
                 if (e.target.closest('.cue-block')) return; // Let cue handle it
+                if (e.target.closest('.track-label')) return; // Let track label handle it
                 this.showTimelineContextMenu(e);
             });
 
@@ -960,7 +1139,51 @@ class CueEditor {
         this.renderCues();
     }
 
-    createCue(trackId, sceneId, sceneName, startTime, duration = 5, ignoreCollisions = false) {
+    renameTrack(trackId) {
+        const track = this.tracks.find(t => t.id === trackId);
+        if (!track) return;
+        const newName = prompt('Track Name:', track.name);
+        if (newName && newName.trim() !== '') {
+            track.name = newName.trim();
+            this.renderTracks();
+        }
+    }
+
+    deleteTrack(trackId) {
+        if (!confirm('Delete this track and all cues on it?')) return;
+        this.cues = this.cues.filter(c => c.trackId !== trackId);
+        this.tracks = this.tracks.filter(t => t.id !== trackId);
+        this.renderTracks();
+        this.renderCues();
+    }
+
+    showTrackContextMenu(e, track) {
+        const menu = document.getElementById('track-context-menu');
+        if (!menu) return;
+
+        const rename = document.getElementById('ctx-track-rename');
+        const del = document.getElementById('ctx-track-delete');
+
+        // Clone to clear listeners
+        const rClone = rename.cloneNode(true);
+        rename.parentNode.replaceChild(rClone, rename);
+        const dClone = del.cloneNode(true);
+        del.parentNode.replaceChild(dClone, del);
+
+        rClone.onclick = () => { this.renameTrack(track.id); menu.style.display = 'none'; };
+        dClone.onclick = () => { this.deleteTrack(track.id); menu.style.display = 'none'; };
+
+        menu.style.left = `${e.clientX}px`;
+        menu.style.top = `${e.clientY}px`;
+        menu.style.display = 'block';
+
+        this.hideContextMenu(); // Close other menus
+
+        const close = () => { menu.style.display = 'none'; document.removeEventListener('click', close); };
+        setTimeout(() => document.addEventListener('click', close), 50);
+    }
+
+    createCue(trackId, sceneId, sceneName, startTime, duration = 2, ignoreCollisions = false, automationPoints = null) {
         // Fix for Loop-Creation: Date.now() is not unique enough for sync loops
         const cue = {
             id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
@@ -972,12 +1195,63 @@ class CueEditor {
             fadeIn: 0,
             fadeOut: 0,
             reverse: false,
-            // Default: Middle = 255 DMX
-            automationPoints: [{ x: 0, y: 0.5 }, { x: 1, y: 0.5 }]
+            automationPoints: automationPoints || [{ x: 0, y: 0.5 }, { x: 1, y: 0.5 }]
         };
         this.cues.push(cue);
         if (!ignoreCollisions) this.resolveCollisions(cue);
         this.renderCues();
+    }
+
+    getCueColor(scene) {
+        if (!scene) return null;
+
+        // Analyze channels
+        let data = scene.channel_data;
+        if (typeof data === 'string') {
+            try { data = JSON.parse(data); } catch (e) { }
+        }
+
+        let hasPos = false, hasColor = false, hasBeam = false, hasSpeed = false, hasControl = false, hasDim = false;
+
+        const check = (idx) => {
+            const ch = this.channelMap[idx];
+            if (!ch) return;
+            if (ch.isPosition) hasPos = true;
+            if (ch.isColor) hasColor = true;
+            if (ch.isBeam) hasBeam = true;
+            if (ch.isSpeed) hasSpeed = true;
+            if (ch.isControl) hasControl = true;
+            if (ch.isDimmer) hasDim = true;
+        };
+
+        if (Array.isArray(data)) {
+            data.forEach((val, idx) => { if (val !== null) check(idx); });
+        } else if (data && typeof data === 'object') {
+            Object.keys(data).forEach(ch => check(parseInt(ch) - 1));
+        }
+
+        // Priority Order
+        if (hasControl) return '#607D8B'; // Blue Grey
+        if (hasSpeed) return '#FF9800';   // Orange
+        if (hasPos) return '#E91E63';     // Pink
+        if (hasBeam) return '#4CAF50';    // Green
+        if (hasColor) return '#00BCD4';   // Cyan
+        if (hasDim) return '#3F51B5';     // Indigo (standard-ish)
+
+        return null; // Default
+    }
+
+    getGroupColor(id) {
+        if (!id) return null;
+        const colors = [
+            '#d32f2f', '#c2185b', '#7b1fa2', '#512da8', '#303f9f',
+            '#1976d2', '#0288d1', '#0097a7', '#00796b', '#388e3c',
+            '#689f38', '#afb42b', '#fbc02d', '#ffa000', '#f57c00',
+            '#e64a19', '#5d4037', '#616161'
+        ]; // Slightly darker palette for better contrast with white text
+        const num = parseInt(id) || 0;
+        const idx = Math.abs(num) % colors.length;
+        return colors[idx];
     }
 
     renderCues() {
@@ -1001,6 +1275,7 @@ class CueEditor {
                 block.innerHTML = `
                     <div class="cue-block-name"></div>
                     <div class="cue-block-time"></div>
+                    <div class="cue-dmx-value"></div>
                     <div class="cue-resize-handle"></div>
                     <div class="automation-layer">
                         <svg preserveAspectRatio="none" viewBox="0 0 100 100">
@@ -1034,13 +1309,71 @@ class CueEditor {
             let displayName = cue.sceneName;
             if (cue.reverse) displayName += ' ⏪';
 
+            // --- Attribute Coloring ---
+            const sceneObj = this.scenes.find(s => s.id === cue.sceneId);
+
+            if (sceneObj) {
+                const color = this.getCueColor(sceneObj);
+                if (color) block.style.setProperty('--cue-bg', color);
+                else block.style.removeProperty('--cue-bg');
+            } else {
+                block.style.removeProperty('--cue-bg');
+            }
+
             block.querySelector('.cue-block-name').textContent = displayName;
             block.querySelector('.cue-block-time').textContent = `${cue.startTime.toFixed(2)}s`;
+
 
             // --- RENDER AUTOMATION ---
             this.renderAutomation(cue, block);
 
-            if (this.selectedCue && this.selectedCue.id === cue.id) block.classList.add('selected');
+            // --- UPDATE DMX VALUE DISPLAY (only for Speed, Color, Control) ---
+            const dmxValueEl = block.querySelector('.cue-dmx-value');
+            if (dmxValueEl && cue.automationPoints && cue.automationPoints.length > 0) {
+                // Determine scene attribute type
+                const scene = this.scenes.find(s => s.id === cue.sceneId);
+                let showDmxValue = false;
+                let isSpeedCue = false;
+
+                if (scene) {
+                    let data = scene.channel_data;
+                    if (typeof data === 'string') {
+                        try { data = JSON.parse(data); } catch (e) { }
+                    }
+
+                    // Check if scene contains Speed, Color, or Control attributes
+                    const checkChannels = (idx) => {
+                        const ch = this.channelMap[idx];
+                        if (!ch) return false;
+                        if (ch.isSpeed) isSpeedCue = true;
+                        return ch.isSpeed || ch.isColor || ch.isControl;
+                    };
+
+                    if (Array.isArray(data)) {
+                        showDmxValue = data.some((val, idx) => checkChannels(idx));
+                    } else if (data && typeof data === 'object') {
+                        showDmxValue = Object.keys(data).some(ch => checkChannels(parseInt(ch) - 1));
+                    }
+                }
+
+                if (showDmxValue) {
+                    const relativeTime = this.currentTime - cue.startTime;
+                    const factor = this.getAutomationValue(cue, relativeTime); // Returns 0.0 - 1.0
+
+                    let dmxValue = Math.round(factor * 255);
+                    // Invert display for Speed cues to match output logic
+                    if (isSpeedCue) {
+                        dmxValue = Math.round(255 * (1.0 - factor));
+                    }
+
+                    dmxValueEl.textContent = dmxValue;
+                    dmxValueEl.style.display = 'block';
+                } else {
+                    dmxValueEl.style.display = 'none';
+                }
+            }
+
+            if (this.selectedCues.has(cue.id)) block.classList.add('selected');
             else block.classList.remove('selected');
 
             // --- Chaser Styling ---
@@ -1058,41 +1391,39 @@ class CueEditor {
     }
 
     renderAutomation(cue, block) {
-        // --- ADDED: Only Show Automation Line if Cue actually controls Dimmer ---
+        // Show Automation Line if Cue controls any automatable attribute
         const scene = this.scenes.find(s => s.id === cue.sceneId);
-        let hasDimmer = false;
+        let hasAutomatableAttribute = false;
 
         if (scene) {
             if (scene.type === 'chaser') {
-                // Chasers usually have Dimmer, but we can check config if we want to be precise.
-                // For now, assume Chasers are "active" elements that might need dimmer control.
-                // Or better: Let's assume YES for chasers as they default to full brightness.
-                hasDimmer = true;
+                hasAutomatableAttribute = true;
             } else {
                 let data = scene.channel_data;
                 if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { } }
 
                 if (Array.isArray(data)) {
-                    // Array format (full DMX frame)
-                    // Check if any Non-Zero value maps to a Dimmer channel
-                    hasDimmer = data.some((val, idx) => {
-                        const v = (typeof val === 'number') ? val : (val.value || 0);
-                        return v > 0 && this.channelMap[idx] && this.channelMap[idx].isIntensity;
+                    // Check if any channel is automatable (Intensity, Speed, Beam, Control)
+                    hasAutomatableAttribute = data.some((val, idx) => {
+                        if (!this.channelMap[idx]) return false;
+                        const ch = this.channelMap[idx];
+                        return ch.isIntensity || ch.isSpeed || ch.isBeam || ch.isControl;
                     });
                 } else if (data && typeof data === 'object') {
                     // Object format { "1": 255 }
-                    hasDimmer = Object.entries(data).some(([ch, val]) => {
+                    hasAutomatableAttribute = Object.entries(data).some(([ch, val]) => {
                         const idx = parseInt(ch) - 1;
-                        const v = parseInt(val);
-                        return v > 0 && this.channelMap[idx] && this.channelMap[idx].isIntensity;
+                        if (!this.channelMap[idx]) return false;
+                        const chInfo = this.channelMap[idx];
+                        return chInfo.isIntensity || chInfo.isSpeed || chInfo.isBeam || chInfo.isControl;
                     });
                 }
             }
         }
 
         const layer = block.querySelector('.automation-layer');
-        if (!hasDimmer) {
-            layer.style.display = 'none'; // Hide if no dimmer
+        if (!hasAutomatableAttribute) {
+            layer.style.display = 'none'; // Hide if no automatable attributes
             return;
         }
         layer.style.display = 'block';
@@ -1143,7 +1474,7 @@ class CueEditor {
             const y = 1.0 - ((e.clientY - rect.top) / rect.height);
             cue.automationPoints.push({
                 x: Math.max(0, Math.min(1, x)),
-                y: Math.max(0, Math.min(0.5, y)) // WALL at 0.5
+                y: Math.max(0.2, Math.min(0.8, y)) // 10px margin Top/Bottom
             });
             this.renderCues();
         };
@@ -1152,6 +1483,7 @@ class CueEditor {
     handleAutomationNodeMouseDown(e, cue, point) {
         e.stopPropagation();
         e.preventDefault();
+
         this.dragState = {
             active: true,
             mode: 'automation',
@@ -1185,9 +1517,9 @@ class CueEditor {
             }
         }
 
-        // Mapping: yNorm=0.5 -> Intensity=1.0. yNorm=0 -> Intensity=0.0.
-        // We divide by 0.5 to make middle the peak.
-        return Math.min(1.0, yNorm / 0.5);
+        // Mapping: yNorm 0.2 (Bottom) -> Factor 0.0
+        //          yNorm 0.8 (Top) -> Factor 1.0
+        return Math.max(0, Math.min(1.0, (yNorm - 0.2) / 0.6));
     }
 
     // ... Standard methods ...
@@ -1227,6 +1559,58 @@ class CueEditor {
         this.renderCues();
         this.hideCueModal();
     }
+    copySelectedCue() {
+        if (this.selectedCues.size === 0) return;
+
+        this.clipboard = [];
+        this.selectedCues.forEach(id => {
+            const cue = this.cues.find(c => c.id === id);
+            if (cue) {
+                this.clipboard.push(JSON.parse(JSON.stringify(cue)));
+            }
+        });
+
+        console.log(`📋 Copied ${this.clipboard.length} cues to clipboard.`);
+
+        // Visual feedback
+        this.selectedCues.forEach(id => {
+            const block = this.cueElements.get(id);
+            if (block) {
+                block.style.filter = 'brightness(1.5)';
+                setTimeout(() => block.style.filter = '', 200);
+            }
+        });
+    }
+
+    pasteCue() {
+        if (!this.clipboard || this.clipboard.length === 0) return;
+
+        // Calculate offset based on earliest start time
+        let minTime = Infinity;
+        this.clipboard.forEach(c => { if (c.startTime < minTime) minTime = c.startTime; });
+
+        const timeDelta = this.currentTime - minTime;
+
+        this.selectedCues.clear();
+        this.selectedCue = null;
+
+        this.clipboard.forEach(clipCue => {
+            const newCue = JSON.parse(JSON.stringify(clipCue));
+            newCue.id = `cue_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+            newCue.startTime = Math.max(0, clipCue.startTime + timeDelta);
+            // newCue.trackId remains same as source (DAW behavior)
+
+            this.cues.push(newCue);
+            this.resolveCollisions(newCue);
+
+            this.selectedCues.add(newCue.id);
+            this.selectedCue = newCue; // Update last accessed
+        });
+
+        this.renderCues();
+        console.log(`📋 Pasted ${this.clipboard.length} cues.`);
+    }
+
     deleteSelectedCue() {
         if (!this.selectedCue) return;
         this.cues = this.cues.filter(c => c.id !== this.selectedCue.id);
@@ -1412,43 +1796,85 @@ class CueEditor {
                 try { data = JSON.parse(data); } catch (e) { data = []; }
             }
 
+            // NEW: Determine which attribute type should receive automation
+            // Priority: Intensity > Speed > Beam > Control
+            let automationTarget = null; // 'intensity', 'speed', 'beam', 'control', or null
+            const sceneAttributeCounts = { intensity: 0, speed: 0, beam: 0, control: 0, other: 0 };
+
+            // Scan scene channels to determine attribute distribution
+            const scanChannel = (idx) => {
+                if (idx >= 512) return;
+                const chanInfo = this.channelMap[idx];
+                if (chanInfo.isIntensity) sceneAttributeCounts.intensity++;
+                else if (chanInfo.isSpeed) sceneAttributeCounts.speed++;
+                else if (chanInfo.isBeam) sceneAttributeCounts.beam++;
+                else if (chanInfo.isControl) sceneAttributeCounts.control++;
+                else sceneAttributeCounts.other++;
+            };
+
+            if (Array.isArray(data)) {
+                data.forEach((val, idx) => scanChannel(idx));
+            } else if (typeof data === 'object' && data !== null) {
+                Object.keys(data).forEach(ch => scanChannel(parseInt(ch) - 1));
+            }
+
+            // Determine automation target based on priority
+            if (sceneAttributeCounts.intensity > 0) automationTarget = 'intensity';
+            else if (sceneAttributeCounts.speed > 0) automationTarget = 'speed';
+            else if (sceneAttributeCounts.beam > 0) automationTarget = 'beam';
+            else if (sceneAttributeCounts.control > 0) automationTarget = 'control';
+
             const processChannel = (idx, valRaw) => {
                 if (idx >= 512) return;
                 addressedThisFrame.add(idx);
-                const isInt = this.channelMap[idx].isIntensity;
+                const chanInfo = this.channelMap[idx];
+                const isInt = chanInfo.isIntensity;
+                const isSpeed = chanInfo.isSpeed;
+                const isBeam = chanInfo.isBeam;
+                const isControl = chanInfo.isControl;
+
+                // Determine if THIS channel should receive automation
+                let applyAutomation = false;
+                if (automationTarget === 'intensity' && isInt) applyAutomation = true;
+                else if (automationTarget === 'speed' && isSpeed) applyAutomation = true;
+                else if (automationTarget === 'beam' && isBeam) applyAutomation = true;
+                else if (automationTarget === 'control' && isControl) applyAutomation = true;
 
                 let finalVal;
                 if (isInt) {
                     // HTP for Intensity (Dimmer)
                     const v = (typeof valRaw === 'number') ? valRaw : (valRaw.value || 0);
-                    finalVal = Math.round(v * factor);
+                    finalVal = applyAutomation ? Math.round(v * factor) : v;
                     frameBuffer[idx] = Math.max(frameBuffer[idx], finalVal);
+                } else if (isSpeed && applyAutomation) {
+                    // INVERTED for Speed: factor 1.0 (Top) → DMX 0 (Fast), factor 0.0 (Bottom) → DMX 255 (Slow)
+                    finalVal = Math.round(255 * (1.0 - factor));
+                    frameBuffer[idx] = finalVal;
                 } else {
-                    // LTP for Attributes (Color, Position, etc.) - Only if value is defined
-                    // Automation (factor) usually only applies to Dimmer, but let's apply it if it's explicitly intensity
-                    // Actually, for attributes, we usually just take the raw value, 
-                    // BUT: If users automate "opacity" of a cue, they expect attributes to fade?
-                    // Professional consoles: "Size/Scale" automation vs "Time" fading.
-                    // Here `factor` is the automation curve (opacity).
-                    // If we want to fade in a color, we need to interpolate. 
-                    // But `frameBuffer` holds the RESULT.
-                    // If this cue is opaque (factor 1), it overwrites.
-                    // If it's transparent (factor 0), it shouldn't touch it?
-                    // Simple LTP: Just overwrite. 
-                    // Better LTP mix: interpolate(old, new, factor).
-
+                    // LTP for Attributes (Color, Position, Beam, Control)
                     const v = (typeof valRaw === 'number') ? valRaw : (valRaw.value || 0);
 
-                    if (factor < 0.01) {
-                        // Cue is invisible, don't overwrite (pass through previous LTP)
-                    } else if (factor >= 0.99) {
-                        // Full overwrite
-                        frameBuffer[idx] = v;
+                    if (applyAutomation) {
+                        // Apply automation to beam/control channels
+                        if (factor < 0.01) {
+                            // Cue is invisible, don't overwrite
+                        } else if (factor >= 0.99) {
+                            frameBuffer[idx] = v;
+                        } else {
+                            // Crossfade with automation factor
+                            const current = frameBuffer[idx];
+                            frameBuffer[idx] = current + (v - current) * factor;
+                        }
                     } else {
-                        // Crossfade Logic for Attributes (Mix previous buffer value with new value)
-                        // This allows smooth automation fades for valid modular overrides
-                        const current = frameBuffer[idx];
-                        frameBuffer[idx] = current + (v - current) * factor;
+                        // No automation: Standard LTP logic for attributes
+                        if (factor < 0.01) {
+                            // Cue is invisible
+                        } else if (factor >= 0.99) {
+                            frameBuffer[idx] = v;
+                        } else {
+                            const current = frameBuffer[idx];
+                            frameBuffer[idx] = current + (v - current) * factor;
+                        }
                     }
                 }
             };
@@ -2195,7 +2621,7 @@ class CueEditor {
             sceneId: 'fx_generated',
             sceneName: `FX: ${config.waveform.toUpperCase()}`,
             startTime,
-            duration: 5.0,
+            duration: 2.0,
             fadeIn: 0,
             fadeOut: 0,
             automationPoints: [{ x: 0, y: 0.5 }, { x: 1, y: 0.5 }],
