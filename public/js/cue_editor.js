@@ -22,6 +22,8 @@ class CueEditor {
         this.lastFrameTime = 0;
         this.selectedCue = null;
         this.snapGrid = 0.1; // Snap to 0.1s
+        this.tapTimes = [];
+        this.lastTapTime = 0;
 
         this.cueElements = new Map();
         this.activeCues = new Set();
@@ -140,13 +142,10 @@ class CueEditor {
         bindBtn('cancel-cue-btn', () => this.hideCueModal());
         bindBtn('delete-cue-btn', () => this.deleteSelectedCue());
 
-        const speedSlider = document.getElementById('speed-slider');
-        if (speedSlider) {
-            speedSlider.oninput = (e) => {
-                this.speed = parseFloat(e.target.value);
-                document.getElementById('speed-value').textContent = `${this.speed.toFixed(1)}x`;
-            };
-        }
+        const bpmInput = document.getElementById('bpm-input');
+        if (bpmInput) bpmInput.onchange = (e) => this.setBPM(parseInt(e.target.value));
+        const tapBtn = document.getElementById('tap-btn');
+        if (tapBtn) tapBtn.onmousedown = (e) => this.handleTap();
 
         // Zoom Logic
         const zoomSlider = document.getElementById('zoom-slider');
@@ -359,7 +358,7 @@ class CueEditor {
         if (slider) slider.value = pps;
 
         this.renderTimeline();
-        this.renderCues();
+        this.renderTracks(); // Updates width and calls renderGrid
         this.updatePlayhead();
     }
 
@@ -1065,6 +1064,35 @@ class CueEditor {
         this.renderTracks();
     }
 
+    setBPM(bpm) {
+        if (!bpm || bpm < 1) bpm = 60;
+        this.speed = bpm / 60;
+        const el = document.getElementById('bpm-input');
+        if (el) el.value = Math.round(bpm);
+        this.renderGrid();
+    }
+
+    handleTap() {
+        const now = Date.now();
+        if (this.lastTapTime && (now - this.lastTapTime > 2000)) {
+            this.tapTimes = [];
+        }
+        this.lastTapTime = now;
+        this.tapTimes.push(now);
+        // Keep max 10 for rolling average
+        if (this.tapTimes.length > 10) this.tapTimes.shift();
+
+        if (this.tapTimes.length > 1) {
+            let intervals = [];
+            for (let i = 1; i < this.tapTimes.length; i++) {
+                intervals.push(this.tapTimes[i] - this.tapTimes[i - 1]);
+            }
+            const avgMs = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+            const bpm = Math.round(60000 / avgMs);
+            this.setBPM(bpm);
+        }
+    }
+
     renderTracks() {
         const container = document.getElementById('tracks-container');
         if (!container) return;
@@ -1137,6 +1165,40 @@ class CueEditor {
             container.appendChild(trackEl);
         });
         this.renderCues();
+        this.renderGrid();
+    }
+
+    renderGrid() {
+        let overlay = document.getElementById('grid-overlay');
+        const container = document.getElementById('tracks-container');
+        if (!container) return;
+
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'grid-overlay';
+            overlay.style.position = 'absolute';
+            overlay.style.top = '0';
+            overlay.style.left = `${LEFT_MARGIN}px`;
+            overlay.style.pointerEvents = 'none';
+            overlay.style.zIndex = '5';
+            overlay.style.height = '100%';
+            container.appendChild(overlay);
+        }
+
+        if (!overlay.parentNode) container.appendChild(overlay);
+
+        const width = (this.maxTime * this.pixelsPerSecond);
+        overlay.style.width = `${width}px`;
+
+        const bpm = this.speed * 60;
+        const beatSec = 60 / bpm;
+        const beatPx = beatSec * this.pixelsPerSecond;
+        const subBeatPx = beatPx / 2;
+
+        const subGrid = `repeating-linear-gradient(90deg, transparent, transparent ${subBeatPx - 1}px, rgba(255,255,255,0.03) ${subBeatPx - 1}px, rgba(255,255,255,0.03) ${subBeatPx}px)`;
+        const mainGrid = `repeating-linear-gradient(90deg, transparent, transparent ${beatPx - 1}px, rgba(255,255,255,0.08) ${beatPx - 1}px, rgba(255,255,255,0.08) ${beatPx}px)`;
+
+        overlay.style.backgroundImage = `${mainGrid}, ${subGrid}`;
     }
 
     renameTrack(trackId) {
@@ -1391,6 +1453,48 @@ class CueEditor {
     }
 
     renderAutomation(cue, block) {
+        if (cue.type === 'fx' && cue.channel_data && cue.channel_data.waveform) {
+            const layer = block.querySelector('.automation-layer');
+            if (layer) {
+                layer.style.display = 'block';
+                const svg = layer.querySelector('svg');
+                const path = svg.querySelector('.automation-line');
+                const wf = cue.channel_data.waveform;
+                const speed = parseFloat(cue.channel_data.speed || 1.0);
+                const duration = cue.duration;
+                const cycles = duration * speed;
+
+                let d = '';
+                const steps = 100;
+                for (let i = 0; i <= steps; i++) {
+                    const t = i / steps;
+                    const tAbs = t * cycles;
+                    let val = 0;
+                    switch (wf) {
+                        case 'sine': val = Math.sin(tAbs * Math.PI * 2); break;
+                        case 'square': val = (tAbs % 1) < 0.5 ? 1 : -1; break;
+                        case 'saw': val = 1 - 2 * (tAbs % 1); break;
+                        case 'ramp': val = 2 * (tAbs % 1) - 1; break;
+                        case 'strobe': val = (tAbs % 1) < 0.5 ? 1 : -1; break;
+                        default: val = 0;
+                    }
+
+                    const normalizedY = 0.5 + (val * 0.4);
+                    const svgX = t * 100;
+                    const svgY = 100 - (normalizedY * 100);
+                    d += `${i === 0 ? 'M' : 'L'} ${svgX.toFixed(1)} ${svgY.toFixed(1)} `;
+                }
+                path.setAttribute('d', d);
+                path.style.stroke = '#e040fb';
+                path.style.strokeWidth = '1.5';
+                path.onmousedown = (e) => { e.stopPropagation(); };
+
+                const nodesContainer = layer.querySelector('.automation-nodes');
+                if (nodesContainer) nodesContainer.innerHTML = '';
+            }
+            return;
+        }
+
         // Show Automation Line if Cue controls any automatable attribute
         const scene = this.scenes.find(s => s.id === cue.sceneId);
         let hasAutomatableAttribute = false;
@@ -2655,6 +2759,10 @@ class CueEditor {
                 this.tracks = tl.tracks || [];
                 this.cues = tl.cues || [];
                 this.maxTime = tl.maxTime || 60;
+                this.speed = tl.speed || 1.0;
+                const bpm = Math.round(this.speed * 60);
+                const bpmEl = document.getElementById('bpm-input');
+                if (bpmEl) bpmEl.value = bpm;
 
                 // Fallback if empty
                 if (this.tracks.length === 0) {
@@ -2675,7 +2783,8 @@ class CueEditor {
         const showData = {
             tracks: this.tracks,
             cues: this.cues,
-            maxTime: this.maxTime
+            maxTime: this.maxTime,
+            speed: this.speed
         };
 
         try {
