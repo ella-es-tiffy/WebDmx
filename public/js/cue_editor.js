@@ -479,9 +479,11 @@ class CueEditor {
             }
         }
 
-        // Build drag group (Chain Selection if no Ctrl)
+        // Build drag group (Chain Selection if no Ctrl AND Snap Cue Active)
         let dragIds = new Set(this.selectedCues);
-        const useChain = !e.ctrlKey && !e.metaKey;
+        const snapCueEl = document.getElementById('snap-cue');
+        const snapCueActive = snapCueEl ? snapCueEl.checked : true;
+        const useChain = !e.ctrlKey && !e.metaKey && snapCueActive;
 
         if (useChain) {
             const EPSILON = 0.05; // 50ms tolerance for loose connections
